@@ -103,8 +103,8 @@ class RingMasterPageShell extends StatelessWidget {
     final resolvedLogo =
         logo ??
         Image.asset(
-          'assets/images/ringmaster_one_logo_transparent.png',
-          semanticLabel: 'RingMaster One logo',
+          'assets/images/ringmaster_breeder_logo_transparent.png',
+          semanticLabel: 'RingMaster Breeder logo',
         );
     final resolvedActions = <Widget>[
       if (showHomeButton)

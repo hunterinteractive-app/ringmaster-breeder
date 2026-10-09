@@ -111,17 +111,11 @@ class _LoginScreenState extends State<LoginScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  ClipRect(
-                    child: Align(
-                      heightFactor: 0.34,
-                      alignment: const Alignment(0, -0.15),
-                      child: Image.asset(
-                        'assets/images/ringmaster_one_logo_transparent.png',
-                        width: 560,
-                        fit: BoxFit.contain,
-                        semanticLabel: 'RingMaster One logo',
-                      ),
-                    ),
+                  Image.asset(
+                    'assets/images/ringmaster_breeder_logo_transparent.png',
+                    width: 560,
+                    fit: BoxFit.contain,
+                    semanticLabel: 'RingMaster Breeder logo',
                   ),
                   const SizedBox(height: 20),
                   const Text(

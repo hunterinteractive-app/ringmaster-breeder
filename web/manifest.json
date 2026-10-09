@@ -1,6 +1,6 @@
 {
-    "name": "ringmaster_breeder",
-    "short_name": "ringmaster_breeder",
+    "name": "RingMaster Breeder",
+    "short_name": "Breeder",
     "start_url": ".",
     "display": "standalone",
     "background_color": "#C7CBCC",

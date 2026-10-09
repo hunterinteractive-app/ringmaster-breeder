@@ -39,7 +39,7 @@ flutter:
 
   # Assets (enable when needed)
   assets:
-    - assets/images/ringmaster_one_logo_transparent.png
+    - assets/images/ringmaster_breeder_logo_transparent.png
     - assets/fonts/NotoSans-Regular.ttf
     - assets/fonts/NotoSans-Italic.ttf
 
