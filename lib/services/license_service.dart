@@ -1,4 +1,3 @@
-
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 final supabase = Supabase.instance.client;
@@ -24,6 +23,11 @@ Future<LicenseStatus> fetchLicenseStatus(String userId) async {
       .select('tier_code, license_tiers(max_rings)')
       .eq('user_id', userId)
       .eq('status', 'active')
+      .or(
+        'expires_at.is.null,expires_at.gt.${DateTime.now().toUtc().toIso8601String()}',
+      )
+      .order('started_at', ascending: false)
+      .limit(1)
       .maybeSingle();
 
   if (license == null) {
@@ -42,7 +46,8 @@ Future<LicenseStatus> fetchLicenseStatus(String userId) async {
   final ringCount = await supabase
       .from('farms')
       .select()
-      .eq('owner_id', userId);
+      .eq('owner_id', userId)
+      .eq('is_demo', false);
 
   return LicenseStatus(
     hasActiveLicense: true,

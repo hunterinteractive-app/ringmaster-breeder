@@ -1,350 +1,356 @@
-// lib/screens/login_screen.dart
-
+import 'dart:async';
 import 'package:flutter/material.dart';
-import 'package:appwrite/appwrite.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
-
-import '../services/user_service.dart';
-import '../models/app_user.dart';
-import '../main.dart';
+import '../services/auth_service.dart';
+import '../theme/app_theme.dart';
+import '../config/app_config.dart';
 
 class LoginScreen extends StatefulWidget {
-  final void Function(AppUser) onLoginSuccess;
-
-  const LoginScreen({
-    super.key,
-    required this.onLoginSuccess,
-  });
-
+  final AuthGateway auth;
+  const LoginScreen({super.key, required this.auth});
   @override
   State<LoginScreen> createState() => _LoginScreenState();
 }
 
 class _LoginScreenState extends State<LoginScreen> {
-  final _formKey = GlobalKey<FormState>();
+  final _form = GlobalKey<FormState>();
+  final _email = TextEditingController();
+  final _code = TextEditingController();
+  String? _pendingEmail;
+  String? _message;
+  bool _busy = false;
+  int _resendSeconds = 0;
+  Timer? _timer;
+  @override
+  void dispose() {
+    _timer?.cancel();
+    _email.dispose();
+    _code.dispose();
+    super.dispose();
+  }
 
-  // Main login
-  final usernameController = TextEditingController();
-  final passwordController = TextEditingController();
-
-  // Forgot username
-  final forgotEmailController = TextEditingController();
-  final forgotArbaController = TextEditingController();
-
-  // Forgot password
-  final forgotPasswordUsernameController = TextEditingController();
-  final forgotPasswordArbaController = TextEditingController();
-
-  String? errorMessage;
-  bool loading = false;
-
-  // --------------------------------------------------
-  // LOGIN HANDLER
-  // --------------------------------------------------
-  Future<void> login() async {
-    if (!_formKey.currentState!.validate()) return;
-
-    final username = usernameController.text.trim();
-    final password = passwordController.text.trim();
-
-    setState(() {
-      loading = true;
-      errorMessage = null;
-    });
-
-    try {
-      // 1) LOOK UP USER BY USERNAME (DB)
-      final user = await UserService.getUserByUsername(username);
-
-      if (user == null) {
-        setState(() {
-          loading = false;
-          errorMessage = "Invalid username or password.";
-        });
+  void _startCooldown() {
+    _timer?.cancel();
+    _resendSeconds = 60;
+    _timer = Timer.periodic(const Duration(seconds: 1), (timer) {
+      if (!mounted) {
+        timer.cancel();
         return;
       }
+      setState(() => _resendSeconds--);
+      if (_resendSeconds <= 0) timer.cancel();
+    });
+  }
 
-      print("🔍 LOGIN USING EMAIL: ${user.email}");
-
-      final account = Account(UserService.client);
-
-      // 2) FORCE DELETE ALL EXISTING SESSIONS (iOS FIX)
-      try {
-        final sessions = await account.listSessions();
-        for (final s in sessions.sessions) {
-          await account.deleteSession(sessionId: s.$id);
-        }
-      } catch (_) {}
-
-      // 3) CREATE FRESH SESSION
-      final session = await appwriteAccount.get();
-        final appwriteUserId = session.$id;
-
-        await Supabase.instance.client.auth.signInWithIdToken(
-          provider: OAuthProvider.custom,
-          idToken: appwriteUserId,
-        );
-
-      final appwriteUser = await AppwriteService.getCurrentUser();
-
-      final supaUser = await UserService.ensureUser(
-        appwriteId: appwriteUser.$id,
-        email: appwriteUser.email,
-      );
-
-      widget.onLoginSuccess(AppUser.fromMap(supaUser));
-
-      // 4) SAVE USER LOCALLY
-      UserService.currentLoggedInUser = user;
-
-      setState(() => loading = false);
-      widget.onLoginSuccess(user);
-
-    } catch (e) {
-      print("❌ LOGIN ERROR RAW: $e");
-
+  Future<void> _request() async {
+    if (_busy || _resendSeconds > 0 || !_form.currentState!.validate()) return;
+    final email = _email.text.trim().toLowerCase();
+    setState(() {
+      _busy = true;
+      _message = null;
+    });
+    try {
+      await widget.auth.requestCode(email);
+      if (!mounted) return;
       setState(() {
-        loading = false;
-        errorMessage = e.toString();
+        _pendingEmail = email;
+        _message = 'Check your email for your sign-in code.';
+        _startCooldown();
       });
+    } catch (_) {
+      if (mounted) {
+        setState(
+          () => _message =
+              'We could not send a code. Check your email address and try again.',
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _busy = false);
     }
   }
 
-  // --------------------------------------------------
-  // FORGOT USERNAME (email + ARBA required)
-  // --------------------------------------------------
-  Future<void> showForgotUsernameDialog() async {
-    forgotEmailController.clear();
-    forgotArbaController.clear();
-
-    await showDialog(
-      context: context,
-      builder: (_) => AlertDialog(
-        title: const Text("Forgot Username"),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            TextField(
-              controller: forgotEmailController,
-              decoration: const InputDecoration(labelText: "Email"),
-            ),
-            const SizedBox(height: 8),
-            TextField(
-              controller: forgotArbaController,
-              decoration: const InputDecoration(labelText: "ARBA Number"),
-            ),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text("Cancel"),
-          ),
-          ElevatedButton(
-            onPressed: () async {
-              final email = forgotEmailController.text.trim();
-              final arba = forgotArbaController.text.trim();
-
-              Navigator.pop(context);
-
-              if (email.isEmpty || arba.isEmpty) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                    content: Text("Email and ARBA number are required."),
-                  ),
-                );
-                return;
-              }
-
-              final username = await UserService.usernameFromEmailAndArba(
-                email: email,
-                arbaNumber: arba,
-              );
-
-              if (username == null) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                    content: Text(
-                      "No account found with that email and ARBA number.",
-                    ),
-                  ),
-                );
-              } else {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    content: Text("Your username is: $username"),
-                  ),
-                );
-              }
-            },
-            child: const Text("Lookup Username"),
-          ),
-        ],
-      ),
-    );
-  }
-
-  // --------------------------------------------------
-  // FORGOT PASSWORD (username + ARBA required)
-  // --------------------------------------------------
-  Future<void> showForgotPasswordDialog() async {
-    forgotPasswordUsernameController.clear();
-    forgotPasswordArbaController.clear();
-
-    await showDialog(
-      context: context,
-      builder: (_) => AlertDialog(
-        title: const Text("Forgot Password"),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            TextField(
-              controller: forgotPasswordUsernameController,
-              decoration: const InputDecoration(labelText: "Username"),
-            ),
-            const SizedBox(height: 8),
-            TextField(
-              controller: forgotPasswordArbaController,
-              decoration: const InputDecoration(labelText: "ARBA Number"),
-            ),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text("Cancel"),
-          ),
-          ElevatedButton(
-            onPressed: () async {
-              final username =
-                  forgotPasswordUsernameController.text.trim();
-              final arba =
-                  forgotPasswordArbaController.text.trim();
-
-              Navigator.pop(context);
-
-              if (username.isEmpty || arba.isEmpty) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                    content: Text(
-                      "Username and ARBA number are required.",
-                    ),
-                  ),
-                );
-                return;
-              }
-
-              try {
-                // ✅ 1) LOOK UP USER BY USERNAME
-                final user =
-                    await UserService.getUserByUsername(username);
-
-                if (user == null ||
-                    user.arbaNumber != arba) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text(
-                        "Unable to find account with that username and ARBA number.",
-                      ),
-                    ),
-                  );
-                  return;
-                }
-
-              
-              } catch (e) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    content: Text(
-                      "Unable to send reset email: $e",
-                    ),
-                  ),
-                );
-              }
-            },
-            child: const Text("Send Reset Link"),
-          ),
-        ],
-      ),
-    );
+  Future<void> _verify() async {
+    if (_busy || !_form.currentState!.validate()) return;
+    setState(() {
+      _busy = true;
+      _message = null;
+    });
+    try {
+      await widget.auth.verifyCode(_pendingEmail!, _code.text);
+    } catch (_) {
+      if (mounted) {
+        setState(
+          () => _message =
+              'The code is invalid or expired. Try again or request a new code.',
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _busy = false);
+    }
   }
 
   @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(title: const Text("Login")),
-      body: Padding(
-        padding: const EdgeInsets.all(24),
-        child: Form(
-          key: _formKey,
-          child: Column(
-            children: [
-              TextFormField(
-                controller: usernameController,
-                decoration: const InputDecoration(
-                  labelText: "Username",
-                  prefixIcon: Icon(Icons.person),
-                ),
-                validator: (v) =>
-                    v != null && v.isNotEmpty ? null : "Enter username",
-              ),
-              const SizedBox(height: 12),
-              TextFormField(
-                controller: passwordController,
-                obscureText: true,
-                decoration: const InputDecoration(
-                  labelText: "Password",
-                  prefixIcon: Icon(Icons.lock),
-                ),
-                validator: (v) =>
-                    v != null && v.isNotEmpty ? null : "Enter password",
-              ),
-              const SizedBox(height: 20),
-
-              loading
-                  ? const CircularProgressIndicator()
-                  : ElevatedButton(
-                      onPressed: login,
-                      style: ElevatedButton.styleFrom(
-                        minimumSize: const Size.fromHeight(48),
+  Widget build(BuildContext context) => Scaffold(
+    body: Container(
+      decoration: const BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [
+            BreederColors.primary,
+            Color(0xFF682435),
+            BreederColors.primary,
+          ],
+        ),
+      ),
+      child: SafeArea(
+        child: Center(
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.all(24),
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 560),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  ClipRect(
+                    child: Align(
+                      heightFactor: 0.34,
+                      alignment: const Alignment(0, -0.15),
+                      child: Image.asset(
+                        'assets/images/ringmaster_one_logo_transparent.png',
+                        width: 560,
+                        fit: BoxFit.contain,
+                        semanticLabel: 'RingMaster One logo',
                       ),
-                      child: const Text("Login"),
                     ),
-
-              const SizedBox(height: 16),
-
-              TextButton(
-                onPressed: () {
-                  Navigator.pushNamed(context, "/register");
-                },
-                child: const Text(
-                  "Create an Account",
-                  style: TextStyle(fontWeight: FontWeight.bold),
-                ),
+                  ),
+                  const SizedBox(height: 20),
+                  const Text(
+                    'RingMaster Breeder',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 28,
+                      fontWeight: FontWeight.w800,
+                      letterSpacing: 0.2,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  const Text(
+                    'Herd records, pedigrees, and family access in one place.',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      color: BreederColors.accent,
+                      fontSize: 14,
+                      height: 1.4,
+                    ),
+                  ),
+                  const SizedBox(height: 24),
+                  Theme(
+                    data: Theme.of(context).copyWith(
+                      colorScheme: Theme.of(context).colorScheme.copyWith(
+                        surface: BreederColors.text,
+                        onSurface: Colors.white,
+                        primary: BreederColors.accent,
+                        onPrimary: BreederColors.text,
+                      ),
+                      textTheme: Theme.of(context).textTheme.apply(
+                        bodyColor: Colors.white,
+                        displayColor: Colors.white,
+                      ),
+                      inputDecorationTheme: InputDecorationTheme(
+                        filled: true,
+                        fillColor: Colors.white.withValues(alpha: 0.08),
+                        labelStyle: const TextStyle(
+                          color: BreederColors.accent,
+                        ),
+                        prefixIconColor: BreederColors.accent,
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        enabledBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                          borderSide: const BorderSide(
+                            color: BreederColors.accent,
+                          ),
+                        ),
+                        contentPadding: const EdgeInsets.symmetric(
+                          horizontal: 16,
+                          vertical: 18,
+                        ),
+                      ),
+                    ),
+                    child: Card(
+                      color: BreederColors.text,
+                      margin: EdgeInsets.zero,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(20),
+                      ),
+                      child: Padding(
+                        padding: const EdgeInsets.all(24),
+                        child: Form(
+                          key: _form,
+                          child: Column(
+                            mainAxisSize: MainAxisSize.min,
+                            crossAxisAlignment: CrossAxisAlignment.stretch,
+                            children: [
+                              Text(
+                                _pendingEmail == null
+                                    ? 'Log in or create your account'
+                                    : 'Enter your login code',
+                                textAlign: TextAlign.center,
+                                style: const TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 24,
+                                  fontWeight: FontWeight.w800,
+                                ),
+                              ),
+                              const SizedBox(height: 12),
+                              Text(
+                                _pendingEmail == null
+                                    ? 'Enter your email to receive a secure code for herd records, pedigrees, and family access.'
+                                    : 'Enter the code sent to $_pendingEmail.',
+                                textAlign: TextAlign.center,
+                                style: const TextStyle(
+                                  color: BreederColors.accent,
+                                  height: 1.4,
+                                ),
+                              ),
+                              const SizedBox(height: 24),
+                              TextFormField(
+                                controller: _email,
+                                enabled: _pendingEmail == null && !_busy,
+                                autofillHints: const [AutofillHints.email],
+                                keyboardType: TextInputType.emailAddress,
+                                decoration: const InputDecoration(
+                                  labelText: 'Email address',
+                                  prefixIcon: Icon(Icons.email_outlined),
+                                ),
+                                validator: (v) =>
+                                    RegExp(
+                                      r'^[^\s@]+@[^\s@]+\.[^\s@]+$',
+                                    ).hasMatch(v?.trim() ?? '')
+                                    ? null
+                                    : 'Enter a valid email address',
+                              ),
+                              if (_pendingEmail != null) ...[
+                                const SizedBox(height: 16),
+                                TextFormField(
+                                  controller: _code,
+                                  autofillHints: const [
+                                    AutofillHints.oneTimeCode,
+                                  ],
+                                  keyboardType: TextInputType.number,
+                                  enabled: !_busy,
+                                  textAlign: TextAlign.center,
+                                  style: const TextStyle(
+                                    fontSize: 26,
+                                    letterSpacing: 8,
+                                  ),
+                                  decoration: const InputDecoration(
+                                    labelText: 'Sign-in code',
+                                    prefixIcon: Icon(Icons.password_outlined),
+                                  ),
+                                  onFieldSubmitted: (_) => _verify(),
+                                  validator: (v) =>
+                                      RegExp(
+                                        r'^\d{6,8}$',
+                                      ).hasMatch(v?.trim() ?? '')
+                                      ? null
+                                      : 'Enter the code from your email',
+                                ),
+                              ],
+                              const SizedBox(height: 20),
+                              ElevatedButton.icon(
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: BreederColors.primary,
+                                  foregroundColor: Colors.white,
+                                  minimumSize: const Size.fromHeight(52),
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(12),
+                                  ),
+                                ),
+                                icon: _busy
+                                    ? const SizedBox(
+                                        width: 18,
+                                        height: 18,
+                                        child: CircularProgressIndicator(
+                                          strokeWidth: 2,
+                                          color: Colors.white,
+                                        ),
+                                      )
+                                    : Icon(
+                                        _pendingEmail == null
+                                            ? Icons.mark_email_read_outlined
+                                            : Icons.login,
+                                      ),
+                                onPressed: _busy
+                                    ? null
+                                    : (_pendingEmail == null
+                                          ? _request
+                                          : _verify),
+                                label: Text(
+                                  _busy
+                                      ? 'Please wait…'
+                                      : (_pendingEmail == null
+                                            ? 'Send sign-in code'
+                                            : 'Sign in'),
+                                ),
+                              ),
+                              if (_pendingEmail != null) ...[
+                                TextButton(
+                                  onPressed: _busy || _resendSeconds > 0
+                                      ? null
+                                      : _request,
+                                  child: Text(
+                                    _resendSeconds > 0
+                                        ? 'Resend in $_resendSeconds seconds'
+                                        : 'Resend code',
+                                  ),
+                                ),
+                                TextButton(
+                                  onPressed: _busy
+                                      ? null
+                                      : () => setState(() {
+                                          _pendingEmail = null;
+                                          _code.clear();
+                                          _message = null;
+                                          _timer?.cancel();
+                                          _resendSeconds = 0;
+                                        }),
+                                  child: const Text('Use another email'),
+                                ),
+                              ],
+                              if (_message != null)
+                                Padding(
+                                  padding: const EdgeInsets.only(top: 16),
+                                  child: Semantics(
+                                    liveRegion: true,
+                                    child: Text(
+                                      _message!,
+                                      style: const TextStyle(
+                                        color: BreederColors.accent,
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 24),
+                  const Text(
+                    'Version ${AppConfig.version}',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(color: BreederColors.accent, fontSize: 12),
+                  ),
+                ],
               ),
-
-              const SizedBox(height: 8),
-
-              TextButton(
-                onPressed: showForgotPasswordDialog,
-                child: const Text("Forgot Password?"),
-              ),
-              TextButton(
-                onPressed: showForgotUsernameDialog,
-                child: const Text("Forgot Username?"),
-              ),
-
-              if (errorMessage != null) ...[
-                const SizedBox(height: 12),
-                Text(
-                  errorMessage!,
-                  style: const TextStyle(color: Colors.red),
-                ),
-              ],
-            ],
+            ),
           ),
         ),
       ),
-    );
-  }
+    ),
+  );
 }

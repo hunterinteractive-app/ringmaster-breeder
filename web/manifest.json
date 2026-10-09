@@ -3,9 +3,9 @@
     "short_name": "ringmaster_breeder",
     "start_url": ".",
     "display": "standalone",
-    "background_color": "#0175C2",
-    "theme_color": "#0175C2",
-    "description": "A new Flutter project.",
+    "background_color": "#C7CBCC",
+    "theme_color": "#42101A",
+    "description": "RingMaster Breeder herd management for rabbits and cavies.",
     "orientation": "portrait-primary",
     "prefer_related_applications": false,
     "icons": [

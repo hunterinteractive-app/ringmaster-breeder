@@ -1,22 +1,21 @@
+import '../widgets/ringmaster_page_shell.dart';
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import 'pedigree_tree_screen.dart';
 import '../services/pedigree_service.dart';
 import '../services/pedigree_pdf_service.dart';
-import 'dart:io';
-import 'package:share_plus/share_plus.dart';
-import 'package:path_provider/path_provider.dart';
+import 'package:printing/printing.dart';
+import '../utils/animal_labels.dart';
 import 'dart:typed_data';
 import 'health_records_screen.dart';
+import '../services/family_service.dart';
+import '../services/animal_service.dart';
 
 class AnimalDetailScreen extends StatefulWidget {
   final String animalId;
 
-  const AnimalDetailScreen({
-    super.key,
-    required this.animalId,
-  });
+  const AnimalDetailScreen({super.key, required this.animalId});
 
   @override
   State<AnimalDetailScreen> createState() => _AnimalDetailScreenState();
@@ -26,8 +25,7 @@ class _AnimalDetailScreenState extends State<AnimalDetailScreen> {
   final supabase = Supabase.instance.client;
 
   /// --- Helpers ---
-  bool isLocked(String status) =>
-      status == "sold" || status == "deceased";
+  bool isLocked(String status) => animalIsLocked(status);
 
   String statusLockMessage(String status) {
     if (status == "sold") return "This animal has been sold.";
@@ -36,51 +34,26 @@ class _AnimalDetailScreenState extends State<AnimalDetailScreen> {
   }
 
   /// --- Queries ---
-  Future<Map<String, dynamic>> fetchAnimal() async {
+  Future<Map<String, dynamic>> fetchAnimal() =>
+      AnimalService.get(widget.animalId);
+  Future<Map<String, dynamic>?> fetchParent(String? id) =>
+      AnimalService.parent(id);
+
+  Future<Map<String, dynamic>> fetchSellerProfile() async {
+    final user = supabase.auth.currentUser;
+
+    if (user == null) {
+      throw Exception("Not logged in");
+    }
+
     return await supabase
-        .from("animals")
+        .from('users')
         .select()
-        .eq("id", widget.animalId)
+        .eq('id', FamilyService.ownerId ?? user.id)
         .single();
   }
 
-  Future<Map<String, dynamic>?> fetchParent(String? id) async {
-    if (id == null) return null;
-
-    final result = await supabase
-        .from("animals")
-        .select("name, tattoo")
-        .eq("id", id)
-        .maybeSingle();
-
-    return result;
-  }
-
-  Future<Map<String, dynamic>> fetchSellerProfile() async {
-  final user = supabase.auth.currentUser;
-
-  if (user == null) {
-    throw Exception("Not logged in");
-  }
-
-  return await supabase
-      .from('profiles')
-      .select()
-      .eq('id', user.id)
-      .single();
-}
-
-  Future<double?> fetchWeight() async {
-    final res = await supabase
-        .from("animal_weights")
-        .select("weight")
-        .eq("animal_id", widget.animalId)
-        .order("recorded_at", ascending: false)
-        .limit(1);
-
-    if (res.isEmpty) return null;
-    return (res.first["weight"] as num).toDouble();
-  }
+  Future<double?> fetchWeight() => AnimalService.latestWeight(widget.animalId);
 
   // ------------------------------------------------------------
   // SAVE + SHARE PDF UTILITY
@@ -90,34 +63,30 @@ class _AnimalDetailScreenState extends State<AnimalDetailScreen> {
     required String fileName,
   }) async {
     try {
-      final directory = await getTemporaryDirectory();
-      final file = File("${directory.path}/$fileName");
-
-      await file.writeAsBytes(pdfBytes);
-
-      await Share.shareXFiles(
-        [XFile(file.path)],
-        text: "Rabbit pedigree PDF",
-      );
+      await Printing.sharePdf(bytes: pdfBytes, filename: fileName);
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text("Sharing failed: $e")),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text("Sharing failed: $e")));
       }
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(title: const Text("Animal Details")),
+    return RingMasterPageShell(
+      title: "Animal Details",
       body: FutureBuilder(
-        future: Future.wait([
-          fetchAnimal(),
-          fetchWeight(),
-        ]),
+        future: Future.wait([fetchAnimal(), fetchWeight()]),
         builder: (context, snapshot) {
+          if (snapshot.hasError) {
+            return const Center(
+              child: Text(
+                "Unable to load records. Please go back and try again.",
+              ),
+            );
+          }
           if (!snapshot.hasData) {
             return const Center(child: CircularProgressIndicator());
           }
@@ -156,15 +125,10 @@ class _AnimalDetailScreenState extends State<AnimalDetailScreen> {
                 _row("Species", animal["species"]),
                 _row("Breed", animal["breed"]),
                 _row("Variety", animal["variety"]),
-                _row(
-                  "Sex",
-                  animal["sex"] == "M" ? "Buck" : "Doe",
-                ),
+                _row("Sex", sexLabel(animal["species"], animal["sex"])),
                 _row(
                   "Current Weight",
-                  weight == null
-                      ? "-"
-                      : "${weight.toStringAsFixed(2)} lb",
+                  weight == null ? "-" : "${weight.toStringAsFixed(2)} lb",
                 ),
                 _row("Registration #", animal["registration_number"]),
                 _row("GC #", animal["grand_champion_number"]),
@@ -210,7 +174,7 @@ class _AnimalDetailScreenState extends State<AnimalDetailScreen> {
                             arguments: widget.animalId,
                           );
 
-                          if (updated == true) setState(() {});
+                          if (updated == true && mounted) setState(() {});
                         },
                   child: const Text("Edit Animal"),
                 ),
@@ -223,7 +187,10 @@ class _AnimalDetailScreenState extends State<AnimalDetailScreen> {
                     Navigator.pushNamed(
                       context,
                       "/weight-history",
-                      arguments: widget.animalId,
+                      arguments: {
+                        'animalId': widget.animalId,
+                        'status': animal["status"],
+                      },
                     );
                   },
                   child: const Text("View Weight History"),
@@ -237,9 +204,8 @@ class _AnimalDetailScreenState extends State<AnimalDetailScreen> {
                     Navigator.push(
                       context,
                       MaterialPageRoute(
-                        builder: (_) => HealthRecordsScreen(
-                          animalId: widget.animalId,
-                        ),
+                        builder: (_) =>
+                            HealthRecordsScreen(animalId: widget.animalId),
                       ),
                     );
                   },
@@ -254,9 +220,8 @@ class _AnimalDetailScreenState extends State<AnimalDetailScreen> {
                     Navigator.push(
                       context,
                       MaterialPageRoute(
-                        builder: (_) => PedigreeTreeScreen(
-                          animalId: widget.animalId,
-                        ),
+                        builder: (_) =>
+                            PedigreeTreeScreen(animalId: widget.animalId),
                       ),
                     );
                   },
@@ -265,39 +230,47 @@ class _AnimalDetailScreenState extends State<AnimalDetailScreen> {
 
                 const SizedBox(height: 12),
 
-                /// PDF EXPORT 
+                /// PDF EXPORT
                 OutlinedButton(
                   onPressed: () async {
                     try {
-                      final pedigree = await PedigreeService.build(widget.animalId);
+                      final pedigree = await PedigreeService.build(
+                        widget.animalId,
+                      );
                       final seller = await fetchSellerProfile();
 
                       final pdfBytes = await PedigreePdfService.generate(
                         pedigree: pedigree,
                         seller: {
-                          'name': seller['full_name'],
+                          'name': seller['display_name'],
                           'address': seller['address'],
                           'city': seller['city'],
                           'state': seller['state'],
                           'zip': seller['zip'],
-                          'phone': seller['phone'],
-                          'email': seller['email'],
-                          'dateSold': DateTime.now().toString().split(' ').first,
+                          'contact': [seller['phone'], seller['email']]
+                              .whereType<String>()
+                              .where((v) => v.isNotEmpty)
+                              .join(' • '),
+                          'dateSold': DateTime.now()
+                              .toString()
+                              .split(' ')
+                              .first,
                         },
                       );
 
                       await saveAndSharePdf(
                         pdfBytes: pdfBytes,
-                        fileName: "${pedigree['animal']['name'] ?? 'pedigree'}.pdf",
+                        fileName: "pedigree-${widget.animalId}.pdf",
                       );
                     } catch (e) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(content: Text("PDF failed: $e")),
-                      );
+                      if (!context.mounted) return;
+                      ScaffoldMessenger.of(
+                        context,
+                      ).showSnackBar(SnackBar(content: Text("PDF failed: $e")));
                     }
                   },
                   child: const Text("Export Pedigree PDF"),
-                )
+                ),
               ],
             ),
           );
@@ -312,14 +285,8 @@ class _AnimalDetailScreenState extends State<AnimalDetailScreen> {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Text("$title:",
-              style: const TextStyle(fontWeight: FontWeight.bold)),
-          Flexible(
-            child: Text(
-              value ?? "-",
-              textAlign: TextAlign.right,
-            ),
-          ),
+          Text("$title:", style: const TextStyle(fontWeight: FontWeight.bold)),
+          Flexible(child: Text(value ?? "-", textAlign: TextAlign.right)),
         ],
       ),
     );

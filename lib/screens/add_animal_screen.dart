@@ -1,3 +1,4 @@
+import '../widgets/ringmaster_page_shell.dart';
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
@@ -31,7 +32,7 @@ class _AddAnimalScreenState extends State<AddAnimalScreen> {
 
   DateTime? dob;
 
-  String species = 'Rabbit';
+  String species = 'rabbit';
   String sex = 'M';
   String status = 'active';
 
@@ -44,7 +45,7 @@ class _AddAnimalScreenState extends State<AddAnimalScreen> {
   String _lastBreedForVariety = '';
 
   String sexLabel(String value) {
-    if (species == 'Rabbit') {
+    if (species == 'rabbit') {
       return value == 'M' ? 'Buck' : 'Doe';
     }
     return value == 'M' ? 'Boar' : 'Sow';
@@ -85,8 +86,10 @@ class _AddAnimalScreenState extends State<AddAnimalScreen> {
       double? parsedWeight;
       if (weightController.text.trim().isNotEmpty) {
         parsedWeight = double.tryParse(weightController.text.trim());
-        if (parsedWeight == null) {
-          throw Exception('Weight must be numeric');
+        if (parsedWeight == null ||
+            !parsedWeight.isFinite ||
+            parsedWeight <= 0) {
+          throw Exception('Weight must be a positive number');
         }
       }
 
@@ -114,23 +117,37 @@ class _AddAnimalScreenState extends State<AddAnimalScreen> {
         throw Exception('Insert failed');
       }
 
-      Navigator.pop(context, true);
+      if (mounted) Navigator.pop(context, true);
     } catch (e) {
+      if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Save Failed: $e'),
-          backgroundColor: Colors.red,
-        ),
+        SnackBar(content: Text('Save Failed: $e'), backgroundColor: Colors.red),
       );
     } finally {
-      setState(() => isSaving = false);
+      if (mounted) setState(() => isSaving = false);
     }
   }
 
   @override
+  void dispose() {
+    for (final controller in [
+      nameController,
+      tattooController,
+      breedController,
+      varietyController,
+      registrationController,
+      gcController,
+      weightController,
+    ]) {
+      controller.dispose();
+    }
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(title: const Text('Add Animal')),
+    return RingMasterPageShell(
+      title: 'Add Animal',
       body: Padding(
         padding: const EdgeInsets.all(16),
         child: ListView(
@@ -151,10 +168,10 @@ class _AddAnimalScreenState extends State<AddAnimalScreen> {
 
             /// SPECIES
             DropdownButtonFormField<String>(
-              value: species,
+              initialValue: species,
               items: const [
-                DropdownMenuItem(value: 'Rabbit', child: Text('Rabbit')),
-                DropdownMenuItem(value: 'Cavy', child: Text('Cavy')),
+                DropdownMenuItem(value: 'rabbit', child: Text('Rabbit')),
+                DropdownMenuItem(value: 'cavy', child: Text('Cavy')),
               ],
               onChanged: (v) {
                 setState(() {
@@ -174,6 +191,13 @@ class _AddAnimalScreenState extends State<AddAnimalScreen> {
             FutureBuilder<List<String>>(
               future: BreedService.fetchBreeds(species.toLowerCase()),
               builder: (context, snapshot) {
+                if (snapshot.hasError) {
+                  return const Center(
+                    child: Text(
+                      "Unable to load records. Please go back and try again.",
+                    ),
+                  );
+                }
                 if (!snapshot.hasData) {
                   return const LinearProgressIndicator();
                 }
@@ -248,7 +272,7 @@ class _AddAnimalScreenState extends State<AddAnimalScreen> {
 
             /// SEX
             DropdownButtonFormField<String>(
-              value: sex,
+              initialValue: sex,
               items: [
                 DropdownMenuItem(value: 'M', child: Text(sexLabel('M'))),
                 DropdownMenuItem(value: 'F', child: Text(sexLabel('F'))),
@@ -297,7 +321,7 @@ class _AddAnimalScreenState extends State<AddAnimalScreen> {
                       final list = snapshot.data ?? [];
 
                       return DropdownButtonFormField<String>(
-                        value: sireId,
+                        initialValue: sireId,
                         items: list
                             .map<DropdownMenuItem<String>>(
                               (a) => DropdownMenuItem<String>(
@@ -338,7 +362,7 @@ class _AddAnimalScreenState extends State<AddAnimalScreen> {
                       final list = snapshot.data ?? [];
 
                       return DropdownButtonFormField<String>(
-                        value: damId,
+                        initialValue: damId,
                         items: list
                             .map<DropdownMenuItem<String>>(
                               (a) => DropdownMenuItem<String>(
@@ -359,22 +383,24 @@ class _AddAnimalScreenState extends State<AddAnimalScreen> {
 
             TextField(
               controller: registrationController,
-              decoration:
-                  const InputDecoration(labelText: 'Registration Number'),
+              decoration: const InputDecoration(
+                labelText: 'Registration Number',
+              ),
             ),
 
             TextField(
               controller: gcController,
-              decoration:
-                  const InputDecoration(labelText: 'Grand Champion Number'),
+              decoration: const InputDecoration(
+                labelText: 'Grand Champion Number',
+              ),
             ),
 
             TextField(
               controller: weightController,
-              keyboardType:
-                  const TextInputType.numberWithOptions(decimal: true),
-              decoration:
-                  const InputDecoration(labelText: 'Current Weight'),
+              keyboardType: const TextInputType.numberWithOptions(
+                decimal: true,
+              ),
+              decoration: const InputDecoration(labelText: 'Current Weight'),
             ),
 
             const SizedBox(height: 24),

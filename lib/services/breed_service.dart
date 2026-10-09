@@ -8,8 +8,6 @@ class BreedService {
         .eq('species', species)
         .order('name');
 
-    return response
-        .map<String>((e) => e['name'] as String)
-        .toList();
+    return response.map<String>((e) => e['name'] as String).toList();
   }
 }

@@ -1,8 +1,8 @@
-
+import '../widgets/ringmaster_page_shell.dart';
 import '../widgets/weight_graph.dart';
 
 import 'package:flutter/material.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
+import '../services/animal_service.dart';
 
 class WeightHistoryScreen extends StatefulWidget {
   final String animalId;
@@ -19,19 +19,15 @@ class WeightHistoryScreen extends StatefulWidget {
 }
 
 class _WeightHistoryScreenState extends State<WeightHistoryScreen> {
-  final supabase = Supabase.instance.client;
-
   bool isSaving = false;
 
-  bool get isLocked =>
-      widget.status == 'sold' || widget.status == 'deceased';
+  bool get isLocked => widget.status == 'sold' || widget.status == 'deceased';
 
-  Future<List> fetchWeights() async {
-    return await supabase
-        .from('animal_weights')
-        .select()
-        .eq('animal_id', widget.animalId)
-        .order('recorded_at', ascending: false);
+  late Future<List<Map<String, dynamic>>> _weights;
+  @override
+  void initState() {
+    super.initState();
+    _weights = AnimalService.weights(widget.animalId);
   }
 
   Future<void> addWeight() async {
@@ -43,8 +39,7 @@ class _WeightHistoryScreenState extends State<WeightHistoryScreen> {
         title: const Text('Add Weight'),
         content: TextField(
           controller: controller,
-          keyboardType:
-              const TextInputType.numberWithOptions(decimal: true),
+          keyboardType: const TextInputType.numberWithOptions(decimal: true),
           decoration: const InputDecoration(
             labelText: 'Weight (lb)',
             hintText: 'Example: 4.25',
@@ -61,15 +56,13 @@ class _WeightHistoryScreenState extends State<WeightHistoryScreen> {
                 : () async {
                     setState(() => isSaving = true);
 
-                    final value =
-                        double.tryParse(controller.text.trim());
+                    final value = double.tryParse(controller.text.trim());
 
-                    if (value == null || value <= 0) {
-                      setState(() => isSaving = false);
+                    if (value == null || !value.isFinite || value <= 0) {
+                      if (mounted) setState(() => isSaving = false);
                       ScaffoldMessenger.of(context).showSnackBar(
                         const SnackBar(
-                          content: Text(
-                              'Weight must be a positive number'),
+                          content: Text('Weight must be a positive number'),
                           backgroundColor: Colors.red,
                         ),
                       );
@@ -77,23 +70,25 @@ class _WeightHistoryScreenState extends State<WeightHistoryScreen> {
                     }
 
                     try {
-                      await supabase.from('animal_weights').insert({
-                        'animal_id': widget.animalId,
-                        'weight': value,
-                      });
-
+                      await AnimalService.addWeight(widget.animalId, value);
+                      if (!mounted) return;
                       Navigator.pop(context);
-                      setState(() {});
+                      if (mounted) {
+                        setState(
+                          () =>
+                              _weights = AnimalService.weights(widget.animalId),
+                        );
+                      }
                     } catch (e) {
+                      if (!mounted) return;
                       ScaffoldMessenger.of(context).showSnackBar(
                         SnackBar(
-                          content:
-                              Text('Failed to save weight: $e'),
+                          content: Text('Failed to save weight: $e'),
                           backgroundColor: Colors.red,
                         ),
                       );
                     } finally {
-                      setState(() => isSaving = false);
+                      if (mounted) setState(() => isSaving = false);
                     }
                   },
             child: isSaving
@@ -107,12 +102,13 @@ class _WeightHistoryScreenState extends State<WeightHistoryScreen> {
         ],
       ),
     );
+    WidgetsBinding.instance.addPostFrameCallback((_) => controller.dispose());
   }
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(title: const Text('Weight History')),
+    return RingMasterPageShell(
+      title: 'Weight History',
       floatingActionButton: isLocked
           ? null
           : FloatingActionButton(
@@ -147,8 +143,15 @@ class _WeightHistoryScreenState extends State<WeightHistoryScreen> {
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 12),
             child: FutureBuilder(
-              future: fetchWeights(),
+              future: _weights,
               builder: (context, snapshot) {
+                if (snapshot.hasError) {
+                  return const Center(
+                    child: Text(
+                      "Unable to load records. Please go back and try again.",
+                    ),
+                  );
+                }
                 if (!snapshot.hasData) {
                   return const SizedBox(
                     height: 220,
@@ -158,9 +161,7 @@ class _WeightHistoryScreenState extends State<WeightHistoryScreen> {
 
                 final weights = snapshot.data as List;
 
-                return WeightGraph(
-                  weights: weights.reversed.toList(),
-                );
+                return WeightGraph(weights: weights.reversed.toList());
               },
             ),
           ),
@@ -170,8 +171,15 @@ class _WeightHistoryScreenState extends State<WeightHistoryScreen> {
           // 📋 WEIGHT LIST (SCROLLABLE)
           Expanded(
             child: FutureBuilder(
-              future: fetchWeights(),
+              future: _weights,
               builder: (context, snapshot) {
+                if (snapshot.hasError) {
+                  return const Center(
+                    child: Text(
+                      "Unable to load records. Please go back and try again.",
+                    ),
+                  );
+                }
                 if (!snapshot.hasData) {
                   return const Center(child: CircularProgressIndicator());
                 }
@@ -187,14 +195,11 @@ class _WeightHistoryScreenState extends State<WeightHistoryScreen> {
                   itemBuilder: (context, index) {
                     final w = weights[index];
 
-                    final weightValue =
-                        (w['weight'] as num).toStringAsFixed(2);
+                    final weightValue = (w['weight'] as num).toStringAsFixed(2);
 
-                    final recordedAt =
-                        DateTime.parse(w['recorded_at'])
-                            .toLocal()
-                            .toString()
-                            .split('.')[0];
+                    final recordedAt = DateTime.parse(
+                      w['recorded_at'],
+                    ).toLocal().toString().split('.')[0];
 
                     return ListTile(
                       leading: const Icon(Icons.monitor_weight),

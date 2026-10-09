@@ -10,23 +10,23 @@ class PedigreePdfService {
   // FONTS
   // ===============================
   static late pw.Font fontRegular;
-  static late pw.Font fontBold;
+  static late pw.Font fontItalic;
 
   static Future<void> _loadFonts() async {
     final reg = await rootBundle.load('assets/fonts/NotoSans-Regular.ttf');
     final bold = await rootBundle.load('assets/fonts/NotoSans-Italic.ttf');
 
     fontRegular = pw.Font.ttf(reg.buffer.asByteData());
-    fontBold = pw.Font.ttf(bold.buffer.asByteData());
+    fontItalic = pw.Font.ttf(bold.buffer.asByteData());
   }
 
   // ===============================
   // LOCKED MEASUREMENTS
   // ===============================
-  static const double colW  = 170;
-  static const double boxH  = 58;
+  static const double colW = 170;
+  static const double boxH = 58;
   static const double lineH = 10;
-  static const double gap   = 6;
+  static const double gap = 6;
 
   // ===============================
   // PUBLIC GENERATOR
@@ -38,10 +38,7 @@ class PedigreePdfService {
     await _loadFonts();
 
     final pdf = pw.Document(
-      theme: pw.ThemeData.withFont(
-        base: fontRegular,
-        bold: fontBold,
-      ),
+      theme: pw.ThemeData.withFont(base: fontRegular, italic: fontItalic),
     );
 
     pdf.addPage(
@@ -76,8 +73,10 @@ class PedigreePdfService {
           top: 0,
           left: 300,
           child: pw.Text(
-            'RABBIT PEDIGREE',
-            style: pw.TextStyle(font: fontBold, fontSize: 18),
+            p['animal']?['species'] == 'cavy'
+                ? 'CAVY PEDIGREE'
+                : 'RABBIT PEDIGREE',
+            style: pw.TextStyle(font: fontItalic, fontSize: 18),
           ),
         ),
 
@@ -90,7 +89,10 @@ class PedigreePdfService {
             mainAxisAlignment: pw.MainAxisAlignment.center,
             crossAxisAlignment: pw.CrossAxisAlignment.start,
             children: [
-              _col([pw.SizedBox(height: 230), _box(p['animal'], male: true)]),
+              _col([
+                pw.SizedBox(height: 230),
+                _box(p['animal'], male: p['animal']?['sex'] == 'M'),
+              ]),
               _col([
                 pw.SizedBox(height: 80),
                 _box(p['sire'], male: true),
@@ -126,11 +128,7 @@ class PedigreePdfService {
           pw.Positioned(left: 0, bottom: 0, child: _sellerSignature(seller)),
 
         // Date Stamp and Created by Stamp (BOTTOM RIGHT)
-        pw.Positioned(
-          right: 0,
-          bottom: 0,
-          child: _exportWatermark(),
-        ),
+        pw.Positioned(right: 0, bottom: 0, child: _exportWatermark()),
       ],
     );
   }
@@ -141,7 +139,10 @@ class PedigreePdfService {
   static pw.Widget _soldToBlock() {
     pw.Widget line(String label) => pw.Row(
       children: [
-        pw.SizedBox(width: 70, child: pw.Text(label, style: pw.TextStyle(fontSize: 8))),
+        pw.SizedBox(
+          width: 70,
+          child: pw.Text(label, style: pw.TextStyle(fontSize: 8)),
+        ),
         pw.Container(
           width: 180,
           height: 10,
@@ -216,7 +217,7 @@ class PedigreePdfService {
       left: 0,
       child: pw.Text(
         text,
-        style: pw.TextStyle(font: bold ? fontBold : fontRegular, fontSize: 8),
+        style: pw.TextStyle(font: bold ? fontItalic : fontRegular, fontSize: 8),
       ),
     );
   }
@@ -275,7 +276,9 @@ class PedigreePdfService {
         pw.SizedBox(height: 4),
         sig(seller['name'] ?? ''),
         sig(seller['address'] ?? ''),
-        sig('${seller['city'] ?? ''}, ${seller['state'] ?? ''} ${seller['zip'] ?? ''}'),
+        sig(
+          '${seller['city'] ?? ''}, ${seller['state'] ?? ''} ${seller['zip'] ?? ''}',
+        ),
         sig(seller['contact'] ?? ''),
       ],
     );

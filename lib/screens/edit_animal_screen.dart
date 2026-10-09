@@ -1,5 +1,6 @@
+import '../widgets/ringmaster_page_shell.dart';
 import 'package:flutter/material.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
+import '../services/animal_service.dart';
 
 class EditAnimalScreen extends StatefulWidget {
   final String animalId;
@@ -11,8 +12,6 @@ class EditAnimalScreen extends StatefulWidget {
 }
 
 class _EditAnimalScreenState extends State<EditAnimalScreen> {
-  final supabase = Supabase.instance.client;
-
   final nameController = TextEditingController();
   final tattooController = TextEditingController();
   final breedController = TextEditingController();
@@ -26,13 +25,11 @@ class _EditAnimalScreenState extends State<EditAnimalScreen> {
 
   bool isSaving = false;
   bool isLoaded = false;
+  bool loadFailed = false;
 
   Future<void> loadAnimal() async {
-    final animal = await supabase
-        .from('animals')
-        .select()
-        .eq('id', widget.animalId)
-        .single();
+    final animal = await AnimalService.get(widget.animalId);
+    if (!mounted) return;
 
     nameController.text = animal['name'] ?? '';
     tattooController.text = animal['tattoo'] ?? '';
@@ -41,8 +38,8 @@ class _EditAnimalScreenState extends State<EditAnimalScreen> {
     registrationController.text = animal['registration_number'] ?? '';
     gcController.text = animal['grand_champion_number'] ?? '';
 
-    species = animal['species']; // rabbit / cavy
-    sex = animal['sex'];         // M / F
+    species = animal['species'].toString().toLowerCase(); // rabbit / cavy
+    sex = animal['sex']; // M / F
     status = animal['status'];
 
     setState(() => isLoaded = true);
@@ -53,17 +50,18 @@ class _EditAnimalScreenState extends State<EditAnimalScreen> {
     setState(() => isSaving = true);
 
     try {
-      await supabase.from('animals').update({
+      await AnimalService.update(widget.animalId, {
         'name': nameController.text.trim(),
         'status': status,
         'tattoo': tattooController.text.trim(),
         'sex': sex,
         'registration_number': registrationController.text.trim(),
         'grand_champion_number': gcController.text.trim(),
-      }).eq('id', widget.animalId);
+      });
 
-      Navigator.pop(context, true);
+      if (mounted) Navigator.pop(context, true);
     } catch (e) {
+      if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text('Update failed: $e'),
@@ -71,7 +69,7 @@ class _EditAnimalScreenState extends State<EditAnimalScreen> {
         ),
       );
     } finally {
-      setState(() => isSaving = false);
+      if (mounted) setState(() => isSaving = false);
     }
   }
 
@@ -95,21 +93,45 @@ class _EditAnimalScreenState extends State<EditAnimalScreen> {
   }
 
   @override
+  void dispose() {
+    for (final controller in [
+      nameController,
+      tattooController,
+      breedController,
+      varietyController,
+      registrationController,
+      gcController,
+    ]) {
+      controller.dispose();
+    }
+    super.dispose();
+  }
+
+  @override
   void initState() {
     super.initState();
-    loadAnimal();
+    loadAnimal().catchError((Object error) {
+      if (mounted) setState(() => loadFailed = true);
+    });
   }
 
   @override
   Widget build(BuildContext context) {
+    if (loadFailed) {
+      return RingMasterPageShell(
+        title: "Edit Animal",
+        body: const Center(child: Text("Unable to load animal.")),
+      );
+    }
     if (!isLoaded) {
-      return const Scaffold(
+      return const RingMasterPageShell(
+        title: 'Edit Animal',
         body: Center(child: CircularProgressIndicator()),
       );
     }
 
-    return Scaffold(
-      appBar: AppBar(title: const Text('Edit Animal')),
+    return RingMasterPageShell(
+      title: 'Edit Animal',
       body: Padding(
         padding: const EdgeInsets.all(16),
         child: ListView(
@@ -124,7 +146,7 @@ class _EditAnimalScreenState extends State<EditAnimalScreen> {
 
             // STATUS
             DropdownButtonFormField<String>(
-              value: status,
+              initialValue: status,
               items: const [
                 DropdownMenuItem(value: 'active', child: Text('Active')),
                 DropdownMenuItem(value: 'sold', child: Text('Sold')),
@@ -166,7 +188,7 @@ class _EditAnimalScreenState extends State<EditAnimalScreen> {
 
             // SEX
             DropdownButtonFormField<String>(
-              value: sex,
+              initialValue: sex,
               items: getSexItems(),
               onChanged: (v) => setState(() => sex = v!),
               decoration: const InputDecoration(labelText: 'Sex'),
@@ -183,15 +205,17 @@ class _EditAnimalScreenState extends State<EditAnimalScreen> {
             // REGISTRATION
             TextField(
               controller: registrationController,
-              decoration:
-                  const InputDecoration(labelText: 'Registration Number'),
+              decoration: const InputDecoration(
+                labelText: 'Registration Number',
+              ),
             ),
 
             // GRAND CHAMPION
             TextField(
               controller: gcController,
-              decoration:
-                  const InputDecoration(labelText: 'Grand Champion Number'),
+              decoration: const InputDecoration(
+                labelText: 'Grand Champion Number',
+              ),
             ),
 
             const SizedBox(height: 24),

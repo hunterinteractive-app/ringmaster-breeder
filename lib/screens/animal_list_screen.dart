@@ -1,7 +1,6 @@
-
-
+import '../widgets/ringmaster_page_shell.dart';
 import 'package:flutter/material.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
+import '../services/animal_service.dart';
 
 class AnimalListScreen extends StatefulWidget {
   final String ringId;
@@ -18,55 +17,60 @@ class AnimalListScreen extends StatefulWidget {
 }
 
 class _AnimalListScreenState extends State<AnimalListScreen> {
-  final supabase = Supabase.instance.client;
-
-  Future<List> fetchAnimals() async {
-    return await supabase
-        .from('animals')
-        .select()
-        .eq('ring_id', widget.ringId)
-        .order('created_at');
+  late Future<List<Map<String, dynamic>>> _animals;
+  @override
+  void initState() {
+    super.initState();
+    _animals = AnimalService.list(widget.ringId);
   }
 
-String sexAbbreviation(String species, String sex) {
-  final s = species.toLowerCase();
-  final x = sex.toUpperCase();
-
-  if (s == 'rabbit') {
-    return x == 'M' ? 'B' : 'D'; // Buck / Doe
+  void _refresh() {
+    setState(() => _animals = AnimalService.list(widget.ringId));
   }
 
-  if (s == 'cavy') {
-    return x == 'M' ? 'B' : 'S'; // Boar / Sow
-  }
+  String sexAbbreviation(String species, String sex) {
+    final s = species.toLowerCase();
+    final x = sex.toUpperCase();
 
-  return x; // fallback
-}
+    if (s == 'rabbit') {
+      return x == 'M' ? 'B' : 'D'; // Buck / Doe
+    }
+
+    if (s == 'cavy') {
+      return x == 'M' ? 'B' : 'S'; // Boar / Sow
+    }
+
+    return x; // fallback
+  }
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(title: Text(widget.ringName)),
+    return RingMasterPageShell(
+      title: widget.ringName,
       floatingActionButton: FloatingActionButton(
         onPressed: () async {
           final added = await Navigator.pushNamed(
             context,
             '/add-animal',
-            arguments: {
-              'ringId': widget.ringId,
-              'ringName': widget.ringName,
-            },
+            arguments: {'ringId': widget.ringId, 'ringName': widget.ringName},
           );
 
-          if (added == true) {
-            setState(() {});
+          if (added == true && mounted) {
+            _refresh();
           }
         },
         child: const Icon(Icons.add),
       ),
       body: FutureBuilder(
-        future: fetchAnimals(),
+        future: _animals,
         builder: (context, snapshot) {
+          if (snapshot.hasError) {
+            return const Center(
+              child: Text(
+                "Unable to load records. Please go back and try again.",
+              ),
+            );
+          }
           if (!snapshot.hasData) {
             return const Center(child: CircularProgressIndicator());
           }
@@ -85,18 +89,16 @@ String sexAbbreviation(String species, String sex) {
               return ListTile(
                 title: Text(animal['name'] ?? 'Unnamed'),
                 subtitle: Text(
-                  '${animal['species']} • ${sexAbbreviation(
-                    animal['species'],
-                    animal['sex'],
-                  )} • ${animal['status']}',
+                  '${animal['species']} • ${sexAbbreviation(animal['species'], animal['sex'])} • ${animal['status']}',
                 ),
                 trailing: const Icon(Icons.arrow_forward_ios),
-                onTap: () {
-                  Navigator.pushNamed(
+                onTap: () async {
+                  await Navigator.pushNamed(
                     context,
                     '/animal-detail',
                     arguments: animal['id'],
                   );
+                  if (mounted) _refresh();
                 },
               );
             },
