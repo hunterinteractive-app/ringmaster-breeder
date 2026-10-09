@@ -99,6 +99,30 @@ void main() {
       await tester.pumpWidget(const SizedBox());
     },
   );
+  testWidgets('Login policies open and return to the form', (tester) async {
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: AppTheme.light,
+        home: LoginScreen(auth: FakeAuth()),
+      ),
+    );
+    for (final title in ['Terms of Service', 'Privacy Policy']) {
+      await tester.ensureVisible(find.text(title));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text(title));
+      await tester.pumpAndSettle();
+      expect(
+        find.text('Effective date: October 9, 2026 • Version 2026-10'),
+        findsOneWidget,
+      );
+      expect(find.text('8. Permanent Deletion'), findsOneWidget);
+      await tester.tap(find.byIcon(Icons.arrow_back));
+      await tester.pumpAndSettle();
+      expect(find.byType(LoginScreen), findsOneWidget);
+      expect(tester.takeException(), isNull);
+    }
+    await tester.pumpWidget(const SizedBox());
+  });
   testWidgets('Shell fits a narrow screen with brand and version visible', (
     tester,
   ) async {

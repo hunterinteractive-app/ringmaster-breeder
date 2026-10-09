@@ -1,3 +1,4 @@
+import 'legal/legal_screen.dart';
 import 'dart:async';
 import 'package:flutter/material.dart';
 import '../services/auth_service.dart';
@@ -248,6 +249,48 @@ class _LoginScreenState extends State<LoginScreen> {
                                     ).hasMatch(v?.trim() ?? '')
                                     ? null
                                     : 'Enter a valid email address',
+                              ),
+                              const SizedBox(height: 12),
+                              const Text(
+                                'The code can only be used once and expires soon.',
+                                textAlign: TextAlign.center,
+                                style: TextStyle(
+                                  color: BreederColors.accent,
+                                  fontSize: 13,
+                                  height: 1.5,
+                                ),
+                              ),
+                              const SizedBox(height: 12),
+                              const Text(
+                                'By continuing, you agree to the RingMaster Breeder Terms of Service and Privacy Policy.',
+                                textAlign: TextAlign.center,
+                                style: TextStyle(
+                                  color: BreederColors.accent,
+                                  fontSize: 13,
+                                  height: 1.5,
+                                ),
+                              ),
+                              Wrap(
+                                alignment: WrapAlignment.center,
+                                children: [
+                                  TextButton(
+                                    onPressed: () => Navigator.of(context).push(
+                                      MaterialPageRoute<void>(
+                                        builder: (_) => const LegalScreen(),
+                                      ),
+                                    ),
+                                    child: const Text('Terms of Service'),
+                                  ),
+                                  TextButton(
+                                    onPressed: () => Navigator.of(context).push(
+                                      MaterialPageRoute<void>(
+                                        builder: (_) =>
+                                            const LegalScreen(privacy: true),
+                                      ),
+                                    ),
+                                    child: const Text('Privacy Policy'),
+                                  ),
+                                ],
                               ),
                               if (_pendingEmail != null) ...[
                                 const SizedBox(height: 16),
