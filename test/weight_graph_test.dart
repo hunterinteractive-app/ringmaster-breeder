@@ -1,3 +1,4 @@
+import 'package:ringmaster_breeder/utils/weight_date.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:fl_chart/fl_chart.dart';
@@ -33,6 +34,15 @@ void main() {
       lessThanOrEqualTo(7),
     );
     expect(data.maxY, greaterThan(4.4));
+    final tooltip = data.lineTouchData.touchTooltipData.getTooltipItems([
+      LineBarSpot(
+        data.lineBarsData.first,
+        0,
+        data.lineBarsData.first.spots.first,
+      ),
+    ]).single!;
+    expect(tooltip.text, '4.10 lb\n${weightDate('2026-09-01')}');
+    expect(weightDate('2026-09-01T12:05:00'), '09-01-26 12:05');
     expect(tester.takeException(), isNull);
   });
 }

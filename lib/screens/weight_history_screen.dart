@@ -1,3 +1,4 @@
+import '../utils/weight_date.dart';
 import '../widgets/ringmaster_page_shell.dart';
 import '../widgets/weight_graph.dart';
 
@@ -215,9 +216,7 @@ class _WeightHistoryScreenState extends State<WeightHistoryScreen> {
 
                     final weightValue = (w['weight'] as num).toStringAsFixed(2);
 
-                    final recordedAt = DateTime.parse(
-                      w['recorded_at'],
-                    ).toLocal().toString().split('.')[0];
+                    final recordedAt = weightDate(w['recorded_at']);
 
                     return ListTile(
                       leading: const Icon(Icons.monitor_weight),

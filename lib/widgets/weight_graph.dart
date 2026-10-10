@@ -1,3 +1,4 @@
+import '../utils/weight_date.dart';
 import 'dart:math' as math;
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
@@ -47,6 +48,20 @@ class WeightGraph extends StatelessWidget {
         height: 260,
         child: LineChart(
           LineChartData(
+            lineTouchData: LineTouchData(
+              touchTooltipData: LineTouchTooltipData(
+                fitInsideHorizontally: true,
+                fitInsideVertically: true,
+                getTooltipItems: (points) => points
+                    .map(
+                      (point) => LineTooltipItem(
+                        '${point.y.toStringAsFixed(2)} lb\n${weightDate(weights[point.spotIndex]['recorded_at'])}',
+                        const TextStyle(color: Colors.white, fontSize: 12),
+                      ),
+                    )
+                    .toList(),
+              ),
+            ),
             minY: minY,
             maxY: maxY,
             gridData: FlGridData(
