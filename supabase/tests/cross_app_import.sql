@@ -70,18 +70,18 @@ select set_config('request.jwt.claim.sub','11111111-1111-4111-8111-111111111111'
 select public.apply_breeder_cross_app_import(
  '11111111-1111-4111-8111-111111111111','ringmaster_show',
  '[{"id":"99999999-9999-4999-8999-999999999999","display_name":"Fixture profile","first_name":"Fixture","last_name":"Owner"}]',
- '[{"id":"88888888-8888-4888-8888-888888888888","name":"Imported fixture","tattoo":"IMPORT-FIXTURE","species":"rabbit","breed":"Fixture","sex":"M"}]',
+ '[{"id":"88888888-8888-4888-8888-888888888888","name":"Imported fixture","tattoo":"IMPORT-FIXTURE","species":"rabbit","breed":"Fixture","sex":"Buck"}]',
  '[{"id":"77777777-7777-4777-8777-777777777777","animal_id":"88888888-8888-4888-8888-888888888888","exhibitor_id":"99999999-9999-4999-8999-999999999999","placement":"1"}]',
  'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa');
 select public.apply_breeder_cross_app_import(
  '11111111-1111-4111-8111-111111111111','ringmaster_show',
  '[{"id":"99999999-9999-4999-8999-999999999999","display_name":"Fixture profile"}]',
- '[{"id":"88888888-8888-4888-8888-888888888888","name":"Changed source name","tattoo":"IMPORT-FIXTURE","species":"rabbit","breed":"Fixture","sex":"M"}]',
+ '[{"id":"88888888-8888-4888-8888-888888888888","name":"Changed source name","tattoo":"IMPORT-FIXTURE","species":"rabbit","breed":"Fixture","sex":"Buck"}]',
  '[{"id":"77777777-7777-4777-8777-777777777777","animal_id":"88888888-8888-4888-8888-888888888888","exhibitor_id":"99999999-9999-4999-8999-999999999999","placement":"1"}]',
  'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa');
 do $$ declare v_before int; v_result jsonb; v_data jsonb; begin
  select count(*) into v_before from public.animals;
- v_data:='[{"id":"66666666-6666-4666-8666-666666666666","animal_id":"55555555-5555-4555-8555-555555555555","exhibitor_id":"99999999-9999-4999-8999-999999999999","tattoo":"IMPORT-FIXTURE","species":"rabbit","breed":"Fixture","sex":"M","placement":"2"},{"id":"44444444-4444-4444-8444-444444444444","exhibitor_id":"99999999-9999-4999-8999-999999999999","tattoo":"UNMATCHED-FIXTURE","species":"rabbit","breed":"Fixture","sex":"M"}]';
+ v_data:='[{"id":"66666666-6666-4666-8666-666666666666","animal_id":"55555555-5555-4555-8555-555555555555","exhibitor_id":"99999999-9999-4999-8999-999999999999","tattoo":"IMPORT-FIXTURE","species":"rabbit","breed":"Fixture","sex":"Buck","placement":"2"},{"id":"44444444-4444-4444-8444-444444444444","exhibitor_id":"99999999-9999-4999-8999-999999999999","tattoo":"UNMATCHED-FIXTURE","species":"rabbit","breed":"Fixture","sex":"Buck"}]';
  v_result:=public.apply_breeder_cross_app_import('11111111-1111-4111-8111-111111111111','ringmaster_show','[{"id":"99999999-9999-4999-8999-999999999999"}]','[]',v_data,null);
  if (select count(*) from public.animals)<>v_before or (v_result->>'animals_added')::int<>0 then raise exception 'Results-only import created animals'; end if;
  if not exists(select 1 from public.breeder_show_history where source_entry_id='66666666-6666-4666-8666-666666666666' and animal_id is not null) then raise exception 'Existing animal did not link'; end if;
@@ -93,7 +93,7 @@ do $$ begin
  if (select count(*) from public.breeder_exhibitor_profiles where owner_id='legacy-owner')<>1 then raise exception 'Duplicate profiles'; end if;
  if (select count(*) from public.breeder_imported_animals where owner_id='legacy-owner')<>1 then raise exception 'Duplicate animals'; end if;
  if (select count(*) from public.breeder_show_history where owner_id='legacy-owner')<>3 then raise exception 'Duplicate history'; end if;
- if not exists(select 1 from public.animals where name='Imported fixture') then raise exception 'Existing animal overwritten'; end if;
+ if not exists(select 1 from public.animals where name='Imported fixture' and sex='M') then raise exception 'Existing animal overwritten'; end if;
  if (public.find_exhibitors_for_breeder_export('owner@example.test')->0->'profile'->>'display_name')<>'Fixture profile' then raise exception 'Breeder export failed'; end if;
 end $$;
 reset role;
