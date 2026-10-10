@@ -1,3 +1,4 @@
+import 'breeding_tracker_screen.dart';
 import '../widgets/record_breeding_dialog.dart';
 import '../widgets/bulk_records_dialog.dart';
 import '../utils/color_details.dart';
@@ -72,6 +73,7 @@ class _AnimalListScreenState extends State<AnimalListScreen> {
         }
         return AnimalBrowser(
           animals: snapshot.data!,
+          ringId: widget.ringId,
           onAdd: _add,
           onRefresh: _refresh,
           onOpen: _open,
@@ -82,6 +84,7 @@ class _AnimalListScreenState extends State<AnimalListScreen> {
 }
 
 class AnimalBrowser extends StatefulWidget {
+  final String? ringId;
   final List<Map<String, dynamic>> animals;
   final VoidCallback onAdd, onRefresh;
   final ValueChanged<Map<String, dynamic>> onOpen;
@@ -91,6 +94,7 @@ class AnimalBrowser extends StatefulWidget {
     required this.onAdd,
     required this.onRefresh,
     required this.onOpen,
+    this.ringId,
   });
   @override
   State<AnimalBrowser> createState() => _AnimalBrowserState();
@@ -105,6 +109,18 @@ class _AnimalBrowserState extends State<AnimalBrowser> {
   void dispose() {
     _search.dispose();
     super.dispose();
+  }
+
+  Future<void> _tracking() async {
+    final ring = widget.ringId ?? widget.animals.firstOrNull?['ring_id'];
+    if (ring == null) return;
+    await Navigator.push(
+      context,
+      MaterialPageRoute<void>(
+        builder: (_) => BreedingTrackerScreen(ringId: ring),
+      ),
+    );
+    if (mounted) widget.onRefresh();
   }
 
   Future<void> _recordBreeding() async {
@@ -300,9 +316,17 @@ class _AnimalBrowserState extends State<AnimalBrowser> {
                     if (v == 'add') widget.onAdd();
                     if (v == 'refresh') widget.onRefresh();
                     if (v == 'breeding') _recordBreeding();
+                    if (v == 'tracking') _tracking();
                     if (v == 'weights' || v == 'health') _bulk(v == 'weights');
                   },
                   itemBuilder: (_) => const [
+                    PopupMenuItem(
+                      value: 'tracking',
+                      child: ListTile(
+                        leading: Icon(Icons.child_care),
+                        title: Text('Breedings & litters'),
+                      ),
+                    ),
                     PopupMenuItem(
                       value: 'breeding',
                       child: ListTile(
