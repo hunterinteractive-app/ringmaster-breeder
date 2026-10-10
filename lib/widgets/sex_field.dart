@@ -16,6 +16,7 @@ class SexField extends StatefulWidget {
 
 class _SexFieldState extends State<SexField> {
   final menu = MenuController();
+  final trailingFocus = FocusNode(skipTraversal: true);
   late final FocusNode focus;
   @override
   void initState() {
@@ -50,6 +51,7 @@ class _SexFieldState extends State<SexField> {
   @override
   void dispose() {
     focus.dispose();
+    trailingFocus.dispose();
     super.dispose();
   }
 
@@ -57,6 +59,7 @@ class _SexFieldState extends State<SexField> {
   Widget build(BuildContext context) => DropdownMenu<String>(
     expandedInsets: EdgeInsets.zero,
     focusNode: focus,
+    trailingIconFocusNode: trailingFocus,
     menuController: menu,
     initialSelection: widget.value,
     label: const Text('Sex'),
@@ -69,7 +72,12 @@ class _SexFieldState extends State<SexField> {
         DropdownMenuEntry(value: sex, label: sex),
     ],
     onSelected: (v) {
-      if (v != null) widget.onChanged?.call(v);
+      if (v != null) {
+        widget.onChanged?.call(v);
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (mounted) focus.nextFocus();
+        });
+      }
     },
   );
 }

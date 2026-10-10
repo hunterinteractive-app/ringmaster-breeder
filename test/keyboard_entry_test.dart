@@ -11,18 +11,25 @@ void main() {
       'Arrows and Enter select highlighted ${breed == null ? 'breed' : 'variety'}',
       (tester) async {
         String selected = '';
+        final nextFocus = FocusNode();
+        addTearDown(nextFocus.dispose);
         await tester.pumpWidget(
           MaterialApp(
             home: Scaffold(
-              body: CatalogField(
-                species: 'rabbit',
-                breed: breed,
-                value: '',
-                onChanged: (v) => selected = v,
-                loadOptions: (_, __) async => List.generate(
-                  20,
-                  (i) => {'name': 'Choice $i', 'is_recognized': true},
-                ),
+              body: Column(
+                children: [
+                  CatalogField(
+                    species: 'rabbit',
+                    breed: breed,
+                    value: '',
+                    onChanged: (v) => selected = v,
+                    loadOptions: (_, __) async => List.generate(
+                      20,
+                      (i) => {'name': 'Choice $i', 'is_recognized': true},
+                    ),
+                  ),
+                  TextField(focusNode: nextFocus),
+                ],
               ),
             ),
           ),
@@ -44,30 +51,42 @@ void main() {
         await tester.testTextInput.receiveAction(TextInputAction.done);
         await tester.pumpAndSettle();
         expect(selected, 'Choice 8');
+        expect(nextFocus.hasFocus, isTrue);
         expect(find.byType(ListTile), findsNothing);
       },
     );
   }
   testWidgets('Sex supports arrow selection and Enter', (tester) async {
     String selected = 'Buck';
+    final nextFocus = FocusNode();
+    addTearDown(nextFocus.dispose);
     await tester.pumpWidget(
       MaterialApp(
         home: Scaffold(
-          body: SexField(
-            species: 'rabbit',
-            value: selected,
-            onChanged: (v) => selected = v,
+          body: Column(
+            children: [
+              SexField(
+                species: 'rabbit',
+                value: selected,
+                onChanged: (v) => selected = v,
+              ),
+              TextField(focusNode: nextFocus),
+            ],
           ),
         ),
       ),
     );
-    tester.widget<TextField>(find.byType(TextField)).focusNode!.requestFocus();
+    tester
+        .widget<TextField>(find.byType(TextField).first)
+        .focusNode!
+        .requestFocus();
     await tester.pumpAndSettle();
     await tester.sendKeyEvent(LogicalKeyboardKey.arrowDown);
     await tester.pumpAndSettle();
     await tester.testTextInput.receiveAction(TextInputAction.done);
     await tester.pumpAndSettle();
     expect(selected, 'Doe');
+    expect(nextFocus.hasFocus, isTrue);
   });
   testWidgets(
     'DOB inserts slashes, rejects impossible dates and supports calendar',

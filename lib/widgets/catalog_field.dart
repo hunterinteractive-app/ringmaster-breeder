@@ -83,7 +83,15 @@ class _CatalogFieldState extends State<CatalogField> {
         controller: controller,
         focusNode: focus,
         onChanged: change,
-        onFieldSubmitted: (_) => submit(),
+        textInputAction: TextInputAction.next,
+        // Keep focus anchored here until the highlighted option is committed.
+        onEditingComplete: () {},
+        onFieldSubmitted: (_) {
+          submit();
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            if (mounted) focus.nextFocus();
+          });
+        },
         maxLength: 100,
         decoration: InputDecoration(
           labelText: widget.breed == null ? 'Breed' : 'Variety',
