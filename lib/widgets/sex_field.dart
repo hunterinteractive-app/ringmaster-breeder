@@ -75,7 +75,12 @@ class _SexFieldState extends State<SexField> {
       if (v != null) {
         widget.onChanged?.call(v);
         WidgetsBinding.instance.addPostFrameCallback((_) {
-          if (mounted) focus.nextFocus();
+          if (!mounted) return;
+          // DropdownMenu may unfocus its text field before reporting selection.
+          // Restore the traversal anchor before asking for the following field.
+          focus.requestFocus();
+          FocusManager.instance.applyFocusChangesIfNeeded();
+          focus.nextFocus();
         });
       }
     },
