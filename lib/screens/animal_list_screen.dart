@@ -88,7 +88,7 @@ class _AnimalListScreenState extends State<AnimalListScreen> {
               final animal = animals[index];
 
               return ListTile(
-                title: Text(animal['name'] ?? 'Unnamed'),
+                title: Text(animalTitle(animal['name'], animal['tattoo'])),
                 subtitle: Text(
                   '${animal['species']} • ${sexLabel(animal['species'], animal['sex'])} • ${animal['status']}',
                 ),

@@ -101,7 +101,7 @@ class _AnimalDetailScreenState extends State<AnimalDetailScreen> {
               children: [
                 /// NAME
                 Text(
-                  animal["name"] ?? "Unnamed",
+                  animalTitle(animal["name"], animal["tattoo"]),
                   style: Theme.of(context).textTheme.headlineMedium,
                 ),
                 const SizedBox(height: 16),
