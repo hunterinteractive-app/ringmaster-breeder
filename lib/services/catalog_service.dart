@@ -30,6 +30,39 @@ class CatalogService {
 
   static String normalize(String value) =>
       value.trim().replaceAll(RegExp(r'\s+'), ' ').toLowerCase();
+  static String identity(String value) =>
+      normalize(value).replaceFirst(RegExp(r'\s*\(cod\)$'), '').trim();
+  static bool isCod(Map<String, dynamic> row) =>
+      row['is_recognized'] == true &&
+      RegExp(
+        r'\(cod\)$',
+        caseSensitive: false,
+      ).hasMatch(row['name'].toString().trim());
+  static List<Map<String, dynamic>> sortedChoices(
+    Iterable<Map<String, dynamic>> rows,
+  ) {
+    final grouped = <String, Map<String, dynamic>>{};
+    for (final row in rows) {
+      final key = identity(row['name']);
+      final previous = grouped[key];
+      if (previous == null) {
+        grouped[key] = Map<String, dynamic>.from(row);
+        continue;
+      }
+      final preferred = row['is_recognized'] == true ? row : previous;
+      grouped[key] = {
+        ...preferred,
+        if (previous.containsKey('varieties') || row.containsKey('varieties'))
+          'varieties': sortedChoices([
+            ...List<Map<String, dynamic>>.from(previous['varieties'] ?? []),
+            ...List<Map<String, dynamic>>.from(row['varieties'] ?? []),
+          ]),
+      };
+    }
+    return grouped.values.toList()
+      ..sort((a, b) => normalize(a['name']).compareTo(normalize(b['name'])));
+  }
+
   static Future<List<Map<String, dynamic>>> options(
     String species,
     String? breed,
@@ -57,21 +90,16 @@ class CatalogService {
         _loading = null;
       }
     }
-    final breeds = _catalog!.where(
-      (b) => b['species'] == species.toLowerCase(),
+    final breeds = sortedChoices(
+      _catalog!.where((b) => b['species'] == species.toLowerCase()),
     );
     if (breed == null) return breeds.toList();
-    final matches = breeds.where(
-      (b) => normalize(b['name']) == normalize(breed),
-    );
+    final matches = breeds.where((b) => identity(b['name']) == identity(breed));
     if (matches.isEmpty) return [];
     final varieties = List<Map<String, dynamic>>.from(
       matches.first['varieties'],
     );
-    varieties.sort(
-      (a, b) => a['name'].toString().compareTo(b['name'].toString()),
-    );
-    return varieties;
+    return sortedChoices(varieties);
   }
 
   static int distance(String a, String b) {

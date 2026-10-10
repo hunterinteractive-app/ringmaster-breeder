@@ -57,8 +57,7 @@ class _CatalogFieldState extends State<CatalogField> {
   Widget build(BuildContext context) {
     final exact = rows.where(
       (r) =>
-          CatalogService.normalize(r['name']) ==
-          CatalogService.normalize(value),
+          CatalogService.identity(r['name']) == CatalogService.identity(value),
     );
     final custom =
         value.trim().isNotEmpty &&
@@ -88,6 +87,8 @@ class _CatalogFieldState extends State<CatalogField> {
           helperMaxLines: 3,
           helperText: failed
               ? 'Catalog unavailable. You can still type a name.'
+              : exact.isNotEmpty && CatalogService.isCod(exact.first)
+              ? 'COD • Listed as COD in RingMaster Show.'
               : custom
               ? 'Unrecognized • shared custom entry. Check suggestions for spelling.'
               : 'Choose a name or type a shared custom entry.',
@@ -110,7 +111,13 @@ class _CatalogFieldState extends State<CatalogField> {
                           (r) =>
                               r['name'] == name && r['is_recognized'] == true,
                         )
-                        ? null
+                        ? (rows.any(
+                                (r) =>
+                                    r['name'] == name &&
+                                    CatalogService.isCod(r),
+                              )
+                              ? const Text('COD')
+                              : null)
                         : const Text('Unrecognized'),
                     onTap: () => select(name),
                   ),

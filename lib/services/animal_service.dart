@@ -38,12 +38,19 @@ class AnimalService {
       );
       for (final field in ['breed', 'variety']) {
         final rows = field == 'breed' ? breeds : varieties;
+        final matching = rows.where(
+          (r) =>
+              CatalogService.identity(r['name']) ==
+              CatalogService.identity(animal[field]?.toString() ?? ''),
+        );
+        if (matching.isNotEmpty && matching.first['is_recognized'] == true)
+          animal[field] = matching.first['name'];
         animal['${field}_unrecognized'] =
             (animal[field]?.toString().trim().isNotEmpty ?? false) &&
             !rows.any(
               (r) =>
-                  CatalogService.normalize(r['name']) ==
-                      CatalogService.normalize(animal[field].toString()) &&
+                  CatalogService.identity(r['name']) ==
+                      CatalogService.identity(animal[field].toString()) &&
                   r['is_recognized'] == true,
             );
       }
