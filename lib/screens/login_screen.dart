@@ -112,34 +112,11 @@ class _LoginScreenState extends State<LoginScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  AspectRatio(
-                    aspectRatio: 1060 / 420,
-                    child: Stack(
-                      children: [
-                        Positioned.fill(
-                          child: Align(
-                            alignment: const Alignment(0.30, 0.50),
-                            child: FractionallySizedBox(
-                              widthFactor: 0.43,
-                              heightFactor: 0.25,
-                              child: DecoratedBox(
-                                decoration: BoxDecoration(
-                                  color: Colors.white,
-                                  borderRadius: BorderRadius.circular(10),
-                                ),
-                              ),
-                            ),
-                          ),
-                        ),
-                        Positioned.fill(
-                          child: Image.asset(
-                            'assets/images/ringmaster_breeder_logo_transparent.png',
-                            fit: BoxFit.contain,
-                            semanticLabel: 'RingMaster Breeder logo',
-                          ),
-                        ),
-                      ],
-                    ),
+                  Image.asset(
+                    'assets/images/ringmaster_breeder_logo_transparent.png',
+                    width: 560,
+                    fit: BoxFit.contain,
+                    semanticLabel: 'RingMaster Breeder logo',
                   ),
                   const SizedBox(height: 20),
                   const Text(
