@@ -1,3 +1,4 @@
+import 'dart:math' as math;
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 import '../theme/app_theme.dart';
@@ -35,31 +36,62 @@ class WeightGraph extends StatelessWidget {
       );
     }
 
-    return SizedBox(
-      height: 220,
-      child: LineChart(
-        LineChartData(
-          gridData: FlGridData(show: true),
-          titlesData: FlTitlesData(
-            leftTitles: AxisTitles(sideTitles: SideTitles(showTitles: true)),
-            bottomTitles: AxisTitles(sideTitles: SideTitles(showTitles: false)),
-            rightTitles: const AxisTitles(
-              sideTitles: SideTitles(showTitles: false),
+    final low = spots.map((p) => p.y).reduce(math.min);
+    final high = spots.map((p) => p.y).reduce(math.max);
+    final interval = math.max(0.1, ((high - low) / 4 * 10).ceil() / 10);
+    final minY = math.max(0.0, (low / interval).floor() * interval - interval);
+    final maxY = (high / interval).ceil() * interval + interval;
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(8, 24, 8, 12),
+      child: SizedBox(
+        height: 260,
+        child: LineChart(
+          LineChartData(
+            minY: minY,
+            maxY: maxY,
+            gridData: FlGridData(
+              show: true,
+              drawVerticalLine: false,
+              horizontalInterval: interval,
             ),
-            topTitles: const AxisTitles(
-              sideTitles: SideTitles(showTitles: false),
+            titlesData: FlTitlesData(
+              leftTitles: AxisTitles(
+                sideTitles: SideTitles(
+                  showTitles: true,
+                  reservedSize: 58,
+                  interval: interval,
+                  getTitlesWidget: (value, meta) => Padding(
+                    padding: const EdgeInsets.only(right: 10),
+                    child: Text(
+                      value.toStringAsFixed(1),
+                      maxLines: 1,
+                      textAlign: TextAlign.right,
+                      style: const TextStyle(fontSize: 12),
+                    ),
+                  ),
+                ),
+              ),
+              bottomTitles: AxisTitles(
+                sideTitles: SideTitles(showTitles: false),
+              ),
+              rightTitles: const AxisTitles(
+                sideTitles: SideTitles(showTitles: false),
+              ),
+              topTitles: const AxisTitles(
+                sideTitles: SideTitles(showTitles: false),
+              ),
             ),
+            borderData: FlBorderData(show: true),
+            lineBarsData: [
+              LineChartBarData(
+                spots: spots,
+                isCurved: true,
+                barWidth: 3,
+                color: BreederColors.primary,
+                dotData: FlDotData(show: true),
+              ),
+            ],
           ),
-          borderData: FlBorderData(show: true),
-          lineBarsData: [
-            LineChartBarData(
-              spots: spots,
-              isCurved: true,
-              barWidth: 3,
-              color: BreederColors.primary,
-              dotData: FlDotData(show: true),
-            ),
-          ],
         ),
       ),
     );

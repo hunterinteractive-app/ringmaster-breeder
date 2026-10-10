@@ -140,6 +140,27 @@ class AnimalService {
     });
   }
 
+  static Future<void> editLatestWeight(
+    String animalId,
+    String recordId,
+    double weight,
+  ) async {
+    if (!weight.isFinite || weight <= 0) {
+      throw ArgumentError('Weight must be positive');
+    }
+    final updated = await _client
+        .from('animal_weights')
+        .update({'weight': weight})
+        .eq('animal_id', animalId)
+        .eq('id', recordId)
+        .select('id');
+    if (updated.isEmpty) {
+      throw StateError(
+        'Only the latest weight can be edited. Refresh and try again.',
+      );
+    }
+  }
+
   static Future<void> update(String id, Map<String, dynamic> changes) async {
     await _client.from('animals').update(changes).eq('id', id);
   }

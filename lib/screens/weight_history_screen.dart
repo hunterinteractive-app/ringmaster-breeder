@@ -30,78 +30,96 @@ class _WeightHistoryScreenState extends State<WeightHistoryScreen> {
     _weights = AnimalService.weights(widget.animalId);
   }
 
-  Future<void> addWeight() async {
-    final controller = TextEditingController();
+  Future<void> addWeight([Map<String, dynamic>? record]) async {
+    final controller = TextEditingController(
+      text: record?['weight']?.toString() ?? '',
+    );
 
     await showDialog(
       context: context,
-      builder: (_) => AlertDialog(
-        title: const Text('Add Weight'),
-        content: TextField(
-          controller: controller,
-          keyboardType: const TextInputType.numberWithOptions(decimal: true),
-          decoration: const InputDecoration(
-            labelText: 'Weight (lb)',
-            hintText: 'Example: 4.25',
+      builder: (_) => StatefulBuilder(
+        builder: (dialogContext, setDialogState) => AlertDialog(
+          title: Text(record == null ? 'Add Weight' : 'Edit Latest Weight'),
+          content: TextField(
+            controller: controller,
+            keyboardType: const TextInputType.numberWithOptions(decimal: true),
+            decoration: const InputDecoration(
+              labelText: 'Weight (lb)',
+              hintText: 'Example: 4.25',
+            ),
           ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Cancel'),
-          ),
-          ElevatedButton(
-            onPressed: isSaving
-                ? null
-                : () async {
-                    setState(() => isSaving = true);
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('Cancel'),
+            ),
+            ElevatedButton(
+              onPressed: isSaving
+                  ? null
+                  : () async {
+                      setDialogState(() => isSaving = true);
 
-                    final value = double.tryParse(controller.text.trim());
+                      final value = double.tryParse(controller.text.trim());
 
-                    if (value == null || !value.isFinite || value <= 0) {
-                      if (mounted) setState(() => isSaving = false);
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                          content: Text('Weight must be a positive number'),
-                          backgroundColor: Colors.red,
-                        ),
-                      );
-                      return;
-                    }
-
-                    try {
-                      await AnimalService.addWeight(widget.animalId, value);
-                      if (!mounted) return;
-                      Navigator.pop(context);
-                      if (mounted) {
-                        setState(
-                          () =>
-                              _weights = AnimalService.weights(widget.animalId),
+                      if (value == null || !value.isFinite || value <= 0) {
+                        if (dialogContext.mounted) {
+                          setDialogState(() => isSaving = false);
+                        }
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                            content: Text('Weight must be a positive number'),
+                            backgroundColor: Colors.red,
+                          ),
                         );
+                        return;
                       }
-                    } catch (e) {
-                      if (!mounted) return;
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(
-                          content: Text('Failed to save weight: $e'),
-                          backgroundColor: Colors.red,
-                        ),
-                      );
-                    } finally {
-                      if (mounted) setState(() => isSaving = false);
-                    }
-                  },
-            child: isSaving
-                ? const SizedBox(
-                    width: 18,
-                    height: 18,
-                    child: CircularProgressIndicator(strokeWidth: 2),
-                  )
-                : const Text('Save'),
-          ),
-        ],
+
+                      try {
+                        if (record == null) {
+                          await AnimalService.addWeight(widget.animalId, value);
+                        } else {
+                          await AnimalService.editLatestWeight(
+                            widget.animalId,
+                            record['id'],
+                            value,
+                          );
+                        }
+                        if (!mounted) return;
+                        Navigator.pop(context);
+                        if (mounted) {
+                          setState(
+                            () => _weights = AnimalService.weights(
+                              widget.animalId,
+                            ),
+                          );
+                        }
+                      } catch (e) {
+                        if (!mounted) return;
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: Text('Failed to save weight: $e'),
+                            backgroundColor: Colors.red,
+                          ),
+                        );
+                      } finally {
+                        if (dialogContext.mounted) {
+                          setDialogState(() => isSaving = false);
+                        }
+                      }
+                    },
+              child: isSaving
+                  ? const SizedBox(
+                      width: 18,
+                      height: 18,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    )
+                  : const Text('Save'),
+            ),
+          ],
+        ),
       ),
     );
+    isSaving = false;
     WidgetsBinding.instance.addPostFrameCallback((_) => controller.dispose());
   }
 
@@ -112,7 +130,7 @@ class _WeightHistoryScreenState extends State<WeightHistoryScreen> {
       floatingActionButton: isLocked
           ? null
           : FloatingActionButton(
-              onPressed: addWeight,
+              onPressed: () => addWeight(),
               child: const Icon(Icons.add),
             ),
       body: Column(
@@ -131,7 +149,7 @@ class _WeightHistoryScreenState extends State<WeightHistoryScreen> {
                   SizedBox(width: 8),
                   Expanded(
                     child: Text(
-                      'Weights cannot be added for sold or deceased animals.',
+                      'Weights cannot be added or edited for sold or deceased animals.',
                       style: TextStyle(fontWeight: FontWeight.w500),
                     ),
                   ),
@@ -204,7 +222,17 @@ class _WeightHistoryScreenState extends State<WeightHistoryScreen> {
                     return ListTile(
                       leading: const Icon(Icons.monitor_weight),
                       title: Text('$weightValue lb'),
-                      subtitle: Text(recordedAt),
+                      subtitle: Text(
+                        index == 0 && !isLocked
+                            ? '$recordedAt • Tap to edit latest weight'
+                            : recordedAt,
+                      ),
+                      trailing: index == 0 && !isLocked
+                          ? const Icon(Icons.edit_outlined)
+                          : null,
+                      onTap: index == 0 && !isLocked
+                          ? () => addWeight(Map<String, dynamic>.from(w))
+                          : null,
                     );
                   },
                 );
