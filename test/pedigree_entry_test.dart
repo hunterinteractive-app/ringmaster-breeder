@@ -61,7 +61,7 @@ void main() {
     await tester.pump(const Duration(milliseconds: 900));
     await tester.pumpAndSettle();
     expect(find.text('Is this the same animal?'), findsOneWidget);
-    await tester.tap(find.widgetWithText(ListTile, "DALY'S VIPER * VIP"));
+    await tester.tap(find.widgetWithText(ListTile, "DALY'S VIPER • VIP"));
     await tester.pumpAndSettle();
     expect(find.text('Is this the same animal?'), findsNothing);
     expect(
@@ -154,7 +154,7 @@ void main() {
       'DAD1',
     );
     await tester.pumpAndSettle();
-    await tester.tap(find.text('Shared father * DAD1').last);
+    await tester.tap(find.text('Shared father • DAD1').last);
     await tester.pumpAndSettle();
     expect(find.textContaining('Repeated ancestor'), findsOneWidget);
     expect(tester.takeException(), isNull);

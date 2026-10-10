@@ -9,5 +9,5 @@ String animalTitle(String? name, String? earNumber) {
   final label = name?.trim() ?? '';
   final ear = earNumber?.trim() ?? '';
   if (label.isEmpty) return ear.isEmpty ? 'Unnamed' : ear;
-  return ear.isEmpty ? label : '$label * $ear';
+  return ear.isEmpty ? label : '$label • $ear';
 }

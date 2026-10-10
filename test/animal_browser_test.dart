@@ -47,12 +47,12 @@ void main() {
         ),
       );
       await tester.pumpAndSettle();
-      expect(find.text('Cookie * ZC2'), findsOneWidget);
+      expect(find.text('Cookie • ZC2'), findsOneWidget);
       expect(find.text('OLD'), findsNothing);
       expect(tester.takeException(), isNull);
       await tester.enterText(find.byType(TextField), '4/3/2025');
       await tester.pumpAndSettle();
-      expect(find.text('Cookie * ZC2'), findsOneWidget);
+      expect(find.text('Cookie • ZC2'), findsOneWidget);
       await tester.enterText(find.byType(TextField), 'missing');
       await tester.pumpAndSettle();
       expect(find.text('No animals match your filters.'), findsOneWidget);
@@ -61,7 +61,7 @@ void main() {
       await tester.tap(find.byTooltip('List view'));
       await tester.pumpAndSettle();
       expect(find.byType(AnimalRecordCard), findsNothing);
-      expect(find.text('Cookie * ZC2'), findsOneWidget);
+      expect(find.text('Cookie • ZC2'), findsOneWidget);
       await tester.tap(find.text('Actions'));
       await tester.pumpAndSettle();
       await tester.tap(find.text('Add animal'));
