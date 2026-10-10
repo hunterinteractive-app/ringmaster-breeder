@@ -3,6 +3,8 @@ import 'package:flutter/material.dart';
 import '../services/animal_service.dart';
 import '../widgets/color_details_fields.dart';
 import '../utils/color_details.dart';
+import '../widgets/dob_field.dart';
+import '../widgets/sex_field.dart';
 
 class EditAnimalScreen extends StatefulWidget {
   final String animalId;
@@ -22,6 +24,7 @@ class _EditAnimalScreenState extends State<EditAnimalScreen> {
   final gcController = TextEditingController();
 
   Map<String, String> details = {};
+  String dob = '';
   String species = '';
   String sex = 'Buck';
   String status = 'active';
@@ -42,6 +45,7 @@ class _EditAnimalScreenState extends State<EditAnimalScreen> {
     gcController.text = animal['grand_champion_number'] ?? '';
 
     details = colorDetails(animal);
+    dob = animal['dob']?.toString() ?? '';
     species = animal['species'].toString().toLowerCase(); // rabbit / cavy
     sex = animal['sex']; // Buck/Doe or Boar/Sow
     status = animal['status'];
@@ -54,6 +58,8 @@ class _EditAnimalScreenState extends State<EditAnimalScreen> {
     setState(() => isSaving = true);
 
     try {
+      final dateError = dobError(dob);
+      if (dateError != null) throw Exception(dateError);
       final detailError = codDetailsError(
         breedController.text,
         varietyController.text,
@@ -63,6 +69,7 @@ class _EditAnimalScreenState extends State<EditAnimalScreen> {
       await AnimalService.update(widget.animalId, {
         'name': nameController.text.trim(),
         'color_details': details,
+        'dob': dob.isEmpty ? null : dob,
         'status': status,
         'tattoo': tattooController.text.trim(),
         'sex': sex,
@@ -82,19 +89,6 @@ class _EditAnimalScreenState extends State<EditAnimalScreen> {
     } finally {
       if (mounted) setState(() => isSaving = false);
     }
-  }
-
-  List<DropdownMenuItem<String>> getSexItems() {
-    if (species == 'cavy') {
-      return const [
-        DropdownMenuItem(value: 'Boar', child: Text('Boar')),
-        DropdownMenuItem(value: 'Sow', child: Text('Sow')),
-      ];
-    }
-    return const [
-      DropdownMenuItem(value: 'Buck', child: Text('Buck')),
-      DropdownMenuItem(value: 'Doe', child: Text('Doe')),
-    ];
   }
 
   String displaySpecies() {
@@ -204,14 +198,13 @@ class _EditAnimalScreenState extends State<EditAnimalScreen> {
               onChanged: (v) => setState(() => details = v),
             ),
 
-            // SEX
-            DropdownButtonFormField<String>(
-              initialValue: sex,
-              items: getSexItems(),
-              onChanged: (v) => setState(() => sex = v!),
-              decoration: const InputDecoration(labelText: 'Sex'),
+            SexField(
+              species: species,
+              value: sex,
+              onChanged: (v) => setState(() => sex = v),
             ),
-
+            const SizedBox(height: 12),
+            DobField(value: dob, onChanged: (v) => dob = v),
             const SizedBox(height: 12),
 
             // TATTOO

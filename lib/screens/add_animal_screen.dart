@@ -6,6 +6,8 @@ import '../widgets/catalog_field.dart';
 import '../widgets/color_details_fields.dart';
 import '../utils/color_details.dart';
 import 'pedigree_entry_screen.dart';
+import '../widgets/dob_field.dart';
+import '../widgets/sex_field.dart';
 
 class AddAnimalScreen extends StatefulWidget {
   final String ringId;
@@ -32,7 +34,7 @@ class _AddAnimalScreenState extends State<AddAnimalScreen> {
   final gcController = TextEditingController();
   final weightController = TextEditingController();
 
-  DateTime? dob;
+  String dob = '';
   Map<String, String> details = {};
 
   String species = 'rabbit';
@@ -67,24 +69,13 @@ class _AddAnimalScreenState extends State<AddAnimalScreen> {
     return List<Map<String, dynamic>>.from(res);
   }
 
-  Future<void> pickDob() async {
-    final picked = await showDatePicker(
-      context: context,
-      initialDate: dob ?? DateTime.now(),
-      firstDate: DateTime(1990),
-      lastDate: DateTime.now(),
-    );
-
-    if (picked != null) {
-      setState(() => dob = picked);
-    }
-  }
-
   Future<void> saveAnimal() async {
     if (isSaving) return;
     setState(() => isSaving = true);
 
     try {
+      final dateError = dobError(dob);
+      if (dateError != null) throw Exception(dateError);
       final detailError = codDetailsError(
         breedController.text,
         varietyController.text,
@@ -113,7 +104,7 @@ class _AddAnimalScreenState extends State<AddAnimalScreen> {
           'p_color_details': details,
           'p_sex': sex,
           'p_status': status,
-          'p_dob': dob?.toIso8601String(),
+          'p_dob': dob.isEmpty ? null : dob,
           'p_registration': registrationController.text.trim(),
           'p_gc': gcController.text.trim(),
           'p_weight': parsedWeight,
@@ -273,37 +264,14 @@ class _AddAnimalScreenState extends State<AddAnimalScreen> {
               onChanged: (v) => setState(() => details = v),
             ),
 
-            /// SEX
-            DropdownButtonFormField<String>(
-              key: ValueKey(species),
-              initialValue: sex,
-              items: [
-                DropdownMenuItem(
-                  value: sexLabel('M'),
-                  child: Text(sexLabel('M')),
-                ),
-                DropdownMenuItem(
-                  value: sexLabel('F'),
-                  child: Text(sexLabel('F')),
-                ),
-              ],
-              onChanged: (v) => setState(() => sex = v!),
-              decoration: const InputDecoration(labelText: 'Sex'),
+            SexField(
+              key: ValueKey('sex:$species'),
+              species: species,
+              value: sex,
+              onChanged: (v) => setState(() => sex = v),
             ),
-
             const SizedBox(height: 12),
-
-            /// DOB
-            ListTile(
-              title: const Text('Date of Birth'),
-              subtitle: Text(
-                dob == null
-                    ? 'Not set'
-                    : '${dob!.month}/${dob!.day}/${dob!.year}',
-              ),
-              trailing: const Icon(Icons.calendar_today),
-              onTap: pickDob,
-            ),
+            DobField(value: dob, onChanged: (v) => dob = v),
 
             const Divider(),
 

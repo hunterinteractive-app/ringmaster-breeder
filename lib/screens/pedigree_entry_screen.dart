@@ -2,7 +2,8 @@ import '../widgets/catalog_field.dart';
 import '../widgets/color_details_fields.dart';
 import '../utils/color_details.dart';
 import 'package:flutter/material.dart';
-import 'package:intl/intl.dart';
+import '../widgets/dob_field.dart';
+import '../widgets/sex_field.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../models/pedigree_entry.dart';
 import '../utils/animal_labels.dart';
@@ -541,51 +542,31 @@ class _PedigreeEntryScreenState extends State<PedigreeEntryScreen> {
       );
     }
     if (field == 'sex') {
-      return DropdownButtonFormField<String>(
+      return SexField(
         key: ValueKey('$slot:$key:sex:${entry.species}'),
-        initialValue: node?['sex'] ?? entry.expectedSex(slot),
-        decoration: InputDecoration(labelText: labels[field]),
-        items: [
-          for (final v
-              in entry.species == 'rabbit' ? ['Buck', 'Doe'] : ['Boar', 'Sow'])
-            DropdownMenuItem(value: v, child: Text(v)),
-        ],
-        onChanged: slot == 0 && !readOnly ? (v) => change(v!) : null,
+        species: entry.species,
+        value: node?['sex'] ?? entry.expectedSex(slot),
+        onChanged: slot == 0 && !readOnly ? change : null,
       );
     }
-    var value = node?[field]?.toString() ?? '';
-    if (field == 'dob' && value.isNotEmpty) {
-      final date = DateTime.tryParse(value);
-      if (date != null) value = DateFormat('MM/dd/yyyy').format(date);
+    if (field == 'dob') {
+      return DobField(
+        key: ValueKey('$slot:$key:dob'),
+        value: node?['dob']?.toString() ?? '',
+        readOnly: readOnly,
+        onChanged: change,
+      );
     }
+    final value = node?[field]?.toString() ?? '';
     return TextFormField(
       key: ValueKey('$slot:$key:$field'),
       initialValue: value,
       readOnly: readOnly,
       decoration: InputDecoration(labelText: labels[field]),
       textInputAction: TextInputAction.next,
-      onChanged: (v) {
-        if (field == 'dob' && v.trim().isNotEmpty) {
-          try {
-            v = DateFormat(
-              'MM/dd/yyyy',
-            ).parseStrict(v).toIso8601String().substring(0, 10);
-          } catch (_) {}
-        }
-        change(v);
-      },
+      onChanged: change,
       validator: (v) {
         if (readOnly || v == null || v.trim().isEmpty) return null;
-        if (field == 'dob') {
-          try {
-            final date = DateFormat('MM/dd/yyyy').parseStrict(v);
-            if (date.isAfter(DateTime.now())) {
-              return 'DOB cannot be in the future';
-            }
-          } catch (_) {
-            return 'Use MM/DD/YYYY';
-          }
-        }
         if (field == 'weight' &&
             (double.tryParse(v) == null ||
                 !double.parse(v).isFinite ||

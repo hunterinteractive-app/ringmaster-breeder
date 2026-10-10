@@ -5,11 +5,14 @@ class CatalogField extends StatefulWidget {
   final String species, value;
   final String? breed;
   final ValueChanged<String> onChanged;
+  final Future<List<Map<String, dynamic>>> Function(String, String?)?
+  loadOptions;
   const CatalogField({
     super.key,
     required this.species,
     required this.value,
     this.breed,
+    this.loadOptions,
     required this.onChanged,
   });
   @override
@@ -36,7 +39,10 @@ class _CatalogFieldState extends State<CatalogField> {
   Future<void> _load() async {
     final species = widget.species, breed = widget.breed;
     try {
-      final data = await CatalogService.options(species, breed);
+      final data = await (widget.loadOptions ?? CatalogService.options)(
+        species,
+        breed,
+      );
       if (mounted && species == widget.species && breed == widget.breed) {
         setState(() {
           rows = data;
@@ -80,6 +86,7 @@ class _CatalogFieldState extends State<CatalogField> {
         controller: controller,
         focusNode: focus,
         onChanged: change,
+        onFieldSubmitted: (_) => submit(),
         maxLength: 100,
         decoration: InputDecoration(
           labelText: widget.breed == null ? 'Breed' : 'Variety',
@@ -101,31 +108,80 @@ class _CatalogFieldState extends State<CatalogField> {
           child: SizedBox(
             width: 320,
             height: 220,
-            child: ListView(
-              children: [
-                for (final name in options)
-                  ListTile(
-                    title: Text(name),
-                    subtitle:
-                        rows.any(
-                          (r) =>
-                              r['name'] == name && r['is_recognized'] == true,
-                        )
-                        ? (rows.any(
-                                (r) =>
-                                    r['name'] == name &&
-                                    CatalogService.isCod(r),
-                              )
-                              ? const Text('COD')
-                              : null)
-                        : const Text('Unrecognized'),
-                    onTap: () => select(name),
-                  ),
-              ],
+            child: _CatalogOptions(
+              options: options.toList(),
+              rows: rows,
+              select: select,
             ),
           ),
         ),
       ),
+    );
+  }
+}
+
+class _CatalogOptions extends StatefulWidget {
+  final List<String> options;
+  final List<Map<String, dynamic>> rows;
+  final ValueChanged<String> select;
+  const _CatalogOptions({
+    required this.options,
+    required this.rows,
+    required this.select,
+  });
+  @override
+  State<_CatalogOptions> createState() => _CatalogOptionsState();
+}
+
+class _CatalogOptionsState extends State<_CatalogOptions> {
+  final scroll = ScrollController();
+  int previous = -1;
+  @override
+  void dispose() {
+    scroll.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final highlighted = AutocompleteHighlightedOption.of(context);
+    if (previous != highlighted) {
+      previous = highlighted;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted || !scroll.hasClients) return;
+        final top = highlighted * 72.0;
+        final bottom = top + 72;
+        final viewport = scroll.position.viewportDimension;
+        if (top < scroll.offset || bottom > scroll.offset + viewport) {
+          scroll.jumpTo(
+            (top < scroll.offset ? top : bottom - viewport).clamp(
+              0.0,
+              scroll.position.maxScrollExtent,
+            ),
+          );
+        }
+      });
+    }
+    return ListView.builder(
+      controller: scroll,
+      padding: EdgeInsets.zero,
+      itemExtent: 72,
+      itemCount: widget.options.length,
+      itemBuilder: (context, index) {
+        final name = widget.options[index];
+        final row = widget.rows.firstWhere((r) => r['name'] == name);
+        return ListTile(
+          selected: index == highlighted,
+          selectedTileColor: Theme.of(context).colorScheme.secondaryContainer,
+          title: Text(name),
+          subtitle: row['is_recognized'] != true
+              ? const Text('Unrecognized')
+              : CatalogService.isCod(row)
+              ? const Text('COD')
+              : null,
+          onTap: () => widget.select(name),
+        );
+      },
     );
   }
 }
