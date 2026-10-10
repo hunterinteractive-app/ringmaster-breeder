@@ -5,6 +5,73 @@ import 'package:ringmaster_breeder/screens/pedigree_entry_screen.dart';
 
 void main() {
   test(
+    'Matching ancestors reuse identity and ancestry without allowing cycles',
+    () {
+      final p = PedigreeEntry();
+      p.nodes[p.root]!['name'] = 'Subject';
+      p.ensure(1);
+      p.ensure(2);
+      final vip = p.ensure(3);
+      p.nodes[vip]!.addAll({'name': "DALY'S VIPER", 'tattoo': 'VIP'});
+      final ancestor = p.ensure(7);
+      p.nodes[ancestor]!['name'] = 'Earlier sire';
+      final repeated = p.ensure(5);
+      p.nodes[repeated]!['name'] = '  daly’s viper  ';
+      expect(p.matchingAncestors(5), [vip]);
+      p.nodes[repeated]!['name'] = 'Different spelling';
+      p.nodes[repeated]!['tattoo'] = ' vip ';
+      expect(p.matchingAncestors(5), [vip]);
+      p.link(5, vip);
+      expect(p.at(11), ancestor);
+      expect(p.matchingAncestors(7), isEmpty);
+    },
+  );
+  testWidgets('Entering a matching ear number asks before autofilling', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(1200, 1600);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+    await tester.pumpWidget(
+      const MaterialApp(
+        home: PedigreeEntryScreen(
+          ringId: 'test',
+          initialAnimals: [
+            {
+              'id': 'vip',
+              'species': 'rabbit',
+              'sex': 'Buck',
+              'name': "DALY'S VIPER",
+              'tattoo': 'VIP',
+              'breed': 'Tan',
+              'variety': 'Black',
+            },
+          ],
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+    await tester.tap(find.widgetWithText(ChoiceChip, 'Sire'));
+    await tester.pumpAndSettle();
+    final ear = find.byWidgetPredicate(
+      (w) => w is TextFormField && w.key.toString().contains('tattoo'),
+    );
+    await tester.enterText(ear, 'VIP');
+    await tester.pump(const Duration(milliseconds: 900));
+    await tester.pumpAndSettle();
+    expect(find.text('Is this the same animal?'), findsOneWidget);
+    await tester.tap(find.widgetWithText(ListTile, "DALY'S VIPER * VIP"));
+    await tester.pumpAndSettle();
+    expect(find.text('Is this the same animal?'), findsNothing);
+    expect(
+      find.text(
+        'Using an existing animal and its saved ancestry. Its record will not be overwritten.',
+      ),
+      findsOneWidget,
+    );
+  });
+  test(
     'New ancestors inherit last catalog choices without overwriting existing nodes',
     () {
       final p = PedigreeEntry();

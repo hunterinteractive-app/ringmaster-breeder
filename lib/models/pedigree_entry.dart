@@ -61,6 +61,37 @@ class PedigreeEntry {
     return key;
   }
 
+  List<String> matchingAncestors(int slot) {
+    final current = at(slot);
+    final parent = slot == 0 ? null : at((slot - 1) ~/ 2);
+    if (current == null ||
+        parent == null ||
+        nodes[current]?['existing_id'] != null) {
+      return [];
+    }
+    String normalize(dynamic value) => (value?.toString() ?? '')
+        .trim()
+        .toLowerCase()
+        .replaceAll('’', "'")
+        .replaceAll(RegExp(r'\s+'), ' ');
+    final name = normalize(nodes[current]?['name']);
+    final ear = normalize(nodes[current]?['tattoo']);
+    final used = (data()['nodes'] as Map).keys.toSet();
+    return nodes.keys.where((key) {
+      final animal = nodes[key]!;
+      if (key == current ||
+          key == root ||
+          (!used.contains(key) && animal['existing_id'] == null) ||
+          animal['sex'] != expectedSex(slot) ||
+          (animal['species'] != null && animal['species'] != species) ||
+          reaches(key, parent)) {
+        return false;
+      }
+      return (ear.isNotEmpty && normalize(animal['tattoo']) == ear) ||
+          (name.isNotEmpty && normalize(animal['name']) == name);
+    }).toList();
+  }
+
   bool reaches(String from, String target, [Set<String>? visited]) {
     if (from == target) return true;
     final seen = visited ?? <String>{};

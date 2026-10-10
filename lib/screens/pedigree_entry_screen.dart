@@ -1,3 +1,4 @@
+import 'dart:async';
 import '../widgets/pedigree_preview.dart';
 import '../widgets/catalog_field.dart';
 import '../widgets/color_details_fields.dart';
@@ -24,6 +25,81 @@ class PedigreeEntryScreen extends StatefulWidget {
 
 class _PedigreeEntryScreenState extends State<PedigreeEntryScreen> {
   final entry = PedigreeEntry();
+  Timer? matchTimer;
+  bool matchDialogOpen = false;
+  final Set<String> checkedMatches = {};
+  @override
+  void dispose() {
+    matchTimer?.cancel();
+    super.dispose();
+  }
+
+  Future<void> checkMatch() async {
+    matchTimer?.cancel();
+    if (!mounted || matchDialogOpen || slot == 0) return;
+    final current = entry.at(slot);
+    final matches = entry.matchingAncestors(slot);
+    if (matches.isEmpty) return;
+    final signature =
+        '$slot:$current:${entry.nodes[current]?['name']}:${entry.nodes[current]?['tattoo']}:${matches.join(',')}';
+    if (!checkedMatches.add(signature)) return;
+    final originalSlot = slot;
+    matchDialogOpen = true;
+    final selected = await showDialog<String>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Is this the same animal?'),
+        content: SizedBox(
+          width: 460,
+          child: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  'A matching name or ear number is already in your records. Reuse it to fill this position with that animal’s details and ancestry. This replaces the details entered at this position and keeps both appearances linked.',
+                ),
+                for (final key in matches)
+                  ListTile(
+                    title: Text(label(key)),
+                    subtitle: Text(
+                      [
+                            entry.nodes[key]?['breed'],
+                            entry.nodes[key]?['variety'],
+                            entry.nodes[key]?['dob'],
+                          ]
+                          .whereType<String>()
+                          .where((v) => v.isNotEmpty)
+                          .join(' • '),
+                    ),
+                    trailing: const Icon(Icons.auto_fix_high),
+                    onTap: () => Navigator.pop(ctx, key),
+                  ),
+              ],
+            ),
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('Keep separate'),
+          ),
+        ],
+      ),
+    );
+    matchDialogOpen = false;
+    if (!mounted ||
+        selected == null ||
+        slot != originalSlot ||
+        entry.at(slot) != current) {
+      return;
+    }
+    setState(() {
+      entry.link(slot, selected);
+      dirty = true;
+    });
+  }
+
   SupabaseClient get db => Supabase.instance.client;
   final form = GlobalKey<FormState>();
   int slot = 0;
@@ -78,8 +154,10 @@ class _PedigreeEntryScreenState extends State<PedigreeEntryScreen> {
   String label(String? key) => key == null
       ? 'Unknown'
       : animalTitle(entry.nodes[key]?['name'], entry.nodes[key]?['tattoo']);
-  void _move(int target) {
+  Future<void> _move(int target) async {
     if (!(form.currentState?.validate() ?? true)) return;
+    await checkMatch();
+    if (!mounted) return;
     setState(() {
       slot = target;
       error = null;
@@ -87,6 +165,8 @@ class _PedigreeEntryScreenState extends State<PedigreeEntryScreen> {
   }
 
   Future<void> _save(bool finish) async {
+    await checkMatch();
+    if (!mounted) return;
     if (!(form.currentState?.validate() ?? true)) return;
     if (finish && !entry.identified(entry.root)) {
       setState(() {
@@ -158,6 +238,8 @@ class _PedigreeEntryScreenState extends State<PedigreeEntryScreen> {
   }
 
   Future<void> _preview() async {
+    await checkMatch();
+    if (!mounted) return;
     if (!(form.currentState?.validate() ?? true)) return;
     await showDialog<void>(
       context: context,
@@ -473,6 +555,10 @@ class _PedigreeEntryScreenState extends State<PedigreeEntryScreen> {
       final k = key ?? entry.ensure(slot);
       entry.nodes[k]![field] = value;
       entry.rememberCatalog(k, field, value);
+      if (field == 'name' || field == 'tattoo') {
+        matchTimer?.cancel();
+        matchTimer = Timer(const Duration(milliseconds: 800), checkMatch);
+      }
       dirty = true;
     }
 
