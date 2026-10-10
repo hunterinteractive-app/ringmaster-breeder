@@ -1,3 +1,4 @@
+import '../widgets/catalog_field.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -488,6 +489,20 @@ class _PedigreeEntryScreenState extends State<PedigreeEntryScreen> {
       dirty = true;
     }
 
+    if ((field == 'breed' || field == 'variety') && !readOnly) {
+      return CatalogField(
+        key: ValueKey(
+          '$slot:$key:$field:${entry.species}:${field == 'variety' ? (node?['breed']) : ''}',
+        ),
+        species: entry.species,
+        breed: field == 'variety' ? (node?['breed']?.toString() ?? '') : null,
+        value: node?[field]?.toString() ?? '',
+        onChanged: (v) {
+          change(v);
+          if (field == 'breed') setState(() {});
+        },
+      );
+    }
     if (field == 'sex') {
       return DropdownButtonFormField<String>(
         key: ValueKey('$slot:$key:sex:${entry.species}'),

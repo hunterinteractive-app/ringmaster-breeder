@@ -346,8 +346,8 @@ class _AnimalBrowserState extends State<AnimalBrowser> {
                             subtitle: Text(
                               [
                                 a['species'] == 'cavy' ? 'Cavy' : 'Rabbit',
-                                a['breed'] ?? 'Breed not recorded',
-                                a['variety'] ?? 'Variety not recorded',
+                                '${a['breed'] ?? 'Breed not recorded'}${a['breed_unrecognized'] == true ? ' (Unrecognized)' : ''}',
+                                '${a['variety'] ?? 'Variety not recorded'}${a['variety_unrecognized'] == true ? ' (Unrecognized)' : ''}',
                                 sexLabel(a['species'], a['sex']),
                                 'DOB: ${_displayDob(a['dob'])}',
                               ].join(' • '),
@@ -499,8 +499,14 @@ class AnimalRecordCard extends StatelessWidget {
                 child: Divider(height: 1),
               ),
               detail('Species', species),
-              detail('Breed', recorded('breed')),
-              detail('Variety', recorded('variety')),
+              detail(
+                'Breed',
+                '${recorded('breed')}${animal['breed_unrecognized'] == true ? ' (Unrecognized)' : ''}',
+              ),
+              detail(
+                'Variety',
+                '${recorded('variety')}${animal['variety_unrecognized'] == true ? ' (Unrecognized)' : ''}',
+              ),
               detail('DOB', _displayDob(animal['dob'])),
               detail(
                 'Sex',

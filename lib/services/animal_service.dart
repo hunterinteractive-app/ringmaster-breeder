@@ -1,3 +1,4 @@
+import 'catalog_service.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:file_picker/file_picker.dart';
 
@@ -28,6 +29,27 @@ class AnimalService {
   static Future<Map<String, dynamic>> _withPhoto(
     Map<String, dynamic> animal,
   ) async {
+    try {
+      final species = animal['species']?.toString() ?? 'rabbit';
+      final breeds = await CatalogService.options(species, null);
+      final varieties = await CatalogService.options(
+        species,
+        animal['breed']?.toString() ?? '',
+      );
+      for (final field in ['breed', 'variety']) {
+        final rows = field == 'breed' ? breeds : varieties;
+        animal['${field}_unrecognized'] =
+            (animal[field]?.toString().trim().isNotEmpty ?? false) &&
+            !rows.any(
+              (r) =>
+                  CatalogService.normalize(r['name']) ==
+                      CatalogService.normalize(animal[field].toString()) &&
+                  r['is_recognized'] == true,
+            );
+      }
+    } catch (_) {
+      /* Animal records remain available during catalog outages. */
+    }
     final path = animal['photo_path'] as String?;
     if (path != null) {
       try {

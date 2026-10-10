@@ -2,9 +2,8 @@ import '../widgets/ringmaster_page_shell.dart';
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
-import '../services/breed_service.dart';
+import '../widgets/catalog_field.dart';
 import 'pedigree_entry_screen.dart';
-import '../services/variety_service.dart';
 
 class AddAnimalScreen extends StatefulWidget {
   final String ringId;
@@ -43,7 +42,6 @@ class _AddAnimalScreenState extends State<AddAnimalScreen> {
   bool sireUnknown = false;
   bool damUnknown = false;
   bool isSaving = false;
-  String _lastBreedForVariety = '';
 
   String sexLabel(String value) {
     if (species == 'rabbit') {
@@ -231,87 +229,23 @@ class _AddAnimalScreenState extends State<AddAnimalScreen> {
 
             const SizedBox(height: 12),
 
-            /// BREED
-            FutureBuilder<List<String>>(
-              future: BreedService.fetchBreeds(species.toLowerCase()),
-              builder: (context, snapshot) {
-                if (snapshot.hasError) {
-                  return const Center(
-                    child: Text(
-                      "Unable to load records. Please go back and try again.",
-                    ),
-                  );
-                }
-                if (!snapshot.hasData) {
-                  return const LinearProgressIndicator();
-                }
-
-                final breeds = [...snapshot.data!]..sort();
-
-                return Autocomplete<String>(
-                  optionsBuilder: (value) {
-                    if (value.text.isEmpty) return breeds;
-                    return breeds.where(
-                      (b) => b.toLowerCase().contains(value.text.toLowerCase()),
-                    );
-                  },
-                  onSelected: (v) {
-                    setState(() {
-                      breedController.text = v;
-                      varietyController.clear();
-                      _lastBreedForVariety = v;
-                    });
-                  },
-                  fieldViewBuilder: (context, controller, focusNode, _) {
-                    controller.text = breedController.text;
-                    return TextField(
-                      controller: controller,
-                      focusNode: focusNode,
-                      onChanged: (v) {
-                        breedController.text = v;
-                        if (v != _lastBreedForVariety) {
-                          varietyController.clear();
-                        }
-                      },
-                      decoration: const InputDecoration(labelText: 'Breed'),
-                    );
-                  },
-                );
-              },
+            CatalogField(
+              key: ValueKey('breed:$species'),
+              species: species,
+              value: breedController.text,
+              onChanged: (v) => setState(() {
+                breedController.text = v;
+                varietyController.clear();
+              }),
             ),
-
             const SizedBox(height: 12),
-
-            /// VARIETY
-            FutureBuilder<List<String>>(
-              future: VarietyService.fetchVarieties(
-                breedName: breedController.text,
-                species: species,
-              ),
-              builder: (context, snapshot) {
-                final varieties = snapshot.data ?? [];
-
-                return Autocomplete<String>(
-                  optionsBuilder: (value) {
-                    if (value.text.isEmpty) return varieties;
-                    return varieties.where(
-                      (v) => v.toLowerCase().contains(value.text.toLowerCase()),
-                    );
-                  },
-                  onSelected: (v) => varietyController.text = v,
-                  fieldViewBuilder: (context, controller, focusNode, _) {
-                    controller.text = varietyController.text;
-                    return TextField(
-                      controller: controller,
-                      focusNode: focusNode,
-                      onChanged: (v) => varietyController.text = v,
-                      decoration: const InputDecoration(labelText: 'Variety'),
-                    );
-                  },
-                );
-              },
+            CatalogField(
+              key: ValueKey('variety:$species:${breedController.text}'),
+              species: species,
+              breed: breedController.text,
+              value: varietyController.text,
+              onChanged: (v) => varietyController.text = v,
             ),
-
             const SizedBox(height: 12),
 
             /// SEX
