@@ -302,16 +302,26 @@ class _AnimalDetailScreenState extends State<AnimalDetailScreen> {
     );
   }
 
-  Widget _row(String title, String? value) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 6),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          Text("$title:", style: const TextStyle(fontWeight: FontWeight.bold)),
-          Flexible(child: Text(value ?? "-", textAlign: TextAlign.right)),
-        ],
-      ),
-    );
-  }
+  Widget _row(String title, Object? value) =>
+      AnimalDetailRow(title: title, value: value);
+}
+
+class AnimalDetailRow extends StatelessWidget {
+  final String title;
+  final Object? value;
+  const AnimalDetailRow({super.key, required this.title, this.value});
+
+  @override
+  Widget build(BuildContext context) => Padding(
+    padding: const EdgeInsets.symmetric(vertical: 6),
+    child: Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        Text('$title:', style: const TextStyle(fontWeight: FontWeight.bold)),
+        Flexible(
+          child: Text(value?.toString() ?? '-', textAlign: TextAlign.right),
+        ),
+      ],
+    ),
+  );
 }
