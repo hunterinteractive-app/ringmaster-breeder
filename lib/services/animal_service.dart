@@ -43,8 +43,9 @@ class AnimalService {
               CatalogService.identity(r['name']) ==
               CatalogService.identity(animal[field]?.toString() ?? ''),
         );
-        if (matching.isNotEmpty && matching.first['is_recognized'] == true)
+        if (matching.isNotEmpty && matching.first['is_recognized'] == true) {
           animal[field] = matching.first['name'];
+        }
         animal['${field}_unrecognized'] =
             (animal[field]?.toString().trim().isNotEmpty ?? false) &&
             !rows.any(
