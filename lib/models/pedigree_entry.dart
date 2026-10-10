@@ -39,7 +39,7 @@ class PedigreeEntry {
     "Dam’s dam’s sire",
     "Dam’s dam’s dam",
   ];
-  static const order = [0, 1, 3, 7, 8, 4, 9, 10, 2, 5, 11, 12, 6, 13, 14];
+  static const order = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14];
   String? at(int slot) {
     if (slot == 0) return root;
     final parent = at((slot - 1) ~/ 2);

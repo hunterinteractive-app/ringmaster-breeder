@@ -258,7 +258,7 @@ class _PedigreeEntryScreenState extends State<PedigreeEntryScreen> {
                 padding: const EdgeInsets.all(20),
                 children: [
                   const Text(
-                    'Enter your animal, then its sire’s family and dam’s family. Tab moves between fields. Unknown ancestors can stay blank.',
+                    'Enter your animal, then its parents, grandparents, and great-grandparents. Tab moves between fields. Unknown ancestors can stay blank.',
                   ),
                   if (drafts.isNotEmpty && draftId == null) ...[
                     const SizedBox(height: 12),
