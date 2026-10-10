@@ -71,6 +71,8 @@ void main() {
           'color_details': {'color': 'Chocolate', 'pattern': 'Silver Marten'},
           'registration_number': 'ABC123',
           'grand_champion_number': 'GC123',
+          'leg_details':
+              'BOB 05/13/17-LIVINGSTONCORBA\nPlaced: 1/10 05/06/17-TNS\nBOV 04/01/17-GPRBA\nBOS 02/18/17-PaRBA-B',
         },
     };
     final bytes = await PedigreePdfService.generate(pedigree: pedigree);

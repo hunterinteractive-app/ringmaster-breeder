@@ -26,7 +26,7 @@ class PedigreePdfService {
   // LOCKED MEASUREMENTS
   // ===============================
   static const double colW = 170;
-  static const double boxH = 58;
+  static const double boxH = 55;
   static const double lineH = 10;
   static const double gap = 6;
 
@@ -55,6 +55,44 @@ class PedigreePdfService {
       ),
     );
 
+    final results = pedigree.entries.where(
+      (e) =>
+          e.value is Map &&
+          (e.value['leg_details'] ?? '').toString().trim().isNotEmpty,
+    );
+    if (results.isNotEmpty) {
+      pdf.addPage(
+        pw.MultiPage(
+          pageFormat: PdfPageFormat.letter,
+          header: (_) => pw.Padding(
+            padding: pw.EdgeInsets.only(bottom: 16),
+            child: pw.Text(
+              'Pedigree - Legs / show details',
+              style: pw.TextStyle(fontSize: 18),
+            ),
+          ),
+          build: (_) => [
+            for (final entry in results) ...[
+              pw.Padding(
+                padding: pw.EdgeInsets.only(top: 12, bottom: 6),
+                child: pw.Text(
+                  '${entry.key.replaceAll('_', ' ')}: ${animalTitle(entry.value['name'], entry.value['tattoo'])}',
+                  style: pw.TextStyle(fontSize: 12),
+                ),
+              ),
+              for (final line in entry.value['leg_details'].toString().split(
+                '\n',
+              ))
+                pw.Paragraph(
+                  text: line,
+                  style: pw.TextStyle(fontSize: 10),
+                  margin: pw.EdgeInsets.only(bottom: 3),
+                ),
+            ],
+          ],
+        ),
+      );
+    }
     return pdf.save();
   }
 
@@ -84,7 +122,7 @@ class PedigreePdfService {
 
         // GRID
         pw.Positioned(
-          top: 80,
+          top: 70,
           left: 0,
           right: 0,
           child: pw.Row(
@@ -200,14 +238,16 @@ class PedigreePdfService {
     pw.Widget line(String text) => pw.Expanded(
       child: pw.Align(
         alignment: pw.Alignment.centerLeft,
-        child: pw.FittedBox(
-          fit: pw.BoxFit.scaleDown,
-          alignment: pw.Alignment.centerLeft,
-          child: pw.Text(
-            text,
-            style: pw.TextStyle(font: fontRegular, fontSize: 7),
-          ),
-        ),
+        child: text.trim().isEmpty
+            ? pw.SizedBox()
+            : pw.FittedBox(
+                fit: pw.BoxFit.scaleDown,
+                alignment: pw.Alignment.centerLeft,
+                child: pw.Text(
+                  text,
+                  style: pw.TextStyle(font: fontRegular, fontSize: 7),
+                ),
+              ),
       ),
     );
     return pw.Container(

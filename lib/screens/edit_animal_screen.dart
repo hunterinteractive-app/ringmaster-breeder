@@ -22,6 +22,7 @@ class _EditAnimalScreenState extends State<EditAnimalScreen> {
   final varietyController = TextEditingController();
   final registrationController = TextEditingController();
   final gcController = TextEditingController();
+  final legDetailsController = TextEditingController();
 
   Map<String, String> details = {};
   String dob = '';
@@ -43,6 +44,7 @@ class _EditAnimalScreenState extends State<EditAnimalScreen> {
     varietyController.text = animal['variety'] ?? '';
     registrationController.text = animal['registration_number'] ?? '';
     gcController.text = animal['grand_champion_number'] ?? '';
+    legDetailsController.text = animal['leg_details'] ?? '';
 
     details = colorDetails(animal);
     dob = animal['dob']?.toString() ?? '';
@@ -75,6 +77,7 @@ class _EditAnimalScreenState extends State<EditAnimalScreen> {
         'sex': sex,
         'registration_number': registrationController.text.trim(),
         'grand_champion_number': gcController.text.trim(),
+        'leg_details': legDetailsController.text,
       });
 
       if (mounted) Navigator.pop(context, true);
@@ -106,6 +109,7 @@ class _EditAnimalScreenState extends State<EditAnimalScreen> {
       varietyController,
       registrationController,
       gcController,
+      legDetailsController,
     ]) {
       controller.dispose();
     }
@@ -226,6 +230,16 @@ class _EditAnimalScreenState extends State<EditAnimalScreen> {
               controller: gcController,
               decoration: const InputDecoration(
                 labelText: 'Grand Champion Number',
+              ),
+            ),
+            TextField(
+              controller: legDetailsController,
+              minLines: 4,
+              maxLines: 8,
+              maxLength: 4000,
+              decoration: const InputDecoration(
+                labelText: 'Legs / show details',
+                hintText: 'Type or paste results, one per line.',
               ),
             ),
 

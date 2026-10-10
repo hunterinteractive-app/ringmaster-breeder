@@ -203,6 +203,17 @@ class _PedigreeEntryScreenState extends State<PedigreeEntryScreen> {
                                           entry.nodes[entry.at(i)]?['dob'],
                                         ].whereType<String>().join(' • '),
                                       ),
+                                    if ((entry.nodes[entry.at(
+                                              i,
+                                            )]?['leg_details'] ??
+                                            '')
+                                        .toString()
+                                        .isNotEmpty)
+                                      SelectableText(
+                                        entry.nodes[entry.at(
+                                          i,
+                                        )]!['leg_details'],
+                                      ),
                                   ],
                                 ),
                               ),
@@ -404,6 +415,7 @@ class _PedigreeEntryScreenState extends State<PedigreeEntryScreen> {
                               'registration_number',
                               'grand_champion_number',
                               'legs',
+                              'leg_details',
                             ])
                               SizedBox(
                                 width: size.maxWidth < 600
@@ -526,6 +538,7 @@ class _PedigreeEntryScreenState extends State<PedigreeEntryScreen> {
       'registration_number': 'Registration number',
       'grand_champion_number': 'GC number',
       'legs': 'Legs',
+      'leg_details': 'Legs / show details',
     };
     void change(String value) {
       final k = key ?? entry.ensure(slot);
@@ -575,8 +588,19 @@ class _PedigreeEntryScreenState extends State<PedigreeEntryScreen> {
       key: ValueKey('$slot:$key:$field'),
       initialValue: value,
       readOnly: readOnly,
-      decoration: InputDecoration(labelText: labels[field]),
-      textInputAction: TextInputAction.next,
+      decoration: InputDecoration(
+        labelText: labels[field],
+        hintText: field == 'leg_details'
+            ? 'Type or paste results, one per line.'
+            : null,
+      ),
+      minLines: field == 'leg_details' ? 4 : 1,
+      maxLines: field == 'leg_details' ? 8 : 1,
+      maxLength: field == 'leg_details' ? 4000 : null,
+      keyboardType: field == 'leg_details' ? TextInputType.multiline : null,
+      textInputAction: field == 'leg_details'
+          ? TextInputAction.newline
+          : TextInputAction.next,
       onChanged: change,
       validator: (v) {
         if (readOnly || v == null || v.trim().isEmpty) return null;

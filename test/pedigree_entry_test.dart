@@ -30,6 +30,8 @@ void main() {
     () {
       final p = PedigreeEntry();
       p.nodes[p.root]!['name'] = 'Subject';
+      p.nodes[p.root]!['leg_details'] =
+          'BOB 05/13/17-LIVINGSTONCORBA\nPlaced: 1/10 05/06/17-TNS';
       final sire = p.ensure(1);
       p.nodes[sire]!['name'] = 'Repeated sire';
       final dam = p.ensure(2);
@@ -41,6 +43,10 @@ void main() {
       expect(p.data()['nodes'].length, 3);
       final restored = PedigreeEntry()..restore(p.data());
       expect(restored.at(1), restored.at(5));
+      expect(
+        restored.nodes[restored.root]!['leg_details'],
+        p.nodes[p.root]!['leg_details'],
+      );
       expect(() => p.link(3, sire), throwsStateError);
       expect(() => p.link(4, sire), throwsStateError);
     },

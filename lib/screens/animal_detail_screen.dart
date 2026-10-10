@@ -176,6 +176,14 @@ class _AnimalDetailScreenState extends State<AnimalDetailScreen> {
                 ),
                 _row("Registration #", animal["registration_number"]),
                 _row("GC #", animal["grand_champion_number"]),
+                _row("Legs", animal["legs"]),
+                if ((animal["leg_details"] ?? "").toString().isNotEmpty)
+                  Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 12),
+                    child: SelectableText(
+                      "Legs / show details\n${animal["leg_details"]}",
+                    ),
+                  ),
                 const SizedBox(height: 24),
 
                 /// PARENTS SECTION
