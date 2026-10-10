@@ -90,7 +90,16 @@ class _AnimalListScreenState extends State<AnimalListScreen> {
               return ListTile(
                 title: Text(animalTitle(animal['name'], animal['tattoo'])),
                 subtitle: Text(
-                  '${animal['species']} • ${sexLabel(animal['species'], animal['sex'])} • ${animal['status']}',
+                  [
+                    animal['species'] == 'cavy' ? 'Cavy' : 'Rabbit',
+                    (animal['breed'] as String?)?.trim().isNotEmpty == true
+                        ? animal['breed']
+                        : 'Breed not recorded',
+                    (animal['variety'] as String?)?.trim().isNotEmpty == true
+                        ? animal['variety']
+                        : 'Variety not recorded',
+                    sexLabel(animal['species'], animal['sex']),
+                  ].join(' • '),
                 ),
                 trailing: const Icon(Icons.arrow_forward_ios),
                 onTap: () async {
