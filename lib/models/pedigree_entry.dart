@@ -4,6 +4,21 @@ class PedigreeEntry {
   String species = 'rabbit';
   String root = 'new0';
   int next = 1;
+  String lastBreed = '', lastVariety = '';
+  Map<String, dynamic> get catalogDefaults => {
+    'breed': lastBreed,
+    'variety': lastVariety,
+  };
+  void rememberCatalog(String key, String field, String value) {
+    if (field == 'breed') {
+      lastBreed = value;
+      lastVariety = '';
+    } else if (field == 'variety') {
+      lastBreed = nodes[key]?['breed']?.toString() ?? '';
+      lastVariety = value;
+    }
+  }
+
   final Map<String, Map<String, dynamic>> nodes = {
     'new0': {'sex': 'Buck'},
   };
@@ -41,10 +56,7 @@ class PedigreeEntry {
       throw StateError('Edit this existing animal from its own record.');
     }
     final key = 'new${next++}';
-    nodes[key] = {
-      'sex': expectedSex(slot),
-      'breed': nodes[root]?['breed'] ?? '',
-    };
+    nodes[key] = {'sex': expectedSex(slot), ...catalogDefaults};
     nodes[parent]![slot.isOdd ? 'sire' : 'dam'] = key;
     return key;
   }
@@ -99,13 +111,22 @@ class PedigreeEntry {
     }
 
     visit(root);
-    return {'species': species, 'root': root, 'next': next, 'nodes': used};
+    return {
+      'species': species,
+      'root': root,
+      'next': next,
+      'nodes': used,
+      'last_breed': lastBreed,
+      'last_variety': lastVariety,
+    };
   }
 
   void restore(Map<String, dynamic> data) {
     species = data['species'];
     root = data['root'];
     next = data['next'] ?? 100;
+    lastBreed = data['last_breed'] ?? '';
+    lastVariety = data['last_variety'] ?? '';
     nodes.clear();
     (data['nodes'] as Map).forEach(
       (k, v) => nodes[k] = Map<String, dynamic>.from(v),

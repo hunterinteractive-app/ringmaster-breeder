@@ -5,6 +5,27 @@ import 'package:ringmaster_breeder/screens/pedigree_entry_screen.dart';
 
 void main() {
   test(
+    'New ancestors inherit last catalog choices without overwriting existing nodes',
+    () {
+      final p = PedigreeEntry();
+      p.nodes[p.root]!['breed'] = 'Mini Lop';
+      p.rememberCatalog(p.root, 'breed', 'Mini Lop');
+      p.rememberCatalog(p.root, 'variety', 'Chinchilla');
+      final sire = p.ensure(1);
+      expect(p.nodes[sire]!['breed'], 'Mini Lop');
+      expect(p.nodes[sire]!['variety'], 'Chinchilla');
+      p.nodes[sire]!['variety'] = 'Black';
+      p.rememberCatalog(sire, 'variety', 'Black');
+      expect(p.nodes[p.ensure(3)]!['variety'], 'Black');
+      final restored = PedigreeEntry()..restore(p.data());
+      expect(restored.nodes[restored.ensure(2)]!['variety'], 'Black');
+      restored.nodes[sire]!['breed'] = 'Mini Rex';
+      restored.rememberCatalog(sire, 'breed', 'Mini Rex');
+      expect(restored.nodes[restored.ensure(4)]!['variety'], '');
+      expect(restored.nodes[restored.ensure(3)]!['variety'], 'Black');
+    },
+  );
+  test(
     'Repeated ancestors share one identity through draft save and restore',
     () {
       final p = PedigreeEntry();

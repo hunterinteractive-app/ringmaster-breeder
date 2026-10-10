@@ -316,6 +316,13 @@ class _PedigreeEntryScreenState extends State<PedigreeEntryScreen> {
                             ? null
                             : (v) => setState(() {
                                 entry.species = v!;
+                                entry.lastBreed = '';
+                                entry.lastVariety = '';
+                                entry.nodes[entry.root]!.remove('breed');
+                                entry.nodes[entry.root]!.remove('variety');
+                                entry.nodes[entry.root]!.remove(
+                                  'color_details',
+                                );
                                 for (final n in entry.nodes.values.where(
                                   (n) => n['existing_id'] == null,
                                 )) {
@@ -412,8 +419,12 @@ class _PedigreeEntryScreenState extends State<PedigreeEntryScreen> {
                       key: ValueKey(
                         'details:$slot:$key:${node?['breed']}:${node?['variety']}',
                       ),
-                      breed: node?['breed'] ?? '',
-                      variety: node?['variety'] ?? '',
+                      breed: node == null
+                          ? entry.lastBreed
+                          : node['breed'] ?? '',
+                      variety: node == null
+                          ? entry.lastVariety
+                          : node['variety'] ?? '',
                       value: colorDetails(node ?? {}),
                       readOnly: readOnly,
                       onChanged: (v) => setState(() {
@@ -503,6 +514,7 @@ class _PedigreeEntryScreenState extends State<PedigreeEntryScreen> {
     Map<String, dynamic>? node,
     bool readOnly,
   ) {
+    node ??= entry.catalogDefaults;
     const labels = {
       'name': 'Name',
       'tattoo': 'Ear number / tag',
@@ -518,17 +530,18 @@ class _PedigreeEntryScreenState extends State<PedigreeEntryScreen> {
     void change(String value) {
       final k = key ?? entry.ensure(slot);
       entry.nodes[k]![field] = value;
+      entry.rememberCatalog(k, field, value);
       dirty = true;
     }
 
     if ((field == 'breed' || field == 'variety') && !readOnly) {
       return CatalogField(
         key: ValueKey(
-          '$slot:$key:$field:${entry.species}:${field == 'variety' ? (node?['breed']) : ''}',
+          '$slot:$key:$field:${entry.species}:${field == 'variety' ? (node['breed']) : ''}',
         ),
         species: entry.species,
-        breed: field == 'variety' ? (node?['breed']?.toString() ?? '') : null,
-        value: node?[field]?.toString() ?? '',
+        breed: field == 'variety' ? (node['breed']?.toString() ?? '') : null,
+        value: node[field]?.toString() ?? '',
         onChanged: (v) {
           change(v);
           setState(() {
@@ -545,19 +558,19 @@ class _PedigreeEntryScreenState extends State<PedigreeEntryScreen> {
       return SexField(
         key: ValueKey('$slot:$key:sex:${entry.species}'),
         species: entry.species,
-        value: node?['sex'] ?? entry.expectedSex(slot),
+        value: node['sex'] ?? entry.expectedSex(slot),
         onChanged: slot == 0 && !readOnly ? change : null,
       );
     }
     if (field == 'dob') {
       return DobField(
         key: ValueKey('$slot:$key:dob'),
-        value: node?['dob']?.toString() ?? '',
+        value: node['dob']?.toString() ?? '',
         readOnly: readOnly,
         onChanged: change,
       );
     }
-    final value = node?[field]?.toString() ?? '';
+    final value = node[field]?.toString() ?? '';
     return TextFormField(
       key: ValueKey('$slot:$key:$field'),
       initialValue: value,
