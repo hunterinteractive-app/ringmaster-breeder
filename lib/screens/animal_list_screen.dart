@@ -1,3 +1,4 @@
+import '../widgets/bulk_records_dialog.dart';
 import '../utils/color_details.dart';
 import '../widgets/ringmaster_page_shell.dart';
 import 'package:flutter/material.dart';
@@ -103,6 +104,27 @@ class _AnimalBrowserState extends State<AnimalBrowser> {
   void dispose() {
     _search.dispose();
     super.dispose();
+  }
+
+  Future<void> _bulk(bool weights) async {
+    final count = await showDialog<int>(
+      context: context,
+      barrierDismissible: false,
+      builder: (_) => BulkRecordsDialog(
+        animals: widget.animals.where(_matches).toList(),
+        weights: weights,
+      ),
+    );
+    if (count != null && mounted) {
+      widget.onRefresh();
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            'Added $count ${weights ? 'weight' : 'health'} records.',
+          ),
+        ),
+      );
+    }
   }
 
   bool _matches(Map<String, dynamic> a) {
@@ -251,6 +273,7 @@ class _AnimalBrowserState extends State<AnimalBrowser> {
                   onSelected: (v) {
                     if (v == 'add') widget.onAdd();
                     if (v == 'refresh') widget.onRefresh();
+                    if (v == 'weights' || v == 'health') _bulk(v == 'weights');
                   },
                   itemBuilder: (_) => const [
                     PopupMenuItem(
@@ -258,6 +281,20 @@ class _AnimalBrowserState extends State<AnimalBrowser> {
                       child: ListTile(
                         leading: Icon(Icons.add),
                         title: Text('Add animal'),
+                      ),
+                    ),
+                    PopupMenuItem(
+                      value: 'weights',
+                      child: ListTile(
+                        leading: Icon(Icons.monitor_weight_outlined),
+                        title: Text('Bulk add weights'),
+                      ),
+                    ),
+                    PopupMenuItem(
+                      value: 'health',
+                      child: ListTile(
+                        leading: Icon(Icons.medical_services_outlined),
+                        title: Text('Bulk add health / vaccine records'),
                       ),
                     ),
                     PopupMenuItem(
