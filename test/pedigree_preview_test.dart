@@ -4,6 +4,44 @@ import 'package:ringmaster_breeder/models/pedigree_entry.dart';
 import 'package:ringmaster_breeder/widgets/pedigree_preview.dart';
 
 void main() {
+  testWidgets(
+    'Saved tree shares layout, repeated markers and animal navigation',
+    (tester) async {
+      String? opened;
+      final tree = PedigreePreview.snapshot(
+        pedigree: {
+          'animal': {'id': 'root', 'tattoo': 'HH77', 'breed': 'Tan'},
+          'sire': {'id': 'sire', 'tattoo': 'HH32'},
+          'dam': {'id': 'dam', 'tattoo': 'HH9'},
+          'sire_sire': {
+            'id': 'viper',
+            'name': "Daly's VIPER",
+            'tattoo': 'VIP',
+            'dob': '2015-07-15',
+            'leg_details': 'BOB 02/11/17-HHR',
+          },
+          'dam_sire': {'id': 'viper', 'name': "Daly's VIPER", 'tattoo': 'VIP'},
+        },
+        onAnimalTap: (id) => opened = id,
+      );
+      await tester.pumpWidget(MaterialApp(home: Scaffold(body: tree)));
+      await tester.pumpAndSettle();
+      expect(find.text('Pedigree Tree'), findsOneWidget);
+      expect(find.byTooltip('Close preview'), findsNothing);
+      expect(find.textContaining('Repeated ancestor'), findsNWidgets(2));
+      expect(find.textContaining('07/15/2015'), findsOneWidget);
+      expect(find.text('BOB 02/11/17-HHR'), findsOneWidget);
+      await tester.tap(find.byKey(const ValueKey('pedigree-slot-3')));
+      expect(opened, 'viper');
+      expect(
+        tester.getCenter(find.byKey(const ValueKey('pedigree-slot-0'))).dx,
+        lessThan(
+          tester.getCenter(find.byKey(const ValueKey('pedigree-slot-1'))).dx,
+        ),
+      );
+      expect(tester.takeException(), isNull);
+    },
+  );
   testWidgets('Traditional preview aligns ancestors and supports zoom', (
     tester,
   ) async {
