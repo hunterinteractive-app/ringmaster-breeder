@@ -1,3 +1,5 @@
+import 'screens/legal/legal_gate.dart';
+import 'services/legal_service.dart';
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -35,7 +37,16 @@ class MyApp extends StatelessWidget {
       builder: (context, snapshot) =>
           Supabase.instance.client.auth.currentSession == null
           ? child ?? const SizedBox.shrink()
-          : AppShell(child: child ?? const SizedBox.shrink()),
+          : AppShell(
+              child: LegalGate(
+                key: ValueKey(Supabase.instance.client.auth.currentUser!.id),
+                gateway: LegalService(
+                  Supabase.instance.client,
+                  Supabase.instance.client.auth.currentUser!.id,
+                ),
+                child: child ?? const SizedBox.shrink(),
+              ),
+            ),
     ),
     home: const AuthRoot(),
     routes: {

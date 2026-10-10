@@ -1,3 +1,4 @@
+import '../../config/legal_config.dart';
 import 'package:flutter/material.dart';
 import '../../widgets/ringmaster_page_shell.dart';
 
@@ -20,7 +21,7 @@ class LegalScreen extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    'Effective date: October 9, 2026 • Version 2026-10',
+                    'Effective date: ${LegalConfig.effectiveDate} • Version ${privacy ? LegalConfig.privacyVersion : LegalConfig.termsVersion}',
                     style: Theme.of(context).textTheme.bodySmall,
                   ),
                   const SizedBox(height: 16),
