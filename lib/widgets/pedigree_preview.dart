@@ -67,6 +67,11 @@ class _PedigreePreviewState extends State<PedigreePreview> {
     void fit(Size viewport) {
       final scale = math.min(viewport.width / width, viewport.height / height);
       transform.value = Matrix4.identity()
+        ..setTranslationRaw(
+          (viewport.width - width * scale) / 2,
+          (viewport.height - height * scale) / 2,
+          0,
+        )
         ..scaleByDouble(scale, scale, scale, 1);
     }
 
