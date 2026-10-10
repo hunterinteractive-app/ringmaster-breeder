@@ -1,4 +1,6 @@
 import '../widgets/catalog_field.dart';
+import '../widgets/color_details_fields.dart';
+import '../utils/color_details.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -97,6 +99,17 @@ class _PedigreeEntryScreenState extends State<PedigreeEntryScreen> {
     });
     try {
       final data = entry.data();
+      if (finish) {
+        for (final node in (data['nodes'] as Map).values) {
+          if (node['existing_id'] != null) continue;
+          final message = codDetailsError(
+            node['breed'] ?? '',
+            node['variety'] ?? '',
+            colorDetails(Map<String, dynamic>.from(node)),
+          );
+          if (message != null) throw StateError(message);
+        }
+      }
       if (draftId == null) {
         final row = await db
             .from('pedigree_drafts')
@@ -126,6 +139,8 @@ class _PedigreeEntryScreenState extends State<PedigreeEntryScreen> {
           ),
         );
       }
+    } on StateError catch (e) {
+      if (mounted) setState(() => error = e.message.toString());
     } on PostgrestException catch (e) {
       if (mounted) setState(() => error = e.message);
     } catch (_) {
@@ -181,7 +196,9 @@ class _PedigreeEntryScreenState extends State<PedigreeEntryScreen> {
                                     if (entry.at(i) != null)
                                       Text(
                                         [
-                                          entry.nodes[entry.at(i)]?['variety'],
+                                          varietyLabel(
+                                            entry.nodes[entry.at(i)] ?? {},
+                                          ),
                                           entry.nodes[entry.at(i)]?['dob'],
                                         ].whereType<String>().join(' • '),
                                       ),
@@ -390,6 +407,20 @@ class _PedigreeEntryScreenState extends State<PedigreeEntryScreen> {
                         ),
                       ),
                     ),
+                    ColorDetailsFields(
+                      key: ValueKey(
+                        'details:$slot:$key:${node?['breed']}:${node?['variety']}',
+                      ),
+                      breed: node?['breed'] ?? '',
+                      variety: node?['variety'] ?? '',
+                      value: colorDetails(node ?? {}),
+                      readOnly: readOnly,
+                      onChanged: (v) => setState(() {
+                        final k = key ?? entry.ensure(slot);
+                        entry.nodes[k]!['color_details'] = v;
+                        dirty = true;
+                      }),
+                    ),
                     if (slot > 0 && editable && node != null)
                       TextButton(
                         onPressed: () => setState(() {
@@ -499,7 +530,13 @@ class _PedigreeEntryScreenState extends State<PedigreeEntryScreen> {
         value: node?[field]?.toString() ?? '',
         onChanged: (v) {
           change(v);
-          if (field == 'breed') setState(() {});
+          setState(() {
+            final k = key ?? entry.at(slot);
+            if (k != null) {
+              entry.nodes[k]!.remove('color_details');
+              if (field == 'breed') entry.nodes[k]!.remove('variety');
+            }
+          });
         },
       );
     }

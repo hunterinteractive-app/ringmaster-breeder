@@ -1,3 +1,4 @@
+import '../utils/color_details.dart';
 import '../widgets/ringmaster_page_shell.dart';
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -167,7 +168,7 @@ class _AnimalDetailScreenState extends State<AnimalDetailScreen> {
                 _row("Tattoo", animal["tattoo"]),
                 _row("Species", animal["species"]),
                 _row("Breed", animal["breed"]),
-                _row("Variety", animal["variety"]),
+                _row("Variety", varietyLabel(animal)),
                 _row("Sex", sexLabel(animal["species"], animal["sex"])),
                 _row(
                   "Current Weight",

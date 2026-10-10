@@ -1,3 +1,4 @@
+import '../utils/color_details.dart';
 import '../widgets/ringmaster_page_shell.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
@@ -347,7 +348,7 @@ class _AnimalBrowserState extends State<AnimalBrowser> {
                               [
                                 a['species'] == 'cavy' ? 'Cavy' : 'Rabbit',
                                 '${a['breed'] ?? 'Breed not recorded'}${a['breed_unrecognized'] == true ? ' (Unrecognized)' : ''}',
-                                '${a['variety'] ?? 'Variety not recorded'}${a['variety_unrecognized'] == true ? ' (Unrecognized)' : ''}',
+                                '${varietyLabel(a).isEmpty ? 'Variety not recorded' : varietyLabel(a)}${a['variety_unrecognized'] == true ? ' (Unrecognized)' : ''}',
                                 sexLabel(a['species'], a['sex']),
                                 'DOB: ${_displayDob(a['dob'])}',
                               ].join(' • '),
@@ -505,7 +506,7 @@ class AnimalRecordCard extends StatelessWidget {
               ),
               detail(
                 'Variety',
-                '${recorded('variety')}${animal['variety_unrecognized'] == true ? ' (Unrecognized)' : ''}',
+                '${varietyLabel(animal).isEmpty ? 'Not recorded' : varietyLabel(animal)}${animal['variety_unrecognized'] == true ? ' (Unrecognized)' : ''}',
               ),
               detail('DOB', _displayDob(animal['dob'])),
               detail(

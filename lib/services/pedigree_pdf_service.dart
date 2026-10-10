@@ -1,3 +1,4 @@
+import '../utils/color_details.dart';
 // ignore_for_file: prefer_const_constructors
 
 import 'dart:typed_data';
@@ -196,41 +197,36 @@ class PedigreePdfService {
     final bg = male ? PdfColors.blue100 : PdfColors.pink100;
     String v(String k) => a == null ? '' : (a[k]?.toString() ?? '');
 
+    pw.Widget line(String text) => pw.Expanded(
+      child: pw.Align(
+        alignment: pw.Alignment.centerLeft,
+        child: pw.FittedBox(
+          fit: pw.BoxFit.scaleDown,
+          alignment: pw.Alignment.centerLeft,
+          child: pw.Text(
+            text,
+            style: pw.TextStyle(font: fontRegular, fontSize: 7),
+          ),
+        ),
+      ),
+    );
     return pw.Container(
       height: boxH,
       padding: pw.EdgeInsets.all(4),
       decoration: pw.BoxDecoration(color: bg, border: pw.Border.all(width: 1)),
-      child: pw.Stack(
+      child: pw.Column(
+        crossAxisAlignment: pw.CrossAxisAlignment.stretch,
         children: [
-          _line(0, v('name'), bold: true),
-          _line(1, 'Ear #: ${v('tattoo')}'),
-          _line(2, 'Breed: ${v('breed')}'),
-          _rightLine(2, 'Wt: ${v('weight')}  Legs: ${v('legs')}'),
-          _line(3, 'Variety: ${v('variety')}'),
-          _rightLine(3, 'Reg: ${v('registration_number')}'),
-          _line(4, 'DOB: ${v('dob')}'),
-          _rightLine(4, 'GC: ${v('grand_champion_number')}'),
+          line(v('name')),
+          line('Ear #: ${v('tattoo')}'),
+          line('Breed: ${v('breed')} • Wt: ${v('weight')}'),
+          line('Variety: ${a == null ? '' : varietyLabel(a)}'),
+          line(
+            'Reg: ${v('registration_number')} • GC: ${v('grand_champion_number')}',
+          ),
+          line('DOB: ${v('dob')} • Legs: ${v('legs')}'),
         ],
       ),
-    );
-  }
-
-  static pw.Widget _line(int i, String text, {bool bold = false}) {
-    return pw.Positioned(
-      top: i * lineH,
-      left: 0,
-      child: pw.Text(
-        text,
-        style: pw.TextStyle(font: bold ? fontItalic : fontRegular, fontSize: 8),
-      ),
-    );
-  }
-
-  static pw.Widget _rightLine(int i, String text) {
-    return pw.Positioned(
-      top: i * lineH,
-      right: 0,
-      child: pw.Text(text, style: pw.TextStyle(fontSize: 8)),
     );
   }
 

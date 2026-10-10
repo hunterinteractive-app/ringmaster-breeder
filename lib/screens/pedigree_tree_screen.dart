@@ -1,3 +1,4 @@
+import '../utils/color_details.dart';
 import '../widgets/ringmaster_page_shell.dart';
 import 'package:flutter/material.dart';
 import '../services/pedigree_service.dart';
@@ -72,6 +73,8 @@ class _PedigreeTreeScreenState extends State<PedigreeTreeScreen> {
                                     [
                                           animal?['tattoo'],
                                           animal?['breed'],
+                                          if (animal != null)
+                                            varietyLabel(animal),
                                           if (repeated) 'Repeated ancestor',
                                         ]
                                         .whereType<String>()

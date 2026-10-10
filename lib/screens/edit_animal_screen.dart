@@ -1,6 +1,8 @@
 import '../widgets/ringmaster_page_shell.dart';
 import 'package:flutter/material.dart';
 import '../services/animal_service.dart';
+import '../widgets/color_details_fields.dart';
+import '../utils/color_details.dart';
 
 class EditAnimalScreen extends StatefulWidget {
   final String animalId;
@@ -19,6 +21,7 @@ class _EditAnimalScreenState extends State<EditAnimalScreen> {
   final registrationController = TextEditingController();
   final gcController = TextEditingController();
 
+  Map<String, String> details = {};
   String species = '';
   String sex = 'Buck';
   String status = 'active';
@@ -38,6 +41,7 @@ class _EditAnimalScreenState extends State<EditAnimalScreen> {
     registrationController.text = animal['registration_number'] ?? '';
     gcController.text = animal['grand_champion_number'] ?? '';
 
+    details = colorDetails(animal);
     species = animal['species'].toString().toLowerCase(); // rabbit / cavy
     sex = animal['sex']; // Buck/Doe or Boar/Sow
     status = animal['status'];
@@ -50,8 +54,15 @@ class _EditAnimalScreenState extends State<EditAnimalScreen> {
     setState(() => isSaving = true);
 
     try {
+      final detailError = codDetailsError(
+        breedController.text,
+        varietyController.text,
+        details,
+      );
+      if (detailError != null) throw Exception(detailError);
       await AnimalService.update(widget.animalId, {
         'name': nameController.text.trim(),
+        'color_details': details,
         'status': status,
         'tattoo': tattooController.text.trim(),
         'sex': sex,
@@ -185,6 +196,13 @@ class _EditAnimalScreenState extends State<EditAnimalScreen> {
             ),
 
             const SizedBox(height: 12),
+
+            ColorDetailsFields(
+              breed: breedController.text,
+              variety: varietyController.text,
+              value: details,
+              onChanged: (v) => setState(() => details = v),
+            ),
 
             // SEX
             DropdownButtonFormField<String>(

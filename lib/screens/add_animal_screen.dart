@@ -3,6 +3,8 @@ import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../widgets/catalog_field.dart';
+import '../widgets/color_details_fields.dart';
+import '../utils/color_details.dart';
 import 'pedigree_entry_screen.dart';
 
 class AddAnimalScreen extends StatefulWidget {
@@ -31,6 +33,7 @@ class _AddAnimalScreenState extends State<AddAnimalScreen> {
   final weightController = TextEditingController();
 
   DateTime? dob;
+  Map<String, String> details = {};
 
   String species = 'rabbit';
   String sex = 'Buck';
@@ -82,6 +85,12 @@ class _AddAnimalScreenState extends State<AddAnimalScreen> {
     setState(() => isSaving = true);
 
     try {
+      final detailError = codDetailsError(
+        breedController.text,
+        varietyController.text,
+        details,
+      );
+      if (detailError != null) throw Exception(detailError);
       double? parsedWeight;
       if (weightController.text.trim().isNotEmpty) {
         parsedWeight = double.tryParse(weightController.text.trim());
@@ -93,7 +102,7 @@ class _AddAnimalScreenState extends State<AddAnimalScreen> {
       }
 
       final response = await supabase.rpc(
-        'create_animal_with_weight',
+        'create_animal_with_color_details',
         params: {
           'p_ring_id': widget.ringId,
           'p_name': nameController.text.trim(),
@@ -101,6 +110,7 @@ class _AddAnimalScreenState extends State<AddAnimalScreen> {
           'p_species': species,
           'p_breed': breedController.text.trim(),
           'p_variety': varietyController.text.trim(),
+          'p_color_details': details,
           'p_sex': sex,
           'p_status': status,
           'p_dob': dob?.toIso8601String(),
@@ -220,6 +230,7 @@ class _AddAnimalScreenState extends State<AddAnimalScreen> {
                       : (male ? 'Boar' : 'Sow');
                   breedController.clear();
                   varietyController.clear();
+                  details = {};
                   sireId = null;
                   damId = null;
                 });
@@ -236,6 +247,7 @@ class _AddAnimalScreenState extends State<AddAnimalScreen> {
               onChanged: (v) => setState(() {
                 breedController.text = v;
                 varietyController.clear();
+                details = {};
               }),
             ),
             const SizedBox(height: 12),
@@ -244,9 +256,22 @@ class _AddAnimalScreenState extends State<AddAnimalScreen> {
               species: species,
               breed: breedController.text,
               value: varietyController.text,
-              onChanged: (v) => varietyController.text = v,
+              onChanged: (v) => setState(() {
+                varietyController.text = v;
+                details = {};
+              }),
             ),
             const SizedBox(height: 12),
+
+            ColorDetailsFields(
+              key: ValueKey(
+                'details:$species:${breedController.text}:${varietyController.text}',
+              ),
+              breed: breedController.text,
+              variety: varietyController.text,
+              value: details,
+              onChanged: (v) => setState(() => details = v),
+            ),
 
             /// SEX
             DropdownButtonFormField<String>(
