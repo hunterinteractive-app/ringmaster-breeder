@@ -26,6 +26,8 @@ insert into public.animals(id,ring_id,name,species,sex) values
 insert into public.animal_weights(animal_id,weight) values('bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb',4.25);
 insert into public.animal_health_records(animal_id,title,record_type,administered_date) values('bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb','Fixture vaccine','vaccine',current_date);
 insert into storage.objects(bucket_id,name) values('health_attachments','bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb/test.pdf');
+insert into storage.objects(bucket_id,name) values('animal_photos','bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb/photo.png');
+update public.animals set photo_path='bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb/photo.png' where id='bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb';
 do $$ declare v_snapshot jsonb; begin
  v_snapshot:=public.breeder_pedigree_snapshot('bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb');
  if v_snapshot->'animal'->>'name'<>'Fixture rabbit' or (v_snapshot->'animal'->>'weight')::numeric<>4.25 then raise exception 'Pedigree snapshot failed'; end if;

@@ -4,6 +4,7 @@ import 'package:intl/intl.dart';
 import '../services/animal_service.dart';
 import '../utils/animal_labels.dart';
 import '../theme/app_theme.dart';
+import '../widgets/animal_avatar.dart';
 
 class AnimalListScreen extends StatefulWidget {
   final String ringId;
@@ -444,14 +445,9 @@ class AnimalRecordCard extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               Center(
-                child: CircleAvatar(
-                  radius: 34,
-                  backgroundColor: BreederColors.primary,
-                  child: const Icon(
-                    Icons.pets_outlined,
-                    color: Colors.white,
-                    size: 32,
-                  ),
+                child: AnimalAvatar(
+                  species: animal['species'] ?? 'rabbit',
+                  photoUrl: animal['photo_url'],
                 ),
               ),
               const SizedBox(height: 12),

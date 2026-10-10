@@ -11,6 +11,7 @@ import 'dart:typed_data';
 import 'health_records_screen.dart';
 import '../services/family_service.dart';
 import '../services/animal_service.dart';
+import '../widgets/animal_avatar.dart';
 
 class AnimalDetailScreen extends StatefulWidget {
   final String animalId;
@@ -23,6 +24,25 @@ class AnimalDetailScreen extends StatefulWidget {
 
 class _AnimalDetailScreenState extends State<AnimalDetailScreen> {
   final supabase = Supabase.instance.client;
+  bool _uploadingPhoto = false;
+  Future<void> _uploadPhoto() async {
+    setState(() => _uploadingPhoto = true);
+    try {
+      await AnimalService.uploadPhoto(widget.animalId);
+    } catch (_) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text(
+              'Unable to upload photo. Choose a JPG, PNG or WebP under 5 MB and try again.',
+            ),
+          ),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _uploadingPhoto = false);
+    }
+  }
 
   /// --- Helpers ---
   bool isLocked(String status) => animalIsLocked(status);
@@ -99,6 +119,29 @@ class _AnimalDetailScreenState extends State<AnimalDetailScreen> {
             padding: const EdgeInsets.all(16),
             child: ListView(
               children: [
+                Center(
+                  child: AnimalAvatar(
+                    species: animal['species'],
+                    photoUrl: animal['photo_url'],
+                    size: 112,
+                  ),
+                ),
+                if (!locked)
+                  Center(
+                    child: TextButton.icon(
+                      onPressed: _uploadingPhoto ? null : _uploadPhoto,
+                      icon: const Icon(Icons.add_photo_alternate_outlined),
+                      label: Text(
+                        _uploadingPhoto
+                            ? 'Uploading…'
+                            : animal['photo_path'] == null
+                            ? 'Upload photo'
+                            : 'Change photo',
+                      ),
+                    ),
+                  ),
+                const SizedBox(height: 16),
+
                 /// NAME
                 Text(
                   animalTitle(animal["name"], animal["tattoo"]),
