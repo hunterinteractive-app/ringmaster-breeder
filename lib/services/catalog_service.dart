@@ -30,8 +30,26 @@ class CatalogService {
 
   static String normalize(String value) =>
       value.trim().replaceAll(RegExp(r'\s+'), ' ').toLowerCase();
-  static String identity(String value) =>
-      normalize(value).replaceFirst(RegExp(r'\s*\(cod\)$'), '').trim();
+  static String identity(String value) {
+    var key = normalize(value);
+    const accents = 'àáâãäåèéêëìíîïòóôõöùúûüýÿçñ';
+    const plain = 'aaaaaaeeeeiiiiooooouuuuyycn';
+    for (var i = 0; i < accents.length; i++) {
+      key = key.replaceAll(accents[i], plain[i]);
+    }
+    key = key
+        .replaceAll(RegExp(r'[\u0300-\u036f]'), '')
+        .replaceAll(RegExp('[’‘]'), "'")
+        .replaceAll(RegExp('[‐‑–—]'), '-')
+        .replaceFirst(RegExp(r'\s*\(\s*cod\s*\)\s*$'), '')
+        .trim();
+    return switch (key) {
+      "champagne d'argente" => "champagne d'argent",
+      'peruvian stain' => 'peruvian satin',
+      _ => key,
+    };
+  }
+
   static bool isCod(Map<String, dynamic> row) =>
       row['is_recognized'] == true &&
       RegExp(
@@ -60,7 +78,7 @@ class CatalogService {
       };
     }
     return grouped.values.toList()
-      ..sort((a, b) => normalize(a['name']).compareTo(normalize(b['name'])));
+      ..sort((a, b) => identity(a['name']).compareTo(identity(b['name'])));
   }
 
   static Future<List<Map<String, dynamic>>> options(

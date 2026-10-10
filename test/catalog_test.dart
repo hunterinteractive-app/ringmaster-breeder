@@ -2,6 +2,61 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:ringmaster_breeder/services/catalog_service.dart';
 
 void main() {
+  test(
+    'Legacy spelling, accents and COD aliases converge without fuzzy merges',
+    () {
+      for (final pair in [
+        ['Argente St. Hubert', 'Argenté St. Hubert (COD)'],
+        ["Champagne d’Argente", "Champagne d'Argent"],
+        ['Peruvian Stain', 'Peruvian Satin'],
+        ['Argente\u0301 St. Hubert', 'Argenté St. Hubert (COD)'],
+      ]) {
+        expect(
+          CatalogService.identity(pair[0]),
+          CatalogService.identity(pair[1]),
+        );
+      }
+      expect(
+        CatalogService.identity('Crested'),
+        isNot(CatalogService.identity('White Crested')),
+      );
+      expect(
+        CatalogService.identity('Tan'),
+        isNot(CatalogService.identity('Satin')),
+      );
+    },
+  );
+  test(
+    'COD aliases retain all varieties and canonical label regardless of input order',
+    () {
+      final rows = <Map<String, dynamic>>[
+        {
+          'name': 'Argente St. Hubert',
+          'is_recognized': false,
+          'varieties': [
+            {'name': 'Blue', 'is_recognized': false},
+          ],
+        },
+        {
+          'name': 'Argenté St. Hubert (COD)',
+          'is_recognized': true,
+          'varieties': [
+            {'name': 'Black', 'is_recognized': true},
+          ],
+        },
+      ];
+      for (final list in [rows, rows.reversed.toList()]) {
+        final result = CatalogService.sortedChoices(list);
+        expect(result.length, 1);
+        expect(result.single['name'], 'Argenté St. Hubert (COD)');
+        expect(
+          (result.single['varieties'] as List).map((r) => r['name']).toList(),
+          ['Black', 'Blue'],
+        );
+      }
+    },
+  );
+
   test('COD alias uses Show spelling and choices sort A to Z', () {
     final choices = CatalogService.sortedChoices([
       {'name': 'Velveteen Lop', 'is_recognized': false},
