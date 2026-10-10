@@ -1,3 +1,5 @@
+import 'package:flutter/material.dart';
+import 'package:ringmaster_breeder/widgets/color_details_fields.dart';
 import 'package:ringmaster_breeder/services/pedigree_pdf_service.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:ringmaster_breeder/utils/color_details.dart';
@@ -5,6 +7,36 @@ import 'package:ringmaster_breeder/models/pedigree_entry.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
+  testWidgets(
+    'Additional details are visible without expanding for recognized and COD varieties',
+    (tester) async {
+      for (final variety in ['Chinchilla', 'Fox Group (COD)']) {
+        await tester.pumpWidget(
+          MaterialApp(
+            home: Scaffold(
+              body: SingleChildScrollView(
+                child: ColorDetailsFields(
+                  breed: 'Mini Lop',
+                  variety: variety,
+                  value: const {},
+                  onChanged: (_) {},
+                ),
+              ),
+            ),
+          ),
+        );
+        expect(find.text('Additional color details'), findsOneWidget);
+        expect(find.byType(ExpansionTile), findsNothing);
+        expect(find.byType(TextFormField), findsNWidgets(5));
+        expect(
+          find.text(
+            variety.contains('COD') ? 'Color (required)' : 'Color (optional)',
+          ),
+          findsOneWidget,
+        );
+      }
+    },
+  );
   test('PDF lays out a full pedigree with composed color labels', () async {
     final pedigree = <String, dynamic>{
       for (final slot in [

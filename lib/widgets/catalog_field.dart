@@ -61,10 +61,7 @@ class _CatalogFieldState extends State<CatalogField> {
 
   @override
   Widget build(BuildContext context) {
-    final exact = rows.where(
-      (r) =>
-          CatalogService.identity(r['name']) == CatalogService.identity(value),
-    );
+    final exact = rows.where((r) => CatalogService.matches(r, value));
     final custom =
         value.trim().isNotEmpty &&
         (exact.isEmpty || exact.first['is_recognized'] != true);
@@ -98,6 +95,9 @@ class _CatalogFieldState extends State<CatalogField> {
               ? 'COD • Listed as COD in RingMaster Show.'
               : custom
               ? 'Unrecognized • shared custom entry. Check suggestions for spelling.'
+              : exact.isNotEmpty &&
+                    CatalogService.choiceNote(exact.first) != null
+              ? '${CatalogService.choiceNote(exact.first)}. Add color details below when needed.'
               : 'Choose a name or type a shared custom entry.',
         ),
       ),
@@ -174,11 +174,9 @@ class _CatalogOptionsState extends State<_CatalogOptions> {
           selected: index == highlighted,
           selectedTileColor: Theme.of(context).colorScheme.secondaryContainer,
           title: Text(name),
-          subtitle: row['is_recognized'] != true
-              ? const Text('Unrecognized')
-              : CatalogService.isCod(row)
-              ? const Text('COD')
-              : null,
+          subtitle: CatalogService.choiceNote(row) == null
+              ? null
+              : Text(CatalogService.choiceNote(row)!),
           onTap: () => widget.select(name),
         );
       },

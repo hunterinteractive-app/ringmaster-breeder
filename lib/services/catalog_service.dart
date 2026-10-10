@@ -50,6 +50,21 @@ class CatalogService {
     };
   }
 
+  static bool matches(Map<String, dynamic> row, String value) => [
+    row['name'],
+    ...List<String>.from(row['aliases'] ?? []),
+  ].any((name) => identity(name.toString()) == identity(value));
+
+  static String? choiceNote(Map<String, dynamic> row) {
+    if (isCod(row)) return 'COD';
+    if (row['catalog_kind'] == 'color_group') {
+      return 'Color group • choose details below';
+    }
+    if (row['is_recognized'] != true) return 'Unrecognized';
+    if (row['standard_reference'] != null) return 'Recognized • ARBA Standard';
+    return null;
+  }
+
   static bool isCod(Map<String, dynamic> row) =>
       row['is_recognized'] == true &&
       RegExp(
@@ -60,7 +75,16 @@ class CatalogService {
     Iterable<Map<String, dynamic>> rows,
   ) {
     final grouped = <String, Map<String, dynamic>>{};
-    for (final row in rows) {
+    for (final raw in rows) {
+      if (raw['catalog_kind'] == 'legacy_ambiguous') continue;
+      final row = <String, dynamic>{
+        ...raw,
+        'name': raw['standard_name'] ?? raw['name'],
+        'aliases': <String>{
+          raw['name'].toString(),
+          ...List<String>.from(raw['aliases'] ?? []),
+        }.toList(),
+      };
       final key = identity(row['name']);
       final previous = grouped[key];
       if (previous == null) {
@@ -70,6 +94,10 @@ class CatalogService {
       final preferred = row['is_recognized'] == true ? row : previous;
       grouped[key] = {
         ...preferred,
+        'aliases': <String>{
+          ...List<String>.from(previous['aliases'] ?? []),
+          ...List<String>.from(row['aliases'] ?? []),
+        }.toList(),
         if (previous.containsKey('varieties') || row.containsKey('varieties'))
           'varieties': sortedChoices([
             ...List<Map<String, dynamic>>.from(previous['varieties'] ?? []),
@@ -94,7 +122,7 @@ class CatalogService {
           await Supabase.instance.client
               .from('breeds')
               .select(
-                'name,species,is_recognized,varieties(name,is_recognized)',
+                'name,species,is_recognized,varieties(name,is_recognized,standard_name,standard_reference,catalog_kind)',
               )
               .order('name'),
         );

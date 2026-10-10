@@ -1,0 +1,2 @@
+update public.varieties v set is_recognized=true,standard_reference='ARBA Standard of Perfection 2026–2030, p. 204' from public.breeds b where b.id=v.breed_id and b.species='rabbit' and b.name='Mini Lop' and v.catalog_key='pointed white';
+update public.varieties v set catalog_kind='legacy_ambiguous' from public.breeds b where b.id=v.breed_id and b.species='rabbit' and b.name='Dwarf Hotot' and v.catalog_key='standard' and v.show_id is null;

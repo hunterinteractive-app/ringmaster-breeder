@@ -39,9 +39,7 @@ class AnimalService {
       for (final field in ['breed', 'variety']) {
         final rows = field == 'breed' ? breeds : varieties;
         final matching = rows.where(
-          (r) =>
-              CatalogService.identity(r['name']) ==
-              CatalogService.identity(animal[field]?.toString() ?? ''),
+          (r) => CatalogService.matches(r, animal[field]?.toString() ?? ''),
         );
         if (matching.isNotEmpty && matching.first['is_recognized'] == true) {
           animal[field] = matching.first['name'];
@@ -50,8 +48,7 @@ class AnimalService {
             (animal[field]?.toString().trim().isNotEmpty ?? false) &&
             !rows.any(
               (r) =>
-                  CatalogService.identity(r['name']) ==
-                      CatalogService.identity(animal[field].toString()) &&
+                  CatalogService.matches(r, animal[field].toString()) &&
                   r['is_recognized'] == true,
             );
       }

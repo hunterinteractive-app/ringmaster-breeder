@@ -3,6 +3,49 @@ import 'package:ringmaster_breeder/services/catalog_service.dart';
 
 void main() {
   test(
+    'Standard colors remain recognized without a Show match and aliases deduplicate',
+    () {
+      final rows = CatalogService.sortedChoices([
+        {
+          'name': 'Black',
+          'is_recognized': true,
+          'standard_reference': '2026–2030',
+        },
+        {
+          'name': 'Self Group - Black',
+          'standard_name': 'Black',
+          'is_recognized': true,
+          'standard_reference': '2026–2030',
+        },
+        {'name': 'Custom Test', 'is_recognized': false},
+        {
+          'name': 'Shaded Group - Blue',
+          'catalog_kind': 'legacy_ambiguous',
+          'is_recognized': false,
+        },
+        {'name': 'Fox Group (COD)', 'is_recognized': true},
+      ]);
+      expect(rows.length, 3);
+      expect(rows.first['name'], 'Black');
+      expect(CatalogService.matches(rows.first, 'Self Group - Black'), isTrue);
+      expect(
+        CatalogService.choiceNote(rows.first),
+        'Recognized • ARBA Standard',
+      );
+      expect(CatalogService.choiceNote(rows[1]), 'Unrecognized');
+      expect(CatalogService.choiceNote(rows[2]), 'COD');
+      expect(
+        CatalogService.choiceNote({
+          'name': 'Agouti',
+          'catalog_kind': 'color_group',
+          'is_recognized': true,
+        }),
+        contains('Color group'),
+      );
+    },
+  );
+
+  test(
     'Legacy spelling, accents and COD aliases converge without fuzzy merges',
     () {
       for (final pair in [
