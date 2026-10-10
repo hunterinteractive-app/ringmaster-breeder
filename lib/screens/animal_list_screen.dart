@@ -107,8 +107,9 @@ class _AnimalBrowserState extends State<AnimalBrowser> {
   bool _matches(Map<String, dynamic> a) {
     final status = a['status'] ?? 'active';
     if (_status == 'Active' && status != 'active') return false;
+    if (_status == 'Sold' && status != 'sold') return false;
     if (_status == 'Archived' &&
-        !['sold', 'retired', 'deceased', 'archived'].contains(status)) {
+        !['retired', 'deceased', 'archived'].contains(status)) {
       return false;
     }
     if (_breed != null && (a['breed'] as String? ?? '').trim() != _breed) {
@@ -218,7 +219,7 @@ class _AnimalBrowserState extends State<AnimalBrowser> {
                 _dropdown(
                   'Status',
                   _status,
-                  ['Active', 'Archived', 'All'],
+                  ['Active', 'Sold', 'Archived', 'All'],
                   (v) => setState(() => _status = v!),
                   150,
                 ),
