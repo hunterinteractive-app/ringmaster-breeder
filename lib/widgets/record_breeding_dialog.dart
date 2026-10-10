@@ -18,7 +18,7 @@ class RecordBreedingDialog extends StatefulWidget {
 
 class _RecordBreedingDialogState extends State<RecordBreedingDialog> {
   String? sireId;
-  bool includeInactive = false;
+  final selectedOutsideParents = <String>{};
   final extraParents = <Map<String, dynamic>>[];
   List<Map<String, dynamic>>? loadedParents;
   String? get ringId => widget.animals.firstOrNull?['ring_id'];
@@ -102,8 +102,8 @@ class _RecordBreedingDialogState extends State<RecordBreedingDialog> {
     );
     if (result == null || !mounted) return;
     setState(() {
-      includeInactive = true;
       final id = result['existing_id'] ?? 'new-parent-${extraParents.length}';
+      selectedOutsideParents.add(id as String);
       if (result['existing_id'] == null) {
         extraParents.add({
           ...result,
@@ -131,7 +131,7 @@ class _RecordBreedingDialogState extends State<RecordBreedingDialog> {
   List<Map<String, dynamic>> get active => allParents
       .where(
         (a) =>
-            includeInactive ||
+            selectedOutsideParents.contains(a['id']) ||
             (a['status'] == 'active' && a['pedigree_only'] != true),
       )
       .toList();
@@ -262,31 +262,6 @@ class _RecordBreedingDialogState extends State<RecordBreedingDialog> {
                   onPressed: () => addParent(true),
                   icon: const Icon(Icons.add),
                   label: const Text('Add borrowed / outside sire'),
-                ),
-                CheckboxListTile(
-                  contentPadding: EdgeInsets.zero,
-                  title: const Text(
-                    'Include inactive and pedigree-only parents',
-                  ),
-                  value: includeInactive,
-                  onChanged: (v) async {
-                    try {
-                      if (v == true) await loadAll();
-                      if (!mounted) return;
-                      setState(() {
-                        includeInactive = v!;
-                        sireId = null;
-                        dams.clear();
-                      });
-                    } catch (_) {
-                      if (mounted) {
-                        setState(
-                          () => error =
-                              'Unable to load inactive parents. Please try again.',
-                        );
-                      }
-                    }
-                  },
                 ),
                 if (sires.isEmpty)
                   const Text(
