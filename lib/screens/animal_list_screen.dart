@@ -1,3 +1,4 @@
+import '../widgets/record_breeding_dialog.dart';
 import '../widgets/bulk_records_dialog.dart';
 import '../utils/color_details.dart';
 import '../widgets/ringmaster_page_shell.dart';
@@ -104,6 +105,31 @@ class _AnimalBrowserState extends State<AnimalBrowser> {
   void dispose() {
     _search.dispose();
     super.dispose();
+  }
+
+  Future<void> _recordBreeding() async {
+    final count = await showDialog<int>(
+      context: context,
+      barrierDismissible: false,
+      builder: (_) => RecordBreedingDialog(animals: widget.animals),
+    );
+    if (count != null && mounted) {
+      await showDialog<void>(
+        context: context,
+        builder: (ctx) => AlertDialog(
+          title: const Text('Breeding recorded'),
+          content: Text(
+            'Saved $count breeding ${count == 1 ? 'record' : 'records'}, linked to the sire and each selected dam.',
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx),
+              child: const Text('Done'),
+            ),
+          ],
+        ),
+      );
+    }
   }
 
   Future<void> _bulk(bool weights) async {
@@ -273,9 +299,17 @@ class _AnimalBrowserState extends State<AnimalBrowser> {
                   onSelected: (v) {
                     if (v == 'add') widget.onAdd();
                     if (v == 'refresh') widget.onRefresh();
+                    if (v == 'breeding') _recordBreeding();
                     if (v == 'weights' || v == 'health') _bulk(v == 'weights');
                   },
                   itemBuilder: (_) => const [
+                    PopupMenuItem(
+                      value: 'breeding',
+                      child: ListTile(
+                        leading: Icon(Icons.favorite_outline),
+                        title: Text('Record breeding'),
+                      ),
+                    ),
                     PopupMenuItem(
                       value: 'add',
                       child: ListTile(
