@@ -58,6 +58,16 @@ class ColorDetailsFields extends StatelessWidget {
           ),
       ],
     );
+    if (!cod) {
+      return ExpansionTile(
+        title: const Text('Additional color details'),
+        subtitle: const Text(
+          'Keep the variety wording; add details only when needed.',
+        ),
+        initiallyExpanded: false,
+        children: [fields],
+      );
+    }
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -68,13 +78,6 @@ class ColorDetailsFields extends StatelessWidget {
             style: Theme.of(context).textTheme.titleMedium,
           ),
         ),
-        if (!cod)
-          const Padding(
-            padding: EdgeInsets.only(bottom: 12),
-            child: Text(
-              'Keep the variety wording; add details only when needed.',
-            ),
-          ),
         fields,
       ],
     );

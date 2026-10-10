@@ -8,7 +8,7 @@ import 'package:ringmaster_breeder/models/pedigree_entry.dart';
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
   testWidgets(
-    'Additional details are visible without expanding for recognized and COD varieties',
+    'Optional details start collapsed while required COD details stay visible',
     (tester) async {
       for (final variety in ['Chinchilla', 'Fox Group (COD)']) {
         await tester.pumpWidget(
@@ -26,7 +26,14 @@ void main() {
           ),
         );
         expect(find.text('Additional color details'), findsOneWidget);
-        expect(find.byType(ExpansionTile), findsNothing);
+        if (!variety.contains('COD')) {
+          expect(find.byType(ExpansionTile), findsOneWidget);
+          expect(find.byType(TextFormField), findsNothing);
+          await tester.tap(find.text('Additional color details'));
+          await tester.pumpAndSettle();
+        } else {
+          expect(find.byType(ExpansionTile), findsNothing);
+        }
         expect(find.byType(TextFormField), findsNWidgets(5));
         expect(
           find.text(
