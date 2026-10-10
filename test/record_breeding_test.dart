@@ -16,6 +16,7 @@ void main() {
         String sex, {
         String species = 'rabbit',
         String status = 'active',
+        String breed = 'Tan',
       }) => {
         'id': id,
         'tattoo': id,
@@ -23,6 +24,8 @@ void main() {
         'species': species,
         'status': status,
         'ring_id': 'ring',
+        'breed': breed,
+        'variety': 'Chocolate',
       };
       await tester.pumpWidget(
         MaterialApp(
@@ -30,7 +33,7 @@ void main() {
             body: RecordBreedingDialog(
               animals: [
                 animal('SIRE', 'Buck'),
-                animal('DAM1', 'Doe'),
+                animal('DAM1', 'Doe', breed: 'Dutch'),
                 animal('DAM2', 'Doe'),
                 animal('CAVY', 'Sow', species: 'cavy'),
                 animal('SOLD', 'Doe', status: 'sold'),
@@ -46,10 +49,15 @@ void main() {
       expect(find.text('Choose a sire and at least one dam.'), findsOneWidget);
       await tester.tap(find.byType(DropdownButtonFormField<String>));
       await tester.pumpAndSettle();
-      await tester.tap(find.text('SIRE — Buck').last);
+      await tester.tap(find.text('SIRE').last);
       await tester.pumpAndSettle();
       expect(find.text('CAVY'), findsNothing);
       expect(find.text('SOLD'), findsNothing);
+      expect(find.text('Tan • Chocolate'), findsWidgets);
+      expect(
+        tester.getTopLeft(find.text('DAM2')).dy,
+        lessThan(tester.getTopLeft(find.text('DAM1')).dy),
+      );
       await tester.tap(find.text('DAM1'));
       await tester.tap(find.text('DAM2'));
       await tester.enterText(find.byType(TextField), 'Test breeding');

@@ -1,3 +1,5 @@
+import 'parent_picker.dart';
+import '../utils/color_details.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -16,31 +18,152 @@ class RecordBreedingDialog extends StatefulWidget {
 
 class _RecordBreedingDialogState extends State<RecordBreedingDialog> {
   String? sireId;
+  bool includeInactive = false;
+  final extraParents = <Map<String, dynamic>>[];
+  List<Map<String, dynamic>>? loadedParents;
+  String? get ringId => widget.animals.firstOrNull?['ring_id'];
+  List<Map<String, dynamic>> get allParents => [
+    ...(loadedParents ?? widget.animals),
+    ...extraParents,
+  ];
+  String detail(Map<String, dynamic> a) => [
+    a['breed'],
+    varietyLabel(a),
+  ].whereType<String>().where((v) => v.trim().isNotEmpty).join(' • ');
+  Widget parentLabel(Map<String, dynamic> a) => Column(
+    mainAxisSize: MainAxisSize.min,
+    crossAxisAlignment: CrossAxisAlignment.start,
+    children: [
+      Text(
+        animalTitle(a['name'], a['tattoo']),
+        overflow: TextOverflow.ellipsis,
+      ),
+      Text(
+        detail(a),
+        overflow: TextOverflow.ellipsis,
+        style: const TextStyle(fontSize: 12),
+      ),
+    ],
+  );
+  Future<void> loadAll() async {
+    if (loadedParents != null) return;
+    if (ringId == null) throw StateError('No Ring selected');
+    loadedParents = List<Map<String, dynamic>>.from(
+      await Supabase.instance.client
+          .from('animals')
+          .select()
+          .eq('ring_id', ringId!),
+    );
+  }
+
+  Future<void> addParent(bool male) async {
+    try {
+      await loadAll();
+    } catch (_) {
+      if (mounted) {
+        setState(() => error = 'Unable to load parents. Please try again.');
+      }
+      return;
+    }
+    if (!mounted) return;
+    final String? species = !male
+        ? (sire?['species'] as String?)
+        : await showDialog<String>(
+            context: context,
+            builder: (ctx) => SimpleDialog(
+              title: const Text('Parent species'),
+              children: [
+                for (final item in ['rabbit', 'cavy'])
+                  SimpleDialogOption(
+                    onPressed: () => Navigator.pop(ctx, item),
+                    child: Text(item == 'rabbit' ? 'Rabbit' : 'Cavy'),
+                  ),
+              ],
+            ),
+          );
+    if (species == null || !mounted) return;
+    final result = await showDialog<Map<String, dynamic>>(
+      context: context,
+      builder: (_) => QuickParentDialog(
+        label: male ? 'Sire' : 'Dam',
+        species: species,
+        sex: sexLabel(species, male ? 'M' : 'F'),
+        breed: sire?['breed'] ?? '',
+        saveHint:
+            'Saved with this breeding as a pedigree-only parent, outside your active herd.',
+        existing: allParents
+            .where(
+              (a) =>
+                  a['species'] == species &&
+                  animalIsMale(a['sex'] ?? '') == male,
+            )
+            .toList(),
+      ),
+    );
+    if (result == null || !mounted) return;
+    setState(() {
+      includeInactive = true;
+      final id = result['existing_id'] ?? 'new-parent-${extraParents.length}';
+      if (result['existing_id'] == null) {
+        extraParents.add({
+          ...result,
+          'id': id,
+          'species': species,
+          'ring_id': ringId,
+          'status': 'active',
+          'pedigree_only': true,
+        });
+      }
+      if (male) {
+        sireId = id;
+        dams.clear();
+      } else {
+        dams.add(id);
+      }
+    });
+  }
+
   final dams = <String>{};
   final notes = TextEditingController();
   DateTime date = DateTime.now();
   bool saving = false;
   String? error;
-  List<Map<String, dynamic>> get active => widget.animals
-      .where((a) => a['status'] == 'active' && a['pedigree_only'] != true)
+  List<Map<String, dynamic>> get active => allParents
+      .where(
+        (a) =>
+            includeInactive ||
+            (a['status'] == 'active' && a['pedigree_only'] != true),
+      )
       .toList();
   List<Map<String, dynamic>> get sires =>
       active.where((a) => animalIsMale(a['sex'] ?? '')).toList();
   Map<String, dynamic>? get sire =>
       sires.where((a) => a['id'] == sireId).firstOrNull;
-  List<Map<String, dynamic>> get eligibleDams => active
-      .where(
-        (a) =>
-            [
-              'f',
-              'female',
-              'doe',
-              'sow',
-            ].contains((a['sex'] ?? '').toString().toLowerCase()) &&
-            a['species'] == sire?['species'] &&
-            a['ring_id'] == sire?['ring_id'],
-      )
-      .toList();
+  List<Map<String, dynamic>> get eligibleDams =>
+      (active
+          .where(
+            (a) =>
+                [
+                  'f',
+                  'female',
+                  'doe',
+                  'sow',
+                ].contains((a['sex'] ?? '').toString().toLowerCase()) &&
+                a['species'] == sire?['species'] &&
+                a['ring_id'] == sire?['ring_id'],
+          )
+          .toList()
+        ..sort((a, b) {
+          final breed = (sire?['breed'] ?? '').toString().trim().toLowerCase();
+          final am =
+              (a['breed'] ?? '').toString().trim().toLowerCase() == breed;
+          final bm =
+              (b['breed'] ?? '').toString().trim().toLowerCase() == breed;
+          if (am != bm) return am ? -1 : 1;
+          return animalTitle(a['name'], a['tattoo']).toLowerCase().compareTo(
+            animalTitle(b['name'], b['tattoo']).toLowerCase(),
+          );
+        }));
   @override
   void dispose() {
     notes.dispose();
@@ -70,7 +193,16 @@ class _RecordBreedingDialogState extends State<RecordBreedingDialog> {
       if (widget.writer != null) {
         await widget.writer!(rows);
       } else {
-        await Supabase.instance.client.from('breeding_records').insert(rows);
+        await Supabase.instance.client.rpc(
+          'record_breeding_with_parents',
+          params: {
+            'p_ring': ringId,
+            'p_records': rows,
+            'p_parents': extraParents
+                .where((p) => p['id'] == sireId || dams.contains(p['id']))
+                .toList(),
+          },
+        );
       }
       if (mounted) Navigator.pop(context, rows.length);
     } catch (e) {
@@ -79,7 +211,7 @@ class _RecordBreedingDialogState extends State<RecordBreedingDialog> {
           saving = false;
           error = e is PostgrestException && e.code == '23505'
               ? 'A breeding for this sire, dam and date already exists. No new records were added.'
-              : 'Unable to save. Check that both parents are still active and try again.';
+              : 'Unable to save. Check the parents and try again.';
         });
       }
     }
@@ -104,7 +236,10 @@ class _RecordBreedingDialogState extends State<RecordBreedingDialog> {
                 ),
                 const SizedBox(height: 16),
                 DropdownButtonFormField<String>(
+                  key: ValueKey(sireId),
                   initialValue: sireId,
+                  itemHeight: 72,
+                  isDense: false,
                   isExpanded: true,
                   decoration: const InputDecoration(
                     labelText: 'Sire (Buck / Boar)',
@@ -113,10 +248,7 @@ class _RecordBreedingDialogState extends State<RecordBreedingDialog> {
                       .map(
                         (a) => DropdownMenuItem<String>(
                           value: a['id'],
-                          child: Text(
-                            '${animalTitle(a['name'], a['tattoo'])} — ${sexLabel(a['species'], a['sex'])}',
-                            overflow: TextOverflow.ellipsis,
-                          ),
+                          child: parentLabel(a),
                         ),
                       )
                       .toList(),
@@ -126,9 +258,39 @@ class _RecordBreedingDialogState extends State<RecordBreedingDialog> {
                     error = null;
                   }),
                 ),
+                TextButton.icon(
+                  onPressed: () => addParent(true),
+                  icon: const Icon(Icons.add),
+                  label: const Text('Add borrowed / outside sire'),
+                ),
+                CheckboxListTile(
+                  contentPadding: EdgeInsets.zero,
+                  title: const Text(
+                    'Include inactive and pedigree-only parents',
+                  ),
+                  value: includeInactive,
+                  onChanged: (v) async {
+                    try {
+                      if (v == true) await loadAll();
+                      if (!mounted) return;
+                      setState(() {
+                        includeInactive = v!;
+                        sireId = null;
+                        dams.clear();
+                      });
+                    } catch (_) {
+                      if (mounted) {
+                        setState(
+                          () => error =
+                              'Unable to load inactive parents. Please try again.',
+                        );
+                      }
+                    }
+                  },
+                ),
                 if (sires.isEmpty)
                   const Text(
-                    'Add an active buck or boar to record a breeding.',
+                    'Choose an existing parent or add a borrowed / outside sire.',
                   ),
                 if (sire != null) ...[
                   const SizedBox(height: 16),
@@ -139,10 +301,12 @@ class _RecordBreedingDialogState extends State<RecordBreedingDialog> {
                     const Text(
                       'No active dams of the same species are available.',
                     ),
+                  const Text('Matching breed first, followed by other breeds.'),
                   for (final a in eligibleDams)
                     CheckboxListTile(
                       contentPadding: EdgeInsets.zero,
                       title: Text(animalTitle(a['name'], a['tattoo'])),
+                      subtitle: Text(detail(a)),
                       value: dams.contains(a['id']),
                       onChanged: (v) => setState(() {
                         if (v == true) {
@@ -152,6 +316,11 @@ class _RecordBreedingDialogState extends State<RecordBreedingDialog> {
                         }
                       }),
                     ),
+                  TextButton.icon(
+                    onPressed: () => addParent(false),
+                    icon: const Icon(Icons.add),
+                    label: const Text('Add borrowed / outside dam'),
+                  ),
                 ],
                 TextButton.icon(
                   icon: const Icon(Icons.calendar_month),

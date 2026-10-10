@@ -174,6 +174,7 @@ class _ParentPickerState extends State<ParentPicker> {
 }
 
 class QuickParentDialog extends StatefulWidget {
+  final String saveHint;
   final String label, species, sex, breed;
   final List<Map<String, dynamic>> existing;
   final Map<String, dynamic>? initial;
@@ -181,6 +182,8 @@ class QuickParentDialog extends StatefulWidget {
   loadOptions;
   const QuickParentDialog({
     super.key,
+    this.saveHint =
+        'Saved with this animal as a pedigree-only parent, outside your active herd.',
     required this.label,
     required this.species,
     required this.sex,
@@ -261,9 +264,7 @@ class _QuickParentDialogState extends State<QuickParentDialog> {
               Text(
                 '${widget.species == 'rabbit' ? 'Rabbit' : 'Cavy'} • ${widget.sex}',
               ),
-              const Text(
-                'Saved with this animal as a pedigree-only parent, outside your active herd.',
-              ),
+              Text(widget.saveHint),
               for (final field in {
                 'name': 'Name',
                 'tattoo': 'Ear number / tag',
