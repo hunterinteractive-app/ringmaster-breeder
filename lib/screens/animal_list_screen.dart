@@ -6,6 +6,11 @@ import '../utils/animal_labels.dart';
 import '../theme/app_theme.dart';
 import '../widgets/animal_avatar.dart';
 
+String _displayDob(dynamic value) {
+  final date = DateTime.tryParse(value?.toString() ?? '');
+  return date == null ? 'Not recorded' : DateFormat('MM/dd/yyyy').format(date);
+}
+
 class AnimalListScreen extends StatefulWidget {
   final String ringId;
   final String ringName;
@@ -343,6 +348,7 @@ class _AnimalBrowserState extends State<AnimalBrowser> {
                                 a['breed'] ?? 'Breed not recorded',
                                 a['variety'] ?? 'Variety not recorded',
                                 sexLabel(a['species'], a['sex']),
+                                'DOB: ${_displayDob(a['dob'])}',
                               ].join(' • '),
                             ),
                             trailing: const Icon(Icons.chevron_right),
@@ -494,6 +500,7 @@ class AnimalRecordCard extends StatelessWidget {
               detail('Species', species),
               detail('Breed', recorded('breed')),
               detail('Variety', recorded('variety')),
+              detail('DOB', _displayDob(animal['dob'])),
               detail(
                 'Sex',
                 sexLabel(animal['species'] ?? 'rabbit', animal['sex'] ?? ''),
