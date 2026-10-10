@@ -43,6 +43,43 @@ class FakeImport implements RecordImportGateway {
 }
 
 void main() {
+  testWidgets('Successful import shows details and closing returns home', (
+    tester,
+  ) async {
+    final gateway = FakeImport();
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Builder(
+          builder: (context) => Scaffold(
+            body: TextButton(
+              onPressed: () => Navigator.of(context).push(
+                MaterialPageRoute<void>(
+                  builder: (_) => RecordImportScreen(gateway: gateway),
+                ),
+              ),
+              child: const Text('Home page'),
+            ),
+          ),
+        ),
+      ),
+    );
+    await tester.tap(find.text('Home page'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Show exhibitor'));
+    await tester.scrollUntilVisible(find.text('Import selected records'), 250);
+    await tester.tap(find.text('Import selected records'));
+    await tester.pumpAndSettle();
+    expect(find.text('Import successful'), findsOneWidget);
+    expect(find.textContaining('1 profiles selected'), findsOneWidget);
+    expect(
+      find.textContaining('Existing records were preserved.'),
+      findsOneWidget,
+    );
+    await tester.tap(find.text('Close'));
+    await tester.pumpAndSettle();
+    expect(find.text('Home page'), findsOneWidget);
+    expect(find.byType(RecordImportScreen), findsNothing);
+  });
   for (final hasRing in [true, false]) {
     testWidgets('Show import respects Ring availability: $hasRing', (
       tester,

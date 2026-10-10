@@ -73,13 +73,30 @@ class _RecordImportScreenState extends State<RecordImportScreen> {
       if (data['status'] != 'imported') {
         throw StateError('Import not completed');
       }
-      if (mounted) {
-        setState(() {
-          _message =
-              'Imported ${data['profiles_selected']} profile(s), ${data['animals_added']} new animal(s), and ${data['entries_added']} new show-entry record(s). Existing records were preserved.';
-          _selected.clear();
-        });
-      }
+      if (!mounted) return;
+      setState(() => _selected.clear());
+      await showDialog<void>(
+        context: context,
+        builder: (dialogContext) => AlertDialog(
+          title: const Text('Import successful'),
+          content: SingleChildScrollView(
+            child: Text(
+              '${data['profiles_selected'] ?? 0} profiles selected\n'
+              '${data['animals_added'] ?? 0} new animals imported\n'
+              '${data['entries_added'] ?? 0} show-entry records imported\n\n'
+              'Existing records were preserved.'
+              '${(data['results_unmatched'] as num? ?? 0) > 0 ? '\n\n${data['results_unmatched']} results could not be linked to an animal and were kept for review.' : ''}',
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(dialogContext).pop(),
+              child: const Text('Close'),
+            ),
+          ],
+        ),
+      );
+      if (mounted) Navigator.of(context).popUntil((route) => route.isFirst);
     } catch (_) {
       if (mounted) {
         setState(
