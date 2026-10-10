@@ -1,3 +1,5 @@
+import '../models/pedigree_layout.dart';
+import '../models/pedigree_entry.dart';
 import '../utils/color_details.dart';
 // ignore_for_file: prefer_const_constructors
 
@@ -43,9 +45,10 @@ class PedigreePdfService {
       theme: pw.ThemeData.withFont(base: fontRegular, italic: fontItalic),
     );
 
+    final layout = PedigreeLayout(pedigree);
     pdf.addPage(
       pw.Page(
-        pageFormat: PdfPageFormat.letter.landscape.copyWith(
+        pageFormat: PdfPageFormat(PedigreeLayout.width, layout.height).copyWith(
           marginLeft: 24,
           marginRight: 24,
           marginTop: 22,
@@ -55,44 +58,6 @@ class PedigreePdfService {
       ),
     );
 
-    final results = pedigree.entries.where(
-      (e) =>
-          e.value is Map &&
-          (e.value['leg_details'] ?? '').toString().trim().isNotEmpty,
-    );
-    if (results.isNotEmpty) {
-      pdf.addPage(
-        pw.MultiPage(
-          pageFormat: PdfPageFormat.letter,
-          header: (_) => pw.Padding(
-            padding: pw.EdgeInsets.only(bottom: 16),
-            child: pw.Text(
-              'Pedigree - Legs / show details',
-              style: pw.TextStyle(fontSize: 18),
-            ),
-          ),
-          build: (_) => [
-            for (final entry in results) ...[
-              pw.Padding(
-                padding: pw.EdgeInsets.only(top: 12, bottom: 6),
-                child: pw.Text(
-                  '${entry.key.replaceAll('_', ' ')}: ${animalTitle(entry.value['name'], entry.value['tattoo'])}',
-                  style: pw.TextStyle(fontSize: 12),
-                ),
-              ),
-              for (final line in entry.value['leg_details'].toString().split(
-                '\n',
-              ))
-                pw.Paragraph(
-                  text: line,
-                  style: pw.TextStyle(fontSize: 10),
-                  margin: pw.EdgeInsets.only(bottom: 3),
-                ),
-            ],
-          ],
-        ),
-      );
-    }
     return pdf.save();
   }
 
@@ -103,6 +68,7 @@ class PedigreePdfService {
     Map<String, dynamic> p,
     Map<String, dynamic>? seller,
   ) {
+    final layout = PedigreeLayout(p);
     return pw.Stack(
       children: [
         // SOLD TO (TOP LEFT)
@@ -120,51 +86,36 @@ class PedigreePdfService {
           ),
         ),
 
-        // GRID
-        pw.Positioned(
-          top: 70,
-          left: 0,
-          right: 0,
-          child: pw.Row(
-            mainAxisAlignment: pw.MainAxisAlignment.center,
-            crossAxisAlignment: pw.CrossAxisAlignment.start,
-            children: [
-              _col([
-                pw.SizedBox(height: 230),
-                _box(
-                  p['animal'],
-                  male: animalIsMale(p['animal']?['sex'] ?? ''),
-                ),
-              ]),
-              _col([
-                pw.SizedBox(height: 80),
-                _box(p['sire'], male: true),
-                pw.SizedBox(height: 200),
-                _box(p['dam'], male: false),
-              ]),
-              _col([
-                pw.SizedBox(height: 25),
-                _box(p['sire_sire'], male: true),
-                pw.SizedBox(height: 50),
-                _box(p['sire_dam'], male: false),
-                pw.SizedBox(height: 75),
-                _box(p['dam_sire'], male: true),
-                pw.SizedBox(height: 50),
-                _box(p['dam_dam'], male: false),
-              ]),
-              _col([
-                _box(p['gg1'], male: true),
-                _box(p['gg2'], male: false),
-                _box(p['gg3'], male: true),
-                _box(p['gg4'], male: false),
-                _box(p['gg5'], male: true),
-                _box(p['gg6'], male: false),
-                _box(p['gg7'], male: true),
-                _box(p['gg8'], male: false),
-              ]),
-            ],
+        for (var slot = 0; slot < PedigreeEntry.snapshotSlots.length; slot++)
+          pw.Positioned(
+            left: layout.left(slot) - 24,
+            top: layout.top(slot) - 22,
+            child: pw.SizedBox(
+              width: colW,
+              child: pw.Column(
+                crossAxisAlignment: pw.CrossAxisAlignment.stretch,
+                children: [
+                  _box(
+                    p[PedigreeEntry.snapshotSlots[slot]],
+                    male: slot == 0
+                        ? animalIsMale(p['animal']?['sex'] ?? '')
+                        : slot.isOdd,
+                  ),
+                  if (layout.details[slot].isNotEmpty) ...[
+                    pw.SizedBox(height: 4),
+                    for (final line in layout.details[slot])
+                      pw.SizedBox(
+                        height: 10,
+                        child: pw.Text(
+                          line,
+                          style: pw.TextStyle(font: fontRegular, fontSize: 7),
+                        ),
+                      ),
+                  ],
+                ],
+              ),
+            ),
           ),
-        ),
 
         // SELLER SIGNATURE (BOTTOM LEFT)
         if (seller != null)
@@ -213,21 +164,6 @@ class PedigreePdfService {
   // ===============================
   // COLUMN
   // ===============================
-  static pw.Widget _col(List<pw.Widget> boxes) {
-    return pw.Container(
-      width: colW,
-      margin: pw.EdgeInsets.only(right: 10),
-      child: pw.Column(
-        children: [
-          for (int i = 0; i < boxes.length; i++) ...[
-            boxes[i],
-            if (i < boxes.length - 1) pw.SizedBox(height: gap),
-          ],
-        ],
-      ),
-    );
-  }
-
   // ===============================
   // BOX (LOCKED TEXT)
   // ===============================

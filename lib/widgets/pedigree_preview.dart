@@ -1,3 +1,4 @@
+import '../models/pedigree_layout.dart';
 import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:printing/printing.dart';
@@ -89,7 +90,67 @@ class _PedigreePreviewState extends State<PedigreePreview> {
           ),
         ),
         Expanded(
-          child: PdfPreview(
+          child: PdfPreview.builder(
+            pagesBuilder: (context, pages) => LayoutBuilder(
+              builder: (context, constraints) {
+                final layout = PedigreeLayout(pedigree);
+                final pageWidth = constraints.maxWidth;
+                final scale = pageWidth / PedigreeLayout.width;
+                return InteractiveViewer(
+                  maxScale: 5,
+                  child: SingleChildScrollView(
+                    child: Column(
+                      children: [
+                        for (final page in pages)
+                          SizedBox(
+                            width: pageWidth,
+                            height: layout.height * scale,
+                            child: Stack(
+                              children: [
+                                Positioned.fill(
+                                  child: Image(
+                                    image: page.image,
+                                    fit: BoxFit.fill,
+                                  ),
+                                ),
+                                if (widget.onAnimalTap != null)
+                                  for (
+                                    var slot = 0;
+                                    slot < PedigreeEntry.snapshotSlots.length;
+                                    slot++
+                                  )
+                                    if (pedigree[PedigreeEntry
+                                            .snapshotSlots[slot]]?['id']
+                                        is String)
+                                      Positioned(
+                                        left: layout.left(slot) * scale,
+                                        top: layout.top(slot) * scale,
+                                        width: PedigreeLayout.boxWidth * scale,
+                                        height:
+                                            PedigreeLayout.boxHeight * scale,
+                                        child: Tooltip(
+                                          message: 'Open animal record',
+                                          child: InkWell(
+                                            key: ValueKey(
+                                              'pedigree-link-$slot',
+                                            ),
+                                            onTap: () => widget.onAnimalTap!(
+                                              pedigree[PedigreeEntry
+                                                  .snapshotSlots[slot]]['id'],
+                                            ),
+                                            child: const SizedBox.expand(),
+                                          ),
+                                        ),
+                                      ),
+                              ],
+                            ),
+                          ),
+                      ],
+                    ),
+                  ),
+                );
+              },
+            ),
             build: (_) => document,
             canChangePageFormat: false,
             canChangeOrientation: false,
