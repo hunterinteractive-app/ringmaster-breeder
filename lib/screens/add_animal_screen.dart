@@ -1,3 +1,4 @@
+import '../widgets/parent_picker.dart';
 import '../widgets/ringmaster_page_shell.dart';
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -41,11 +42,8 @@ class _AddAnimalScreenState extends State<AddAnimalScreen> {
   String sex = 'Buck';
   String status = 'active';
 
-  String? sireId;
-  String? damId;
-
-  bool sireUnknown = false;
-  bool damUnknown = false;
+  Map<String, dynamic>? sire, dam;
+  String? quickDraftId;
   bool isSaving = false;
 
   String sexLabel(String value) {
@@ -59,11 +57,10 @@ class _AddAnimalScreenState extends State<AddAnimalScreen> {
   Future<List<Map<String, dynamic>>> fetchParents(String sexFilter) async {
     final res = await supabase
         .from('animals')
-        .select('id, name, tattoo')
+        .select('id, name, tattoo, status, pedigree_only')
         .eq('ring_id', widget.ringId)
         .eq('species', species)
         .eq('sex', sexLabel(sexFilter))
-        .neq('status', 'deceased')
         .order('name');
 
     return List<Map<String, dynamic>>.from(res);
@@ -92,26 +89,71 @@ class _AddAnimalScreenState extends State<AddAnimalScreen> {
         }
       }
 
-      final response = await supabase.rpc(
-        'create_animal_with_color_details',
-        params: {
-          'p_ring_id': widget.ringId,
-          'p_name': nameController.text.trim(),
-          'p_tattoo': tattooController.text.trim(),
-          'p_species': species,
-          'p_breed': breedController.text.trim(),
-          'p_variety': varietyController.text.trim(),
-          'p_color_details': details,
-          'p_sex': sex,
-          'p_status': status,
-          'p_dob': dob.isEmpty ? null : dob,
-          'p_registration': registrationController.text.trim(),
-          'p_gc': gcController.text.trim(),
-          'p_weight': parsedWeight,
-          'p_sire_id': sireId,
-          'p_dam_id': damId,
-        },
-      );
+      dynamic response;
+      if (sire != null && sire!['existing_id'] == null ||
+          dam != null && dam!['existing_id'] == null ||
+          quickDraftId != null) {
+        final data = {
+          'species': species,
+          'root': 'animal',
+          'nodes': {
+            'animal': {
+              'name': nameController.text.trim(),
+              'tattoo': tattooController.text.trim(),
+              'breed': breedController.text.trim(),
+              'variety': varietyController.text.trim(),
+              'color_details': details,
+              'sex': sex,
+              'dob': dob,
+              'registration_number': registrationController.text.trim(),
+              'grand_champion_number': gcController.text.trim(),
+              'weight': parsedWeight,
+              if (sire != null) 'sire': 'sire',
+              if (dam != null) 'dam': 'dam',
+            },
+            if (sire != null) 'sire': sire,
+            if (dam != null) 'dam': dam,
+          },
+        };
+        if (quickDraftId == null) {
+          final row = await supabase
+              .from('pedigree_drafts')
+              .insert({'ring_id': widget.ringId, 'data': data})
+              .select('id')
+              .single();
+          quickDraftId = row['id'];
+        } else {
+          await supabase
+              .from('pedigree_drafts')
+              .update({'data': data})
+              .eq('id', quickDraftId!);
+        }
+        response = await supabase.rpc(
+          'save_pedigree_draft',
+          params: {'p_draft': quickDraftId},
+        );
+      } else {
+        response = await supabase.rpc(
+          'create_animal_with_color_details',
+          params: {
+            'p_ring_id': widget.ringId,
+            'p_name': nameController.text.trim(),
+            'p_tattoo': tattooController.text.trim(),
+            'p_species': species,
+            'p_breed': breedController.text.trim(),
+            'p_variety': varietyController.text.trim(),
+            'p_color_details': details,
+            'p_sex': sex,
+            'p_status': status,
+            'p_dob': dob.isEmpty ? null : dob,
+            'p_registration': registrationController.text.trim(),
+            'p_gc': gcController.text.trim(),
+            'p_weight': parsedWeight,
+            'p_sire_id': sire?['existing_id'],
+            'p_dam_id': dam?['existing_id'],
+          },
+        );
+      }
 
       if (response == null) {
         throw Exception('Insert failed');
@@ -222,8 +264,8 @@ class _AddAnimalScreenState extends State<AddAnimalScreen> {
                   breedController.clear();
                   varietyController.clear();
                   details = {};
-                  sireId = null;
-                  damId = null;
+                  sire = null;
+                  dam = null;
                 });
               },
               decoration: const InputDecoration(labelText: 'Species'),
@@ -275,86 +317,23 @@ class _AddAnimalScreenState extends State<AddAnimalScreen> {
 
             const Divider(),
 
-            /// 🔹 SIRE (AUTOCOMPLETE)
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                CheckboxListTile(
-                  title: const Text('Unknown'),
-                  value: sireUnknown,
-                  onChanged: (v) {
-                    setState(() {
-                      sireUnknown = v!;
-                      if (sireUnknown) sireId = null;
-                    });
-                  },
-                  controlAffinity: ListTileControlAffinity.leading,
-                  contentPadding: EdgeInsets.zero,
-                ),
-
-                if (!sireUnknown)
-                  FutureBuilder<List<Map<String, dynamic>>>(
-                    future: fetchParents('M'),
-                    builder: (context, snapshot) {
-                      final list = snapshot.data ?? [];
-
-                      return DropdownButtonFormField<String>(
-                        initialValue: sireId,
-                        items: list
-                            .map<DropdownMenuItem<String>>(
-                              (a) => DropdownMenuItem<String>(
-                                value: a['id'],
-                                child: Text('${a['name']} (${a['tattoo']})'),
-                              ),
-                            )
-                            .toList(),
-                        onChanged: (v) => setState(() => sireId = v),
-                        decoration: const InputDecoration(labelText: 'Sire'),
-                      );
-                    },
-                  ),
-              ],
+            ParentPicker(
+              key: ValueKey('sire:$species'),
+              label: 'Sire',
+              species: species,
+              sex: sexLabel('M'),
+              breed: breedController.text,
+              loadParents: () => fetchParents('M'),
+              onChanged: (v) => setState(() => sire = v),
             ),
-
-            /// 🔹 DAM (AUTOCOMPLETE)
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                CheckboxListTile(
-                  title: const Text('Unknown'),
-                  value: damUnknown,
-                  onChanged: (v) {
-                    setState(() {
-                      damUnknown = v!;
-                      if (damUnknown) damId = null;
-                    });
-                  },
-                  controlAffinity: ListTileControlAffinity.leading,
-                  contentPadding: EdgeInsets.zero,
-                ),
-
-                if (!damUnknown)
-                  FutureBuilder<List<Map<String, dynamic>>>(
-                    future: fetchParents('F'),
-                    builder: (context, snapshot) {
-                      final list = snapshot.data ?? [];
-
-                      return DropdownButtonFormField<String>(
-                        initialValue: damId,
-                        items: list
-                            .map<DropdownMenuItem<String>>(
-                              (a) => DropdownMenuItem<String>(
-                                value: a['id'],
-                                child: Text('${a['name']} (${a['tattoo']})'),
-                              ),
-                            )
-                            .toList(),
-                        onChanged: (v) => setState(() => damId = v),
-                        decoration: const InputDecoration(labelText: 'Dam'),
-                      );
-                    },
-                  ),
-              ],
+            ParentPicker(
+              key: ValueKey('dam:$species'),
+              label: 'Dam',
+              species: species,
+              sex: sexLabel('F'),
+              breed: breedController.text,
+              loadParents: () => fetchParents('F'),
+              onChanged: (v) => setState(() => dam = v),
             ),
 
             const SizedBox(height: 12),
