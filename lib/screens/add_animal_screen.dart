@@ -33,7 +33,7 @@ class _AddAnimalScreenState extends State<AddAnimalScreen> {
   DateTime? dob;
 
   String species = 'rabbit';
-  String sex = 'M';
+  String sex = 'Buck';
   String status = 'active';
 
   String? sireId;
@@ -58,7 +58,7 @@ class _AddAnimalScreenState extends State<AddAnimalScreen> {
         .select('id, name, tattoo')
         .eq('ring_id', widget.ringId)
         .eq('species', species)
-        .eq('sex', sexFilter)
+        .eq('sex', sexLabel(sexFilter))
         .neq('status', 'deceased')
         .order('name');
 
@@ -175,7 +175,11 @@ class _AddAnimalScreenState extends State<AddAnimalScreen> {
               ],
               onChanged: (v) {
                 setState(() {
+                  final male = sex == 'Buck' || sex == 'Boar';
                   species = v!;
+                  sex = species == 'rabbit'
+                      ? (male ? 'Buck' : 'Doe')
+                      : (male ? 'Boar' : 'Sow');
                   breedController.clear();
                   varietyController.clear();
                   sireId = null;
@@ -272,10 +276,17 @@ class _AddAnimalScreenState extends State<AddAnimalScreen> {
 
             /// SEX
             DropdownButtonFormField<String>(
+              key: ValueKey(species),
               initialValue: sex,
               items: [
-                DropdownMenuItem(value: 'M', child: Text(sexLabel('M'))),
-                DropdownMenuItem(value: 'F', child: Text(sexLabel('F'))),
+                DropdownMenuItem(
+                  value: sexLabel('M'),
+                  child: Text(sexLabel('M')),
+                ),
+                DropdownMenuItem(
+                  value: sexLabel('F'),
+                  child: Text(sexLabel('F')),
+                ),
               ],
               onChanged: (v) => setState(() => sex = v!),
               decoration: const InputDecoration(labelText: 'Sex'),

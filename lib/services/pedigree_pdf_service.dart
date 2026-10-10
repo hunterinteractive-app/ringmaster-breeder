@@ -1,6 +1,7 @@
 // ignore_for_file: prefer_const_constructors
 
 import 'dart:typed_data';
+import '../utils/animal_labels.dart';
 import 'package:flutter/services.dart' show rootBundle;
 import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
@@ -91,7 +92,10 @@ class PedigreePdfService {
             children: [
               _col([
                 pw.SizedBox(height: 230),
-                _box(p['animal'], male: p['animal']?['sex'] == 'M'),
+                _box(
+                  p['animal'],
+                  male: animalIsMale(p['animal']?['sex'] ?? ''),
+                ),
               ]),
               _col([
                 pw.SizedBox(height: 80),

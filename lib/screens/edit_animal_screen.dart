@@ -20,7 +20,7 @@ class _EditAnimalScreenState extends State<EditAnimalScreen> {
   final gcController = TextEditingController();
 
   String species = '';
-  String sex = 'M';
+  String sex = 'Buck';
   String status = 'active';
 
   bool isSaving = false;
@@ -39,7 +39,7 @@ class _EditAnimalScreenState extends State<EditAnimalScreen> {
     gcController.text = animal['grand_champion_number'] ?? '';
 
     species = animal['species'].toString().toLowerCase(); // rabbit / cavy
-    sex = animal['sex']; // M / F
+    sex = animal['sex']; // Buck/Doe or Boar/Sow
     status = animal['status'];
 
     setState(() => isLoaded = true);
@@ -76,13 +76,13 @@ class _EditAnimalScreenState extends State<EditAnimalScreen> {
   List<DropdownMenuItem<String>> getSexItems() {
     if (species == 'cavy') {
       return const [
-        DropdownMenuItem(value: 'M', child: Text('Boar')),
-        DropdownMenuItem(value: 'F', child: Text('Sow')),
+        DropdownMenuItem(value: 'Boar', child: Text('Boar')),
+        DropdownMenuItem(value: 'Sow', child: Text('Sow')),
       ];
     }
     return const [
-      DropdownMenuItem(value: 'M', child: Text('Buck')),
-      DropdownMenuItem(value: 'F', child: Text('Doe')),
+      DropdownMenuItem(value: 'Buck', child: Text('Buck')),
+      DropdownMenuItem(value: 'Doe', child: Text('Doe')),
     ];
   }
 

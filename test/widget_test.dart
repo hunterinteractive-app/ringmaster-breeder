@@ -43,6 +43,10 @@ void main() {
     expect(sexLabel('Cavy', 'F'), 'Sow');
     expect(sexLabel('cavy', 'M'), 'Boar');
     expect(sexLabel('Rabbit', 'F'), 'Doe');
+    expect(sexLabel('rabbit', 'Buck'), 'Buck');
+    expect(sexLabel('rabbit', 'Doe'), 'Doe');
+    expect(sexLabel('cavy', 'Boar'), 'Boar');
+    expect(sexLabel('cavy', 'Sow'), 'Sow');
     expect(animalIsLocked('sold'), true);
     expect(animalIsLocked('retired'), false);
   });

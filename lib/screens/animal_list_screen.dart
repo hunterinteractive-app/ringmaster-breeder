@@ -1,6 +1,7 @@
 import '../widgets/ringmaster_page_shell.dart';
 import 'package:flutter/material.dart';
 import '../services/animal_service.dart';
+import '../utils/animal_labels.dart';
 
 class AnimalListScreen extends StatefulWidget {
   final String ringId;
@@ -33,11 +34,11 @@ class _AnimalListScreenState extends State<AnimalListScreen> {
     final x = sex.toUpperCase();
 
     if (s == 'rabbit') {
-      return x == 'M' ? 'B' : 'D'; // Buck / Doe
+      return animalIsMale(sex) ? 'B' : 'D'; // Buck / Doe
     }
 
     if (s == 'cavy') {
-      return x == 'M' ? 'B' : 'S'; // Boar / Sow
+      return animalIsMale(sex) ? 'B' : 'S'; // Boar / Sow
     }
 
     return x; // fallback
@@ -89,7 +90,7 @@ class _AnimalListScreenState extends State<AnimalListScreen> {
               return ListTile(
                 title: Text(animal['name'] ?? 'Unnamed'),
                 subtitle: Text(
-                  '${animal['species']} • ${sexAbbreviation(animal['species'], animal['sex'])} • ${animal['status']}',
+                  '${animal['species']} • ${sexLabel(animal['species'], animal['sex'])} • ${animal['status']}',
                 ),
                 trailing: const Icon(Icons.arrow_forward_ios),
                 onTap: () async {

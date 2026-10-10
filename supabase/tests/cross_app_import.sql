@@ -93,7 +93,7 @@ do $$ begin
  if (select count(*) from public.breeder_exhibitor_profiles where owner_id='legacy-owner')<>1 then raise exception 'Duplicate profiles'; end if;
  if (select count(*) from public.breeder_imported_animals where owner_id='legacy-owner')<>1 then raise exception 'Duplicate animals'; end if;
  if (select count(*) from public.breeder_show_history where owner_id='legacy-owner')<>3 then raise exception 'Duplicate history'; end if;
- if not exists(select 1 from public.animals where name='Imported fixture' and sex='M') then raise exception 'Existing animal overwritten'; end if;
+ if not exists(select 1 from public.animals where name='Imported fixture' and sex='Buck') then raise exception 'Existing animal overwritten'; end if;
  if (public.find_exhibitors_for_breeder_export('owner@example.test')->0->'profile'->>'display_name')<>'Fixture profile' then raise exception 'Breeder export failed'; end if;
 end $$;
 reset role;
@@ -105,4 +105,22 @@ do $$ begin
  begin perform public.apply_breeder_cross_app_import('11111111-1111-4111-8111-111111111111','ringmaster_show','[]'); raise exception 'Client import writer allowed'; exception when insufficient_privilege then null; end;
 end $$;
 reset role;
+-- Verify all species names and legacy writes during the deployment transition.
+insert into public.animals(id,ring_id,name,species,sex) values
+ ('10101010-1010-4010-8010-101010101010','aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa','Fixture doe','rabbit','F'),
+ ('20202020-2020-4020-8020-202020202020','aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa','Fixture boar','cavy','M'),
+ ('30303030-3030-4030-8030-303030303030','aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa','Fixture sow','cavy','Sow');
+insert into public.animals(ring_id,name,species,sex,sire_id,dam_id) values
+ ('aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa','Fixture offspring','rabbit','Doe','bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb','10101010-1010-4010-8010-101010101010'),
+ ('aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa','Fixture cavy offspring','cavy','Boar','20202020-2020-4020-8020-202020202020','30303030-3030-4030-8030-303030303030');
+do $$ begin
+ if exists(select 1 from public.animals where sex in ('M','F')) then raise exception 'Legacy sex code persisted'; end if;
+ if not exists(select 1 from public.animals where name='Fixture doe' and sex='Doe') then raise exception 'Doe conversion failed'; end if;
+ if not exists(select 1 from public.animals where name='Fixture boar' and sex='Boar') then raise exception 'Boar conversion failed'; end if;
+ if not exists(select 1 from public.animals where name='Fixture sow' and sex='Sow') then raise exception 'Sow failed'; end if;
+ begin
+ insert into public.animals(ring_id,species,sex,sire_id) values('aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa','rabbit','Buck','10101010-1010-4010-8010-101010101010');
+ raise exception 'Female sire accepted';
+ exception when raise_exception then if sqlerrm='Female sire accepted' then raise; end if; end;
+end $$;
 rollback;
