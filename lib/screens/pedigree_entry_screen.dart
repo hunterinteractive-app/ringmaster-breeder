@@ -1,3 +1,4 @@
+import '../widgets/pedigree_preview.dart';
 import '../widgets/catalog_field.dart';
 import '../widgets/color_details_fields.dart';
 import '../utils/color_details.dart';
@@ -160,79 +161,7 @@ class _PedigreeEntryScreenState extends State<PedigreeEntryScreen> {
     if (!(form.currentState?.validate() ?? true)) return;
     await showDialog<void>(
       context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('Pedigree preview'),
-        content: SizedBox(
-          width: 1000,
-          child: SingleChildScrollView(
-            child: SingleChildScrollView(
-              scrollDirection: Axis.horizontal,
-              child: Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  for (final generation in [
-                    [0],
-                    [1, 2],
-                    [3, 4, 5, 6],
-                    [7, 8, 9, 10, 11, 12, 13, 14],
-                  ])
-                    SizedBox(
-                      width: 225,
-                      child: Column(
-                        children: [
-                          for (final i in generation)
-                            Card(
-                              child: Padding(
-                                padding: const EdgeInsets.all(12),
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Text(
-                                      PedigreeEntry.slots[i],
-                                      style: const TextStyle(
-                                        fontWeight: FontWeight.bold,
-                                      ),
-                                    ),
-                                    Text(label(entry.at(i))),
-                                    if (entry.at(i) != null)
-                                      Text(
-                                        [
-                                          varietyLabel(
-                                            entry.nodes[entry.at(i)] ?? {},
-                                          ),
-                                          entry.nodes[entry.at(i)]?['dob'],
-                                        ].whereType<String>().join(' • '),
-                                      ),
-                                    if ((entry.nodes[entry.at(
-                                              i,
-                                            )]?['leg_details'] ??
-                                            '')
-                                        .toString()
-                                        .isNotEmpty)
-                                      SelectableText(
-                                        entry.nodes[entry.at(
-                                          i,
-                                        )]!['leg_details'],
-                                      ),
-                                  ],
-                                ),
-                              ),
-                            ),
-                        ],
-                      ),
-                    ),
-                ],
-              ),
-            ),
-          ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx),
-            child: const Text('Close'),
-          ),
-        ],
-      ),
+      builder: (ctx) => PedigreePreview(entry: entry),
     );
   }
 
