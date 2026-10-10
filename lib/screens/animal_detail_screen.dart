@@ -10,7 +10,6 @@ import 'package:printing/printing.dart';
 import '../utils/animal_labels.dart';
 import 'dart:typed_data';
 import 'health_records_screen.dart';
-import '../services/family_service.dart';
 import '../services/animal_service.dart';
 import '../widgets/animal_avatar.dart';
 
@@ -59,20 +58,6 @@ class _AnimalDetailScreenState extends State<AnimalDetailScreen> {
       AnimalService.get(widget.animalId);
   Future<Map<String, dynamic>?> fetchParent(String? id) =>
       AnimalService.parent(id);
-
-  Future<Map<String, dynamic>> fetchSellerProfile() async {
-    final user = supabase.auth.currentUser;
-
-    if (user == null) {
-      throw Exception("Not logged in");
-    }
-
-    return await supabase
-        .from('users')
-        .select()
-        .eq('id', FamilyService.ownerId ?? user.id)
-        .single();
-  }
 
   Future<double?> fetchWeight() => AnimalService.latestWeight(widget.animalId);
 
@@ -289,25 +274,11 @@ class _AnimalDetailScreenState extends State<AnimalDetailScreen> {
                       final pedigree = await PedigreeService.build(
                         widget.animalId,
                       );
-                      final seller = await fetchSellerProfile();
+                      final seller = await PedigreeService.seller();
 
                       final pdfBytes = await PedigreePdfService.generate(
                         pedigree: pedigree,
-                        seller: {
-                          'name': seller['display_name'],
-                          'address': seller['address'],
-                          'city': seller['city'],
-                          'state': seller['state'],
-                          'zip': seller['zip'],
-                          'contact': [seller['phone'], seller['email']]
-                              .whereType<String>()
-                              .where((v) => v.isNotEmpty)
-                              .join(' • '),
-                          'dateSold': DateTime.now()
-                              .toString()
-                              .split(' ')
-                              .first,
-                        },
+                        seller: seller,
                       );
 
                       await saveAndSharePdf(

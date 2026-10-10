@@ -46,6 +46,31 @@ class PedigreeEntry {
     return parent == null ? null : nodes[parent]?[slot.isOdd ? 'sire' : 'dam'];
   }
 
+  static const snapshotSlots = [
+    'animal',
+    'sire',
+    'dam',
+    'sire_sire',
+    'sire_dam',
+    'dam_sire',
+    'dam_dam',
+    'gg1',
+    'gg2',
+    'gg3',
+    'gg4',
+    'gg5',
+    'gg6',
+    'gg7',
+    'gg8',
+  ];
+
+  Map<String, dynamic> snapshot() => {
+    for (var i = 0; i < snapshotSlots.length; i++)
+      snapshotSlots[i]: nodes[at(i)] == null
+          ? null
+          : {...nodes[at(i)]!, 'species': species},
+  };
+
   String expectedSex(int slot) => sexLabel(species, slot.isOdd ? 'M' : 'F');
   String ensure(int slot) {
     final present = at(slot);

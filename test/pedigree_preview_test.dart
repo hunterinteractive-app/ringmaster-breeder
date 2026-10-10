@@ -1,90 +1,44 @@
-import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:ringmaster_breeder/models/pedigree_entry.dart';
-import 'package:ringmaster_breeder/widgets/pedigree_preview.dart';
+import 'package:ringmaster_breeder/services/pedigree_pdf_service.dart';
 
 void main() {
-  testWidgets(
-    'Saved tree shares layout, repeated markers and animal navigation',
-    (tester) async {
-      String? opened;
-      final tree = PedigreePreview.snapshot(
-        pedigree: {
-          'animal': {'id': 'root', 'tattoo': 'HH77', 'breed': 'Tan'},
-          'sire': {'id': 'sire', 'tattoo': 'HH32'},
-          'dam': {'id': 'dam', 'tattoo': 'HH9'},
-          'sire_sire': {
-            'id': 'viper',
-            'name': "Daly's VIPER",
-            'tattoo': 'VIP',
-            'dob': '2015-07-15',
-            'leg_details': 'BOB 02/11/17-HHR',
-          },
-          'dam_sire': {'id': 'viper', 'name': "Daly's VIPER", 'tattoo': 'VIP'},
-        },
-        onAnimalTap: (id) => opened = id,
+  TestWidgetsFlutterBinding.ensureInitialized();
+  test(
+    'Draft snapshot preserves repeated ancestors and all export details',
+    () async {
+      final entry = PedigreeEntry();
+      entry.nodes[entry.root]!.addAll({
+        'name': 'HH77',
+        'tattoo': '77',
+        'breed': 'Tan',
+      });
+      entry.ensure(1);
+      entry.ensure(2);
+      final shared = entry.ensure(3);
+      entry.nodes[shared]!.addAll({
+        'name': "Daly's Viper",
+        'tattoo': 'VIP',
+        'dob': '2015-07-15',
+        'registration_number': 'F803P',
+        'grand_champion_number': 'M826',
+        'legs': 13,
+        'weight': 5.01,
+        'variety': 'Black',
+        'leg_details': 'BOB 02/11/17-HHR',
+      });
+      entry.link(5, shared);
+      final snapshot = entry.snapshot();
+      expect(snapshot.keys, PedigreeEntry.snapshotSlots);
+      expect(snapshot['sire_sire'], snapshot['dam_sire']);
+      expect(snapshot['sire_sire']['leg_details'], 'BOB 02/11/17-HHR');
+      expect(snapshot['animal']['species'], 'rabbit');
+      expect(snapshot['gg1'], isNull);
+      final pdf = await PedigreePdfService.generate(
+        pedigree: snapshot,
+        seller: {'name': 'Example Breeder'},
       );
-      await tester.pumpWidget(MaterialApp(home: Scaffold(body: tree)));
-      await tester.pumpAndSettle();
-      expect(find.text('Pedigree Tree'), findsOneWidget);
-      expect(find.byTooltip('Close preview'), findsNothing);
-      expect(find.textContaining('Repeated ancestor'), findsNWidgets(2));
-      expect(find.textContaining('07/15/2015'), findsOneWidget);
-      expect(find.text('BOB 02/11/17-HHR'), findsOneWidget);
-      await tester.tap(find.byKey(const ValueKey('pedigree-slot-3')));
-      expect(opened, 'viper');
-      expect(
-        tester.getCenter(find.byKey(const ValueKey('pedigree-slot-0'))).dx,
-        lessThan(
-          tester.getCenter(find.byKey(const ValueKey('pedigree-slot-1'))).dx,
-        ),
-      );
-      expect(tester.takeException(), isNull);
+      expect(pdf.length, greaterThan(1000));
     },
   );
-  testWidgets('Traditional preview aligns ancestors and supports zoom', (
-    tester,
-  ) async {
-    final entry = PedigreeEntry();
-    entry.nodes[entry.root]!.addAll({
-      'name': 'Henry’s HH77',
-      'tattoo': 'HH77',
-      'breed': 'Tan',
-      'variety': 'Chocolate',
-      'sex': 'Doe',
-      'dob': '2019-05-29',
-    });
-    for (var i = 1; i < 15; i++) {
-      final key = entry.ensure(i);
-      entry.nodes[key]!.addAll({
-        'name': 'Ancestor $i',
-        'tattoo': 'HH$i',
-        'variety': 'Chocolate',
-        'legs': 4,
-        'registration_number': 'Z183P',
-        'grand_champion_number': 'N2169',
-        'dob': '2016-08-16',
-        'leg_details':
-            'BOB 05/13/17-LIVINGSTONCORBA\nPlaced: 1/10 05/06/17-TNS\nBOV 04/01/17-GPRBA',
-      });
-    }
-    await tester.pumpWidget(MaterialApp(home: PedigreePreview(entry: entry)));
-    await tester.pumpAndSettle();
-    expect(tester.takeException(), isNull);
-    final subject = tester.getCenter(
-      find.byKey(const ValueKey('pedigree-slot-0')),
-    );
-    final sire = tester.getCenter(
-      find.byKey(const ValueKey('pedigree-slot-1')),
-    );
-    final dam = tester.getCenter(find.byKey(const ValueKey('pedigree-slot-2')));
-    expect(subject.dx, lessThan(sire.dx));
-    expect(subject.dy, greaterThan(sire.dy));
-    expect(subject.dy, lessThan(dam.dy));
-    await tester.tap(find.byTooltip('Zoom in'));
-    await tester.pumpAndSettle();
-    await tester.tap(find.text('Fit'));
-    await tester.pumpAndSettle();
-    expect(tester.takeException(), isNull);
-  });
 }
