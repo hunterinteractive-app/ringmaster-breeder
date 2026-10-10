@@ -1,0 +1,68 @@
+import 'package:flutter/material.dart';
+import 'package:flutter_test/flutter_test.dart';
+import 'package:ringmaster_breeder/models/pedigree_entry.dart';
+import 'package:ringmaster_breeder/screens/pedigree_entry_screen.dart';
+
+void main() {
+  test(
+    'Repeated ancestors share one identity through draft save and restore',
+    () {
+      final p = PedigreeEntry();
+      p.nodes[p.root]!['name'] = 'Subject';
+      final sire = p.ensure(1);
+      p.nodes[sire]!['name'] = 'Repeated sire';
+      final dam = p.ensure(2);
+      p.nodes[dam]!['name'] = 'Dam';
+      p.link(5, sire);
+      expect(p.at(1), p.at(5));
+      p.nodes[sire]!['tattoo'] = 'S1';
+      expect(p.nodes[p.at(5)]!['tattoo'], 'S1');
+      expect(p.data()['nodes'].length, 3);
+      final restored = PedigreeEntry()..restore(p.data());
+      expect(restored.at(1), restored.at(5));
+      expect(() => p.link(3, sire), throwsStateError);
+      expect(() => p.link(4, sire), throwsStateError);
+    },
+  );
+  testWidgets('Type a pedigree and reuse its sire on the dam side', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(1200, 1400);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+    await tester.pumpWidget(
+      const MaterialApp(
+        home: PedigreeEntryScreen(ringId: 'test', initialAnimals: []),
+      ),
+    );
+    await tester.pumpAndSettle();
+    Finder field(String label) => find.byWidgetPredicate(
+      (w) => w is TextField && w.decoration?.labelText == label,
+    );
+    await tester.enterText(field('Name'), 'Subject');
+    await tester.tap(find.widgetWithText(ChoiceChip, 'Sire'));
+    await tester.pumpAndSettle();
+    await tester.enterText(field('Name'), 'Shared father');
+    await tester.enterText(field('Ear number / tag'), 'DAD1');
+    await tester.tap(find.widgetWithText(ChoiceChip, 'Dam'));
+    await tester.pumpAndSettle();
+    await tester.enterText(field('Name'), 'Mother');
+    await tester.tap(find.widgetWithText(ChoiceChip, 'Dam’s sire'));
+    await tester.pumpAndSettle();
+    await tester.enterText(
+      find.byWidgetPredicate(
+        (w) =>
+            w is TextField &&
+            w.decoration?.labelText ==
+                'Find existing or reuse an entered ancestor',
+      ),
+      'DAD1',
+    );
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Shared father * DAD1').last);
+    await tester.pumpAndSettle();
+    expect(find.textContaining('Repeated ancestor'), findsOneWidget);
+    expect(tester.takeException(), isNull);
+  });
+}

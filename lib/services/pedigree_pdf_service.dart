@@ -205,7 +205,7 @@ class PedigreePdfService {
           _line(0, v('name'), bold: true),
           _line(1, 'Ear #: ${v('tattoo')}'),
           _line(2, 'Breed: ${v('breed')}'),
-          _rightLine(2, 'Wt: ${v('weight')}'),
+          _rightLine(2, 'Wt: ${v('weight')}  Legs: ${v('legs')}'),
           _line(3, 'Variety: ${v('variety')}'),
           _rightLine(3, 'Reg: ${v('registration_number')}'),
           _line(4, 'DOB: ${v('dob')}'),

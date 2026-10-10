@@ -21,6 +21,7 @@ class AnimalService {
               .from('animals')
               .select()
               .eq('ring_id', ringId)
+              .eq('pedigree_only', false)
               .order('created_at'),
         ).map(_withPhoto),
       );

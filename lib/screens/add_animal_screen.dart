@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../services/breed_service.dart';
+import 'pedigree_entry_screen.dart';
 import '../services/variety_service.dart';
 
 class AddAnimalScreen extends StatefulWidget {
@@ -152,6 +153,45 @@ class _AddAnimalScreenState extends State<AddAnimalScreen> {
         padding: const EdgeInsets.all(16),
         child: ListView(
           children: [
+            Card(
+              child: Padding(
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text(
+                      'Have a full pedigree?',
+                      style: TextStyle(
+                        fontSize: 20,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    const Text(
+                      'Enter three generations, reuse ancestors, or resume a saved draft.',
+                    ),
+                    const SizedBox(height: 8),
+                    FilledButton.icon(
+                      onPressed: () async {
+                        final saved = await Navigator.push<bool>(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) =>
+                                PedigreeEntryScreen(ringId: widget.ringId),
+                          ),
+                        );
+                        if (saved == true && context.mounted) {
+                          Navigator.pop(context, true);
+                        }
+                      },
+                      icon: const Icon(Icons.account_tree_outlined),
+                      label: const Text('Enter full pedigree'),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            const SizedBox(height: 16),
+
             /// NAME
             TextField(
               controller: nameController,
