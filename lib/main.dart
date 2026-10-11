@@ -1,3 +1,4 @@
+import 'screens/delete_account_screen.dart';
 import 'screens/legal/legal_gate.dart';
 import 'services/legal_service.dart';
 import 'dart:async';
@@ -38,13 +39,16 @@ class MyApp extends StatelessWidget {
           Supabase.instance.client.auth.currentSession == null
           ? child ?? const SizedBox.shrink()
           : AppShell(
-              child: LegalGate(
+              child: AccountDeletionGate(
                 key: ValueKey(Supabase.instance.client.auth.currentUser!.id),
-                gateway: LegalService(
-                  Supabase.instance.client,
-                  Supabase.instance.client.auth.currentUser!.id,
+                child: LegalGate(
+                  key: ValueKey(Supabase.instance.client.auth.currentUser!.id),
+                  gateway: LegalService(
+                    Supabase.instance.client,
+                    Supabase.instance.client.auth.currentUser!.id,
+                  ),
+                  child: child ?? const SizedBox.shrink(),
                 ),
-                child: child ?? const SizedBox.shrink(),
               ),
             ),
     ),

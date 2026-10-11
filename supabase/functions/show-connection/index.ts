@@ -34,6 +34,8 @@ Deno.serve(async req=>{
    const identity=await admin.from('users').select('id').eq('auth_user_id',user.id).single();if(identity.error)throw identity.error;
    herds=await rows((a,b)=>admin.from('farms').select('id,name').eq('owner_id',identity.data.id).eq('is_demo',false).order('id').range(a,b));
    const found=await admin.from('show_connections').select('*').eq('user_id',user.id).maybeSingle();if(found.error)throw found.error;connection=found.data;
+   const deleting=await admin.from('account_deletions').select('user_id').eq('user_id',user.id).maybeSingle();if(deleting.error)throw deleting.error;
+   if(deleting.data)return reply({error:'Account deletion is in progress.'},409);
    if(body.action==='status')return reply({connection,herds});
    if(body.action==='connect'){
     const match=await show.rpc('breeder_verified_account',{p_email:user.email});if(match.error)throw match.error;

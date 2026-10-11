@@ -1,3 +1,4 @@
+import 'delete_account_screen.dart';
 import '../widgets/show_connection_panel.dart';
 import 'dart:convert';
 import 'dart:typed_data';
@@ -356,12 +357,12 @@ class _AccountScreenState extends State<AccountScreen> {
                       Icons.manage_accounts_outlined,
                       [
                         const Text(
-                          'Account closure and permanent deletion require a verified account-management service. They are not available here yet.',
+                          'Permanently delete your Breeder account and all herds you own. Export any records you want to keep first.',
                         ),
                         const SizedBox(height: 12),
-                        const OutlinedButton(
-                          onPressed: null,
-                          child: Text('Delete account — not yet available'),
+                        OutlinedButton(
+                          onPressed: () => open(const DeleteAccountScreen()),
+                          child: const Text('Delete account'),
                         ),
                         const SizedBox(height: 12),
                         OutlinedButton.icon(
