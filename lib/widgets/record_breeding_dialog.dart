@@ -47,7 +47,7 @@ class _RecordBreedingDialogState extends State<RecordBreedingDialog> {
   );
   Future<void> loadAll() async {
     if (loadedParents != null) return;
-    if (ringId == null) throw StateError('No Ring selected');
+    if (ringId == null) throw StateError('No Herd selected');
     loadedParents = List<Map<String, dynamic>>.from(
       await Supabase.instance.client
           .from('animals')

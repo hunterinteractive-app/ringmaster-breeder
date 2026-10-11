@@ -223,7 +223,7 @@ class BreedingDashboard extends StatelessWidget {
                   child: Padding(
                     padding: EdgeInsets.all(32),
                     child: Text(
-                      'No breedings here yet. Start with Actions → Record breeding in your Ring.',
+                      'No breedings here yet. Start with Actions → Record breeding in your Herd.',
                     ),
                   ),
                 ),

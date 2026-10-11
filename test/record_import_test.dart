@@ -10,7 +10,7 @@ class FakeImport implements RecordImportGateway {
   @override
   Future<List<Map<String, dynamic>>> ownedRings() async => hasRing
       ? [
-          {'id': 'ring', 'name': 'My Ring'},
+          {'id': 'ring', 'name': 'My Herd'},
         ]
       : [];
   @override
@@ -81,7 +81,7 @@ void main() {
     expect(find.byType(RecordImportScreen), findsNothing);
   });
   for (final hasRing in [true, false]) {
-    testWidgets('Show import respects Ring availability: $hasRing', (
+    testWidgets('Show import respects Herd availability: $hasRing', (
       tester,
     ) async {
       final gateway = FakeImport(hasRing: hasRing);

@@ -101,7 +101,7 @@ class _RecordImportScreenState extends State<RecordImportScreen> {
       if (mounted) {
         setState(
           () => _message =
-              'Import could not be completed. Check your Ring and selected records, then try again.',
+              'Import could not be completed. Check your Herd and selected records, then try again.',
         );
       }
     } finally {
@@ -189,13 +189,13 @@ class _RecordImportScreenState extends State<RecordImportScreen> {
                   ),
                   if (_rings.isEmpty)
                     const Text(
-                      'Create a Ring first to import animals. You can import profiles and show history now, then return for animals.',
+                      'Create a Herd first to import animals. You can import profiles and show history now, then return for animals.',
                     ),
                   if (_rings.isNotEmpty && _animals)
                     DropdownButtonFormField<String>(
                       initialValue: _ring,
                       decoration: const InputDecoration(
-                        labelText: 'Import animals into your Ring',
+                        labelText: 'Import animals into your Herd',
                       ),
                       items: _rings
                           .map(

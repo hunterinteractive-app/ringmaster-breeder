@@ -43,7 +43,7 @@ void main() {
         theme: AppTheme.light,
         home: Builder(
           builder: (context) => RingMasterPageShell(
-            title: 'My Rings',
+            title: 'My Herds',
             body: TextButton(
               onPressed: () => Navigator.of(context).push(
                 MaterialPageRoute<void>(
@@ -68,7 +68,7 @@ void main() {
         await tester.tap(find.byTooltip('Home').last);
       }
       await tester.pumpAndSettle();
-      expect(find.text('My Rings'), findsOneWidget);
+      expect(find.text('My Herds'), findsOneWidget);
       expect(tester.takeException(), isNull);
     }
   });

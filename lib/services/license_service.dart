@@ -42,7 +42,7 @@ Future<LicenseStatus> fetchLicenseStatus(String userId) async {
   final String tierCode = license['tier_code'];
   final int maxRings = license['license_tiers']['max_rings'];
 
-  // 2. Count how many Rings the user owns
+  // 2. Count how many Herds the user owns
   final ringCount = await supabase
       .from('farms')
       .select()

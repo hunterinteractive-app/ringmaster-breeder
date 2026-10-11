@@ -66,7 +66,7 @@ class _FamilyAccessScreenState extends State<FamilyAccessScreen> {
       padding: const EdgeInsets.all(24),
       children: [
         const Text(
-          'Invite family members to access all Rings, animals, weights, health records, and pedigrees in your family. Each member signs in with their own email.',
+          'Invite family members to access all Herds, animals, weights, health records, and pedigrees in your family. Each member signs in with their own email.',
         ),
         const SizedBox(height: 12),
         const Text(

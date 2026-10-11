@@ -81,7 +81,7 @@ class _RingDashboardState extends State<RingDashboard> {
     final name = await showDialog<String>(
       context: context,
       builder: (_) =>
-          const NameDialog(title: 'Create Ring', label: 'Ring name'),
+          const NameDialog(title: 'Create Herd', label: 'Herd name'),
     );
     if (name == null || !mounted) return;
     try {
@@ -95,7 +95,7 @@ class _RingDashboardState extends State<RingDashboard> {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
             content: Text(
-              'Unable to create Ring. Check your license and try again.',
+              'Unable to create Herd. Check your license and try again.',
             ),
           ),
         );
@@ -105,7 +105,7 @@ class _RingDashboardState extends State<RingDashboard> {
 
   @override
   Widget build(BuildContext context) => RingMasterPageShell(
-    title: 'My Rings',
+    title: 'My Herds',
     actions: [
       IconButton(
         tooltip: 'Import RingMaster records',
@@ -140,7 +140,7 @@ class _RingDashboardState extends State<RingDashboard> {
         },
       ),
       IconButton(
-        tooltip: 'Refresh Rings',
+        tooltip: 'Refresh Herds',
         icon: const Icon(Icons.refresh),
         onPressed: _refresh,
       ),
@@ -170,7 +170,7 @@ class _RingDashboardState extends State<RingDashboard> {
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                const Text('Unable to load your Rings.'),
+                const Text('Unable to load your Herds.'),
                 TextButton(onPressed: _refresh, child: const Text('Try again')),
               ],
             ),
@@ -222,7 +222,7 @@ class _RingDashboardState extends State<RingDashboard> {
             if (rings.isEmpty)
               const Padding(
                 padding: EdgeInsets.all(24),
-                child: Text('No Rings yet.'),
+                child: Text('No Herds yet.'),
               ),
             ...rings.map(
               (ring) => Card(
@@ -235,8 +235,8 @@ class _RingDashboardState extends State<RingDashboard> {
                               h['owner_user_id'] == FamilyService.ownerId &&
                               h['is_owner'] == true,
                         )
-                        ? 'Your Ring'
-                        : 'Shared family Ring',
+                        ? 'Your Herd'
+                        : 'Shared family Herd',
                   ),
                   trailing: const Icon(Icons.chevron_right),
                   onTap: () => Navigator.pushNamed(
@@ -253,7 +253,7 @@ class _RingDashboardState extends State<RingDashboard> {
                 child: ElevatedButton.icon(
                   onPressed: _createRing,
                   icon: const Icon(Icons.add),
-                  label: const Text('Create Ring'),
+                  label: const Text('Create Herd'),
                 ),
               ),
           ],

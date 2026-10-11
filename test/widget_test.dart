@@ -139,7 +139,7 @@ void main() {
         theme: AppTheme.light,
         builder: (_, child) => AppShell(child: child!),
         home: const RingMasterPageShell(
-          title: 'My Rings',
+          title: 'My Herds',
           body: Text('Content'),
         ),
       ),

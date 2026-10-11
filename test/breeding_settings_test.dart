@@ -32,7 +32,7 @@ void main() {
     expect(breedingDay(DateTime(2026, 3, 1), 14), DateTime(2026, 3, 15));
     expect(breedingDay(DateTime(2026, 10, 20), 4 * 7), DateTime(2026, 11, 17));
   });
-  testWidgets('Reject reversed ranges and save both species for the Ring', (
+  testWidgets('Reject reversed ranges and save both species for the Herd', (
     tester,
   ) async {
     tester.view.physicalSize = const Size(1000, 2600);

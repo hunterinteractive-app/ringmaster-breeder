@@ -118,7 +118,7 @@ class _BreedingSettingsDialogState extends State<BreedingSettingsDialog> {
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
                   const Text(
-                    'Defaults for this Ring. Estimated windows update when settings change. Actual event dates are kept separately.',
+                    'Defaults for this Herd. Estimated windows update when settings change. Actual event dates are kept separately.',
                   ),
                   for (final s in ['rabbit', 'cavy']) ...[
                     const SizedBox(height: 20),
