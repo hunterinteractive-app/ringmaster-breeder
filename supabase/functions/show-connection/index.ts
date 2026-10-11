@@ -7,6 +7,7 @@ Deno.serve(async req=>{
  if(req.method==='OPTIONS')return reply({});
  if(req.method!=='POST')return reply({error:'Method not allowed'},405);
  let admin:any,connection:any;
+ let settingsSaved=false;
  try{
   const body=await req.json();
   if(!['status','connect','save','disconnect','sync','pull'].includes(body.action))return reply({error:'Unknown action'},400);
@@ -45,7 +46,7 @@ Deno.serve(async req=>{
    if(body.action==='save'||body.action==='disconnect'){
     const ids=body.action==='disconnect'?[]:body.herd_ids;
     if(!Array.isArray(ids)||ids.some(id=>!herds.some(h=>h.id===id)))return reply({error:'Choose only herds you own'},403);
-    const saved=await admin.from('show_connections').update({herd_ids:[...new Set(ids)],enabled:body.action!=='disconnect'&&ids.length>0,updated_at:new Date().toISOString()}).eq('id',connection.id).select().single();if(saved.error)throw saved.error;connection=saved.data;
+    const saved=await admin.from('show_connections').update({herd_ids:[...new Set(ids)],enabled:body.action!=='disconnect'&&ids.length>0,updated_at:new Date().toISOString()}).eq('id',connection.id).select().single();if(saved.error)throw saved.error;connection=saved.data;settingsSaved=true;
    }
   }
   // Recheck source ownership and verified account identity on every refresh.
@@ -61,8 +62,9 @@ Deno.serve(async req=>{
   const result=await show.rpc('apply_breeder_animals',{p_connection:connection.id,p_owner:connection.show_user_id,p_version:connection.updated_at,p_animals:animals.map(a=>({...a,show_id:provenance.get(a.id)??null,pattern:a.color_details?.pattern??'',sex:['M','Buck','Boar'].includes(a.sex)?(a.species==='cavy'?'Boar':'Buck'):['F','Doe','Sow'].includes(a.sex)?(a.species==='cavy'?'Sow':'Doe'):null}))});if(result.error)throw result.error;
   await admin.from('show_connections').update({last_synced_at:new Date().toISOString(),last_error:null}).eq('id',connection.id).eq('updated_at',connection.updated_at);
   return reply({connected:connection.enabled,count:result.data});
- }catch(_){
+ }catch(error){
+  console.error('show-connection failed', {code:(error as any)?.code??'request_failed'});
   if(connection&&admin)await admin.from('show_connections').update({last_error:'Refresh failed. Please retry.'}).eq('id',connection.id);
-  return reply({error:'Unable to refresh the connection. Your settings are saved; retry shortly.'},503);
+  return reply({error:settingsSaved?'Your herd settings were saved, but syncing failed. Please retry.':'Unable to complete the connection request. Please retry.'},503);
  }
 });
