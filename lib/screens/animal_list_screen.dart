@@ -1,3 +1,4 @@
+import 'herd_calendar_screen.dart';
 import 'breeding_tracker_screen.dart';
 import '../widgets/record_breeding_dialog.dart';
 import '../widgets/bulk_records_dialog.dart';
@@ -110,6 +111,16 @@ class _AnimalBrowserState extends State<AnimalBrowser> {
   void dispose() {
     _search.dispose();
     super.dispose();
+  }
+
+  Future<void> _calendar() async {
+    final ring = widget.ringId ?? widget.animals.firstOrNull?['ring_id'];
+    if (ring == null) return;
+    await Navigator.push(
+      context,
+      MaterialPageRoute<void>(builder: (_) => HerdCalendarScreen(ringId: ring)),
+    );
+    if (mounted) widget.onRefresh();
   }
 
   Future<void> _tracking() async {
@@ -318,9 +329,17 @@ class _AnimalBrowserState extends State<AnimalBrowser> {
                     if (v == 'refresh') widget.onRefresh();
                     if (v == 'breeding') _recordBreeding();
                     if (v == 'tracking') _tracking();
+                    if (v == 'calendar') _calendar();
                     if (v == 'weights' || v == 'health') _bulk(v == 'weights');
                   },
                   itemBuilder: (_) => const [
+                    PopupMenuItem(
+                      value: 'calendar',
+                      child: ListTile(
+                        leading: Icon(Icons.calendar_month),
+                        title: Text('Herd calendar'),
+                      ),
+                    ),
                     PopupMenuItem(
                       value: 'tracking',
                       child: ListTile(
