@@ -9,3 +9,5 @@ Snapshots apply atomically. Repeated entry IDs update historical results instead
 Server functions are service-role-only; received data uses family RLS. A settings version and start timestamp reject disabled/reconfigured or stale concurrent refreshes. Failed/oversized pagination does not replace the stored snapshot.
 
 Verification: `supabase/tests/connected_show_reports.sql` and Show's `supabase/tests/breeder_report_export.sql` run in rollback transactions. Widget coverage is in `test/show_reports_test.dart`.
+
+Show history presents placements and award badges from current entry fields, entry awards, and legacy result details. Missing placements remain explicitly unrecorded. Eligible major wins on matched animals are composed separately from manual show notes and included beneath the animal block in the shared pedigree layout (preview, tree, and PDF). Withdrawn, scratched, disqualified, and no-show results are excluded. Refreshing a correction replaces generated wins without editing manual notes or leg totals.

@@ -11,7 +11,11 @@ class PedigreeLayout {
   PedigreeLayout(this.pedigree) {
     details = [
       for (final key in PedigreeEntry.snapshotSlots)
-        wrap((pedigree[key]?['leg_details'] ?? '').toString()),
+        wrap(
+          [pedigree[key]?['leg_details'], pedigree[key]?['synced_show_details']]
+              .where((v) => v != null && v.toString().trim().isNotEmpty)
+              .join('\n'),
+        ),
     ];
     rowHeight = math.max(
       61.0,

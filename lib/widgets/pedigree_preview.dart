@@ -39,7 +39,9 @@ class _PedigreePreviewState extends State<PedigreePreview> {
   }
 
   Future<Uint8List> _generate() async => PedigreePdfService.generate(
-    pedigree: pedigree,
+    pedigree: widget.entry == null
+        ? pedigree
+        : await PedigreeService.withShowWins(pedigree),
     seller: await PedigreeService.seller(),
   );
 

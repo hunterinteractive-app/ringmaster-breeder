@@ -90,9 +90,9 @@ void main() {
         ),
       );
       expect(find.text('Viper • VIP'), findsOneWidget);
-      expect(find.text('10-01-26'), findsOneWidget);
-      expect(find.text('Placement: 1'), findsOneWidget);
-      expect(find.text('Awards: BOV'), findsOneWidget);
+      expect(find.text('Oct 1, 2026'), findsOneWidget);
+      expect(find.text('1st place'), findsOneWidget);
+      expect(find.text('BOV • Best of Variety'), findsOneWidget);
       expect(
         find.text('Not linked to an animal. The result is retained here.'),
         findsOneWidget,

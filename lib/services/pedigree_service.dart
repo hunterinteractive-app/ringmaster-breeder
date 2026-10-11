@@ -1,5 +1,6 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'family_service.dart';
+import '../utils/show_results.dart';
 
 class PedigreeService {
   static Future<Map<String, dynamic>> seller() async {
@@ -25,11 +26,43 @@ class PedigreeService {
   }
 
   static Future<Map<String, dynamic>> build(String animalId) async =>
-      Map<String, dynamic>.from(
-        await Supabase.instance.client.rpc(
-              'breeder_pedigree_snapshot',
-              params: {'p_animal_id': animalId},
-            )
-            as Map,
+      withShowWins(
+        Map<String, dynamic>.from(
+          await Supabase.instance.client.rpc(
+                'breeder_pedigree_snapshot',
+                params: {'p_animal_id': animalId},
+              )
+              as Map,
+        ),
       );
+  static Future<Map<String, dynamic>> withShowWins(
+    Map<String, dynamic> pedigree,
+  ) async {
+    final ids = pedigree.values
+        .whereType<Map>()
+        .map((a) => a['id'] ?? a['existing_id'])
+        .whereType<String>()
+        .toSet()
+        .toList();
+    if (ids.isEmpty) return pedigree;
+    final rows = <Map<String, dynamic>>[];
+    for (var start = 0; ; start += 500) {
+      final page = await Supabase.instance.client
+          .from('breeder_show_history')
+          .select('animal_id,record,source_available')
+          .inFilter('animal_id', ids)
+          .eq('source_available', true)
+          .order('id')
+          .range(start, start + 499);
+      rows.addAll(page);
+      if (page.length < 500) break;
+    }
+    rows.sort(
+      (a, b) => (b['record']['shows']?['start_date'] ?? '')
+          .toString()
+          .compareTo((a['record']['shows']?['start_date'] ?? '').toString()),
+    );
+    attachPedigreeWins(pedigree, rows);
+    return pedigree;
+  }
 }
