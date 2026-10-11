@@ -2,6 +2,7 @@ import 'package:flutter/foundation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 class FamilyService {
+  static String? selectedHerd;
   static final selectedOwner = ValueNotifier<String?>(null);
   static List<Map<String, dynamic>> households = [];
   static List<Map<String, dynamic>> invitations = [];
@@ -14,6 +15,7 @@ class FamilyService {
                 : households.first['owner_user_id'] as String)
       : Supabase.instance.client.auth.currentUser?.id;
   static void clear() {
+    selectedHerd = null;
     _actor = null;
     households = [];
     invitations = [];
@@ -59,6 +61,7 @@ class FamilyService {
     if (!households.any((h) => h['owner_user_id'] == owner)) {
       throw StateError('Family access is no longer available.');
     }
+    selectedHerd = null;
     selectedOwner.value = owner;
   }
 }

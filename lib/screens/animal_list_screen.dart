@@ -1,3 +1,4 @@
+import '../services/family_service.dart';
 import 'herd_calendar_screen.dart';
 import 'breeding_tracker_screen.dart';
 import '../widgets/record_breeding_dialog.dart';
@@ -33,6 +34,7 @@ class _AnimalListScreenState extends State<AnimalListScreen> {
   @override
   void initState() {
     super.initState();
+    FamilyService.selectedHerd = widget.ringId;
     _animals = AnimalService.list(widget.ringId);
   }
 

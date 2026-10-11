@@ -1,3 +1,4 @@
+import 'screens/calendar_home_screen.dart';
 import 'screens/account_screen.dart';
 import 'screens/delete_account_screen.dart';
 import 'screens/legal/legal_gate.dart';
@@ -55,6 +56,7 @@ class MyApp extends StatelessWidget {
     ),
     home: const AuthRoot(),
     routes: {
+      '/calendar': (_) => const CalendarHomeScreen(),
       '/account': (_) => const AccountScreen(),
       '/animals': (context) {
         final args =

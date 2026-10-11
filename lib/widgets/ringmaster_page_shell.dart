@@ -11,6 +11,7 @@ class RingMasterPageShell extends StatelessWidget {
 
   final bool showAccountButton;
   final bool isAccountPage;
+  final bool isCalendarPage;
   final VoidCallback? onRefresh;
   final VoidCallback? onAccountReturn;
   final bool showHomeButton;
@@ -35,6 +36,7 @@ class RingMasterPageShell extends StatelessWidget {
     this.subtitle = 'RingMaster Breeder',
     this.showAccountButton = true,
     this.isAccountPage = false,
+    this.isCalendarPage = false,
     this.onRefresh,
     this.onAccountReturn,
     this.showHomeButton = true,
@@ -122,6 +124,14 @@ class RingMasterPageShell extends StatelessWidget {
           onPressed: () {
             Navigator.of(context).popUntil((route) => route.isFirst);
           },
+        ),
+      if (showAccountButton)
+        IconButton(
+          tooltip: 'Herd calendar',
+          icon: const Icon(Icons.calendar_month_outlined),
+          onPressed: isCalendarPage
+              ? null
+              : () => Navigator.of(context).pushNamed('/calendar'),
         ),
       if (onRefresh != null)
         IconButton(

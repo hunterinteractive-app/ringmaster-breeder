@@ -9,8 +9,14 @@ import 'health_records_screen.dart';
 
 class HerdCalendarScreen extends StatefulWidget {
   final String ringId;
+  final Widget? herdPicker;
   final Future<List<HerdCalendarEvent>> Function()? loader;
-  const HerdCalendarScreen({super.key, required this.ringId, this.loader});
+  const HerdCalendarScreen({
+    super.key,
+    required this.ringId,
+    this.loader,
+    this.herdPicker,
+  });
   @override
   State<HerdCalendarScreen> createState() => _HerdCalendarScreenState();
 }
@@ -144,10 +150,12 @@ class _HerdCalendarScreenState extends State<HerdCalendarScreen> {
         .toList();
     return RingMasterPageShell(
       title: 'Herd calendar',
+      isCalendarPage: true,
       onRefresh: load,
       body: ListView(
         padding: const EdgeInsets.all(20),
         children: [
+          if (widget.herdPicker != null) widget.herdPicker!,
           Text(
             'Your herd, day by day',
             style: Theme.of(context).textTheme.headlineSmall,

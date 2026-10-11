@@ -5,6 +5,41 @@ import 'package:ringmaster_breeder/widgets/ringmaster_page_shell.dart';
 
 void main() {
   testWidgets(
+    'Global calendar opens and returns without losing the current page',
+    (tester) async {
+      await tester.pumpWidget(
+        MaterialApp(
+          routes: {
+            '/calendar': (_) => const RingMasterPageShell(
+              title: 'Calendar',
+              isCalendarPage: true,
+              body: Text('Calendar content'),
+            ),
+          },
+          home: const RingMasterPageShell(
+            title: 'Animal details',
+            body: Text('Current animal'),
+          ),
+        ),
+      );
+      await tester.tap(find.byTooltip('Herd calendar'));
+      await tester.pumpAndSettle();
+      expect(find.text('Calendar content'), findsOneWidget);
+      expect(
+        tester
+            .widget<IconButton>(
+              find.widgetWithIcon(IconButton, Icons.calendar_month_outlined),
+            )
+            .onPressed,
+        isNull,
+      );
+      await tester.tap(find.byIcon(Icons.arrow_back));
+      await tester.pumpAndSettle();
+      expect(find.text('Current animal'), findsOneWidget);
+    },
+  );
+
+  testWidgets(
     'Shared Account navigation returns to the same page and refresh is local',
     (tester) async {
       var refreshed = 0;

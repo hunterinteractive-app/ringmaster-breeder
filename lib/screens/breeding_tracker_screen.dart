@@ -1,4 +1,3 @@
-import 'herd_calendar_screen.dart';
 import '../utils/offspring_names.dart';
 import '../widgets/catalog_field.dart';
 import '../widgets/breeding_dashboard.dart';
@@ -109,19 +108,6 @@ class _BreedingTrackerScreenState extends State<BreedingTrackerScreen> {
     title: 'Breedings & litters',
     onRefresh: refresh,
     actions: [
-      IconButton(
-        tooltip: 'Herd calendar',
-        icon: const Icon(Icons.calendar_month),
-        onPressed: () async {
-          await Navigator.push(
-            context,
-            MaterialPageRoute<void>(
-              builder: (_) => HerdCalendarScreen(ringId: widget.ringId),
-            ),
-          );
-          if (mounted) refresh();
-        },
-      ),
       IconButton(
         tooltip: 'Breeding settings',
         icon: const Icon(Icons.settings_outlined),
