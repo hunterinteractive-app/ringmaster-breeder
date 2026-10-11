@@ -10,6 +10,7 @@ import 'package:printing/printing.dart';
 import '../utils/animal_labels.dart';
 import 'dart:typed_data';
 import 'health_records_screen.dart';
+import 'show_reports_screen.dart';
 import '../services/animal_service.dart';
 import '../widgets/animal_avatar.dart';
 
@@ -249,6 +250,18 @@ class _AnimalDetailScreenState extends State<AnimalDetailScreen> {
                   child: const Text("Health & Vaccine Records"),
                 ),
 
+                const SizedBox(height: 12),
+
+                ElevatedButton(
+                  onPressed: () => Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) =>
+                          ShowReportsScreen(animalId: widget.animalId),
+                    ),
+                  ),
+                  child: const Text('Show history & reports'),
+                ),
                 const SizedBox(height: 12),
 
                 /// View Pedigree Tree

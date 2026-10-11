@@ -1,4 +1,7 @@
 import 'package:flutter/material.dart';
+import '../services/show_report_service.dart';
+import '../screens/show_reports_screen.dart';
+import 'package:intl/intl.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 class ShowConnectionPanel extends StatefulWidget {
@@ -22,6 +25,9 @@ class _ShowConnectionPanelState extends State<ShowConnectionPanel> {
 
   Future<Map<String, dynamic>> request(String name) async {
     if (widget.gateway != null) return widget.gateway!(name, selected.toList());
+    if (name.startsWith('reports-')) {
+      return ShowReportService.request(name.substring(8));
+    }
     final response = await Supabase.instance.client.functions.invoke(
       'show-connection',
       body: {'action': name, 'herd_ids': selected.toList()},
@@ -38,7 +44,11 @@ class _ShowConnectionPanelState extends State<ShowConnectionPanel> {
       notice = null;
     });
     try {
-      final result = await request(name);
+      var result = await request(name);
+      if (name == 'reports-enable') {
+        if (mounted) setState(() => connection?['reports_enabled'] = true);
+        result = await request('reports-refresh');
+      }
       final data = name == 'status' || name == 'connect'
           ? result
           : await request('status');
@@ -48,9 +58,18 @@ class _ShowConnectionPanelState extends State<ShowConnectionPanel> {
             ? null
             : Map<String, dynamic>.from(data['connection']);
         herds = data['herds'] ?? [];
-        selected = Set<String>.from(connection?['herd_ids'] ?? []);
+        if (!name.startsWith('reports-')) {
+          selected = Set<String>.from(connection?['herd_ids'] ?? []);
+        }
         if (name == 'save' || name == 'sync') {
           notice = 'Refreshed ${result['count']} animals in Show.';
+        }
+        if (name == 'reports-enable' || name == 'reports-refresh') {
+          notice =
+              'Received ${result['reports'] ?? 0} reports and ${result['results'] ?? 0} show results.';
+        }
+        if (name == 'reports-disable') {
+          notice = 'Report receiving stopped. Your received reports are kept.';
         }
         if (name == 'disconnect') {
           notice = 'Herd sharing stopped. Existing Show entries are preserved.';
@@ -153,9 +172,49 @@ class _ShowConnectionPanelState extends State<ShowConnectionPanel> {
         ),
       ],
       const Divider(),
-      const Text(
-        'Automatic show reports: not yet connected. Manual show-history imports remain available below.',
-      ),
+      if (connection != null) ...[
+        SwitchListTile(
+          contentPadding: EdgeInsets.zero,
+          title: const Text('Receive show reports'),
+          subtitle: const Text(
+            'Receive available exhibitor reports, ARBA leg PDFs and show results from your linked Show account. Reports refresh when you open Show reports.',
+          ),
+          value: connection!['reports_enabled'] == true,
+          onChanged: busy
+              ? null
+              : (value) => action(value ? 'reports-enable' : 'reports-disable'),
+        ),
+        if (connection!['last_reports_synced_at'] != null)
+          Text(
+            'Reports refreshed: ${DateFormat('MM-dd-yy HH:mm').format(DateTime.parse(connection!['last_reports_synced_at']).toLocal())}',
+          ),
+        if (connection!['last_reports_error'] != null)
+          Text(
+            connection!['last_reports_error'],
+            style: TextStyle(color: Theme.of(context).colorScheme.error),
+          ),
+        Wrap(
+          spacing: 12,
+          children: [
+            OutlinedButton.icon(
+              icon: const Icon(Icons.description_outlined),
+              label: const Text('Show reports'),
+              onPressed: () => Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (_) => const ShowReportsScreen(ownAccount: true),
+                ),
+              ),
+            ),
+            if (connection!['reports_enabled'] == true)
+              TextButton(
+                onPressed: busy ? null : () => action('reports-refresh'),
+                child: const Text('Refresh reports'),
+              ),
+          ],
+        ),
+      ] else
+        const Text('Link your Show account to receive show reports.'),
     ],
   );
 }
