@@ -346,7 +346,7 @@ class _AccountScreenState extends State<AccountScreen> {
                       ),
                       const SizedBox(height: 12),
                       const Text(
-                        'Online billing, plan changes, and cancellation will be available once the billing provider is connected.',
+                        'Billing will be managed through Stripe. Plan changes and cancellation will be available once Stripe is connected.',
                       ),
                     ]),
                     section('Family access', Icons.group_outlined, [
