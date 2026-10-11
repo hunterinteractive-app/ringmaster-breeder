@@ -1,3 +1,4 @@
+import '../widgets/catalog_field.dart';
 import '../widgets/breeding_dashboard.dart';
 import '../widgets/breeding_settings_dialog.dart';
 import 'package:flutter/material.dart';
@@ -565,12 +566,7 @@ class _LitterOffspringDialogState extends State<LitterOffspringDialog> {
                           child: Column(
                             children: [
                               Text('Offspring ${i + 1}'),
-                              for (final key in [
-                                'name',
-                                'tattoo',
-                                'breed',
-                                'variety',
-                              ])
+                              for (final key in ['name', 'tattoo'])
                                 Padding(
                                   padding: const EdgeInsets.only(top: 8),
                                   child: TextFormField(
@@ -591,6 +587,23 @@ class _LitterOffspringDialogState extends State<LitterOffspringDialog> {
                                         : null,
                                   ),
                                 ),
+                              CatalogField(
+                                species: widget.record['dam']['species'],
+                                value: young[i]['breed'] ?? '',
+                                onChanged: (v) => setState(() {
+                                  young[i]['breed'] = v;
+                                  young[i]['variety'] = '';
+                                }),
+                              ),
+                              CatalogField(
+                                key: ValueKey(
+                                  'variety-$i-${young[i]['breed']}',
+                                ),
+                                species: widget.record['dam']['species'],
+                                breed: young[i]['breed'] ?? '',
+                                value: young[i]['variety'] ?? '',
+                                onChanged: (v) => young[i]['variety'] = v,
+                              ),
                               DropdownButtonFormField<String>(
                                 initialValue: young[i]['sex'],
                                 validator: (v) =>
