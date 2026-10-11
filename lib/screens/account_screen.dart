@@ -1,3 +1,4 @@
+import '../widgets/show_connection_panel.dart';
 import 'dart:convert';
 import 'dart:typed_data';
 import 'package:file_picker/file_picker.dart';
@@ -277,27 +278,7 @@ class _AccountScreenState extends State<AccountScreen> {
                       ),
                     ]),
                     section('Connected show programs', Icons.sync, [
-                      const Text(
-                        'RingMaster Show',
-                        style: TextStyle(fontWeight: FontWeight.bold),
-                      ),
-                      const SizedBox(height: 8),
-                      const Text(
-                        'Manual imports are available. Live herd syncing and automatic show-report delivery are not connected yet.',
-                      ),
-                      const SizedBox(height: 12),
-                      const ListTile(
-                        contentPadding: EdgeInsets.zero,
-                        leading: Icon(Icons.sync_disabled),
-                        title: Text('Live herd syncing'),
-                        subtitle: Text('Not configured'),
-                      ),
-                      const ListTile(
-                        contentPadding: EdgeInsets.zero,
-                        leading: Icon(Icons.description_outlined),
-                        title: Text('Receive show reports automatically'),
-                        subtitle: Text('Not configured'),
-                      ),
+                      const ShowConnectionPanel(),
                     ]),
                     section('Import & export', Icons.import_export, [
                       ListTile(
