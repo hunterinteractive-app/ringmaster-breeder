@@ -1,3 +1,4 @@
+import 'super_admin_screen.dart';
 import 'delete_account_screen.dart';
 import '../widgets/show_connection_panel.dart';
 import 'dart:convert';
@@ -33,6 +34,7 @@ class _AccountScreenState extends State<AccountScreen> {
   final form = GlobalKey<FormState>();
   String? owner, email, error;
   LicenseStatus? license;
+  bool superAdmin = false;
   bool loading = true, saving = false, exporting = false, dirty = false;
 
   @override
@@ -61,6 +63,7 @@ class _AccountScreenState extends State<AccountScreen> {
           .eq('id', owner!)
           .single();
       final plan = await fetchLicenseStatus(owner!);
+      final admin = await client.rpc('breeder_is_super_admin') == true;
       if (!mounted) return;
       for (final entry in fields.entries) {
         entry.value.text = profile[entry.key]?.toString() ?? '';
@@ -68,6 +71,7 @@ class _AccountScreenState extends State<AccountScreen> {
       setState(() {
         email = client.auth.currentUser?.email ?? profile['email'];
         license = plan;
+        superAdmin = admin;
         loading = false;
         error = null;
       });
@@ -343,6 +347,21 @@ class _AccountScreenState extends State<AccountScreen> {
                         'Billing will be managed through Stripe. Plan changes and cancellation will be available once Stripe is connected.',
                       ),
                     ]),
+                    if (superAdmin)
+                      section(
+                        'Super Admin',
+                        Icons.admin_panel_settings_outlined,
+                        [
+                          ListTile(
+                            title: const Text('View As User'),
+                            subtitle: const Text(
+                              'Inspect user accounts, herds, and animal records.',
+                            ),
+                            trailing: const Icon(Icons.chevron_right),
+                            onTap: () => open(const SuperAdminScreen()),
+                          ),
+                        ],
+                      ),
                     section('Family access', Icons.group_outlined, [
                       ListTile(
                         contentPadding: EdgeInsets.zero,
