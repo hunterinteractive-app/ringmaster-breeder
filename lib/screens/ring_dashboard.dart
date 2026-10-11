@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../services/family_service.dart';
 import '../services/license_service.dart';
-import 'family_access_screen.dart';
+import 'account_screen.dart';
 import 'record_import_screen.dart';
 import '../widgets/name_dialog.dart';
 
@@ -129,12 +129,12 @@ class _RingDashboardState extends State<RingDashboard> {
         ),
       ),
       IconButton(
-        tooltip: 'Family access',
-        icon: const Icon(Icons.group),
+        tooltip: 'Account',
+        icon: const Icon(Icons.account_circle_outlined),
         onPressed: () async {
           await Navigator.push(
             context,
-            MaterialPageRoute<void>(builder: (_) => const FamilyAccessScreen()),
+            MaterialPageRoute<void>(builder: (_) => const AccountScreen()),
           );
           if (mounted) _refresh();
         },
@@ -191,24 +191,25 @@ class _RingDashboardState extends State<RingDashboard> {
               style: Theme.of(context).textTheme.headlineSmall,
             ),
             const SizedBox(height: 16),
-            DropdownButtonFormField<String>(
-              initialValue: FamilyService.ownerId,
-              decoration: const InputDecoration(labelText: 'Family'),
-              items: FamilyService.households
-                  .map(
-                    (h) => DropdownMenuItem<String>(
-                      value: h['owner_user_id'],
-                      child: Text(h['label']),
-                    ),
-                  )
-                  .toList(),
-              onChanged: (value) {
-                if (value != null) {
-                  FamilyService.select(value);
-                  _refresh();
-                }
-              },
-            ),
+            if (FamilyService.households.length > 1)
+              DropdownButtonFormField<String>(
+                initialValue: FamilyService.ownerId,
+                decoration: const InputDecoration(labelText: 'Family'),
+                items: FamilyService.households
+                    .map(
+                      (h) => DropdownMenuItem<String>(
+                        value: h['owner_user_id'],
+                        child: Text(h['label']),
+                      ),
+                    )
+                    .toList(),
+                onChanged: (value) {
+                  if (value != null) {
+                    FamilyService.select(value);
+                    _refresh();
+                  }
+                },
+              ),
             const SizedBox(height: 16),
             if (!_license!.hasActiveLicense)
               const Card(
