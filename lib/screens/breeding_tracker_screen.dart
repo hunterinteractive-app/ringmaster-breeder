@@ -568,7 +568,7 @@ class _LitterOffspringDialogState extends State<LitterOffspringDialog> {
                               Text('Offspring ${i + 1}'),
                               for (final key in ['name', 'tattoo'])
                                 Padding(
-                                  padding: const EdgeInsets.only(top: 8),
+                                  padding: const EdgeInsets.only(top: 16),
                                   child: TextFormField(
                                     initialValue: young[i][key],
                                     decoration: InputDecoration(
@@ -587,6 +587,7 @@ class _LitterOffspringDialogState extends State<LitterOffspringDialog> {
                                         : null,
                                   ),
                                 ),
+                              const SizedBox(height: 16),
                               CatalogField(
                                 species: widget.record['dam']['species'],
                                 value: young[i]['breed'] ?? '',
@@ -595,6 +596,7 @@ class _LitterOffspringDialogState extends State<LitterOffspringDialog> {
                                   young[i]['variety'] = '';
                                 }),
                               ),
+                              const SizedBox(height: 16),
                               CatalogField(
                                 key: ValueKey(
                                   'variety-$i-${young[i]['breed']}',
@@ -604,6 +606,7 @@ class _LitterOffspringDialogState extends State<LitterOffspringDialog> {
                                 value: young[i]['variety'] ?? '',
                                 onChanged: (v) => young[i]['variety'] = v,
                               ),
+                              const SizedBox(height: 16),
                               DropdownButtonFormField<String>(
                                 initialValue: young[i]['sex'],
                                 validator: (v) =>
