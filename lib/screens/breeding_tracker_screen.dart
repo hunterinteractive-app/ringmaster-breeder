@@ -1,3 +1,4 @@
+import '../utils/offspring_names.dart';
 import '../widgets/catalog_field.dart';
 import '../widgets/breeding_dashboard.dart';
 import '../widgets/breeding_settings_dialog.dart';
@@ -483,7 +484,9 @@ class LitterOffspringDialog extends StatefulWidget {
 class _LitterOffspringDialogState extends State<LitterOffspringDialog> {
   late List<Map<String, dynamic>> young;
   final form = GlobalKey<FormState>();
-  bool saving = false;
+  bool saving = false, generating = false;
+  int generation = 0;
+  bool get busy => saving || generating;
   String? error;
   @override
   void initState() {
@@ -504,6 +507,43 @@ class _LitterOffspringDialogState extends State<LitterOffspringDialog> {
     );
   }
 
+  Future<List<Map<String, dynamic>>> herdAnimals() async {
+    final rows = <Map<String, dynamic>>[];
+    for (var offset = 0; ; offset += 500) {
+      final page = await Supabase.instance.client
+          .from('animals')
+          .select('name,tattoo')
+          .eq('ring_id', widget.record['dam']['ring_id'])
+          .order('id')
+          .range(offset, offset + 499);
+      rows.addAll(page);
+      if (page.length < 500) return rows;
+    }
+  }
+
+  Future<void> generate() async {
+    setState(() {
+      generating = true;
+      error = null;
+    });
+    try {
+      final herd = await herdAnimals();
+      if (!mounted) return;
+      setState(() {
+        young = generateOffspringNames(young, herd);
+        generation++;
+      });
+    } catch (_) {
+      if (mounted) {
+        setState(
+          () => error = 'Unable to check existing tattoos. Please try again.',
+        );
+      }
+    } finally {
+      if (mounted) setState(() => generating = false);
+    }
+  }
+
   Future<void> save() async {
     if (!form.currentState!.validate()) return;
     final ears = young
@@ -518,6 +558,23 @@ class _LitterOffspringDialogState extends State<LitterOffspringDialog> {
       error = null;
     });
     try {
+      final existing = (await herdAnimals())
+          .map((a) => normalizedTattoo(a['tattoo']))
+          .toSet();
+      final duplicates = young
+          .where((a) => existing.contains(normalizedTattoo(a['tattoo'])))
+          .map((a) => a['tattoo'])
+          .join(', ');
+      if (duplicates.isNotEmpty) {
+        if (mounted) {
+          setState(() {
+            saving = false;
+            error =
+                'Already used in this herd: $duplicates. Choose different ear numbers.';
+          });
+        }
+        return;
+      }
       await Supabase.instance.client.rpc(
         'create_litter_animals',
         params: {'p_id': widget.record['id'], 'p_young': young},
@@ -528,7 +585,9 @@ class _LitterOffspringDialogState extends State<LitterOffspringDialog> {
         setState(() {
           saving = false;
           error = e is PostgrestException
-              ? e.message
+              ? (e.code == '23505'
+                    ? 'An ear number is already used in this herd. Choose a different one and try again.'
+                    : e.message)
               : 'Unable to create records. Try again.';
         });
       }
@@ -539,14 +598,14 @@ class _LitterOffspringDialogState extends State<LitterOffspringDialog> {
   Widget build(BuildContext context) {
     final cavy = widget.record['dam']['species'] == 'cavy';
     return PopScope(
-      canPop: !saving,
+      canPop: !busy,
       child: AlertDialog(
         title: const Text('Create offspring records'),
         content: SizedBox(
           width: 600,
           child: SingleChildScrollView(
             child: AbsorbPointer(
-              absorbing: saving,
+              absorbing: busy,
               child: Form(
                 key: form,
                 child: Column(
@@ -554,6 +613,17 @@ class _LitterOffspringDialogState extends State<LitterOffspringDialog> {
                   children: [
                     Text(
                       'Create ${young.length} ${cavy ? 'pups' : 'kits'} in your active herd. Birth date and both parents are filled from this litter. Review breed and enter each variety; leave unknown details blank.',
+                    ),
+                    const SizedBox(height: 16),
+                    OutlinedButton.icon(
+                      onPressed: busy ? null : generate,
+                      icon: const Icon(Icons.auto_awesome),
+                      label: Text(
+                        generating ? 'Generating…' : 'Generate names & tattoos',
+                      ),
+                    ),
+                    const Text(
+                      'Fills empty fields only. Tattoos are checked against every animal in this herd. You can edit the suggestions.',
                     ),
                     for (var i = 0; i < young.length; i++)
                       Card(
@@ -566,6 +636,9 @@ class _LitterOffspringDialogState extends State<LitterOffspringDialog> {
                                 Padding(
                                   padding: const EdgeInsets.only(top: 16),
                                   child: TextFormField(
+                                    key: ValueKey(
+                                      'offspring-$generation-$i-$key',
+                                    ),
                                     initialValue: young[i][key],
                                     decoration: InputDecoration(
                                       labelText: {
@@ -641,11 +714,11 @@ class _LitterOffspringDialogState extends State<LitterOffspringDialog> {
         ),
         actions: [
           TextButton(
-            onPressed: saving ? null : () => Navigator.pop(context),
+            onPressed: busy ? null : () => Navigator.pop(context),
             child: const Text('Cancel'),
           ),
           FilledButton(
-            onPressed: saving ? null : save,
+            onPressed: busy ? null : save,
             child: Text(
               saving ? 'Creating…' : 'Create ${young.length} animals',
             ),
