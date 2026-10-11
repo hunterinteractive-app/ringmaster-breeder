@@ -1,0 +1,1 @@
+do $$ declare f record; definition text; begin for f in select p.oid from pg_proc p join pg_namespace n on n.oid=p.pronamespace where n.nspname='public' and p.prokind='f' and p.prosrc ~ '\mRings?\M' loop definition := pg_get_functiondef(f.oid); execute regexp_replace(definition, '\mRing(s?)\M', 'Herd\1', 'g'); end loop; end $$;

@@ -61,6 +61,6 @@ Deno.serve(async(req: Request)=>{
   return json(result.data);
  } catch(e) {
   console.error('Cross-app import failed',e instanceof Error?e.name:'database_error');
-  return json({status:'error',message:'Unable to import. Check your selected Ring and records, then try again.'},503);
+  return json({status:'error',message:'Unable to import. Check your selected Herd and records, then try again.'},503);
  }
 });
