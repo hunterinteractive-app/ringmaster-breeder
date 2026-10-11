@@ -119,11 +119,26 @@ class _AccountScreenState extends State<AccountScreen> {
           final page = await client
               .from('animals')
               .select(
-                'id,ring_id,name,tattoo,species,breed,variety,sex,dob,status,sire_id,dam_id,pedigree_only',
+                'id,ring_id,name,tattoo,species,breed,variety,sex,dob,status,sire_id,dam_id,pedigree_only,animal_weights(weight,recorded_at)',
               )
               .inFilter('ring_id', names.keys.toList())
               .order('id')
+              .order(
+                'recorded_at',
+                referencedTable: 'animal_weights',
+                ascending: false,
+              )
+              .order('id', referencedTable: 'animal_weights', ascending: false)
+              .limit(1, referencedTable: 'animal_weights')
               .range(offset, offset + 499);
+          for (final animal in page) {
+            final weights = animal['animal_weights'] as List? ?? [];
+            if (weights.isNotEmpty) {
+              animal['latest_weight_lb'] = weights.first['weight'];
+              animal['latest_weight_recorded_at'] =
+                  weights.first['recorded_at'];
+            }
+          }
           animals.addAll(page);
           if (page.length < 500) break;
         }
@@ -142,6 +157,8 @@ class _AccountScreenState extends State<AccountScreen> {
         'sire_id',
         'dam_id',
         'pedigree_only',
+        'latest_weight_lb',
+        'latest_weight_recorded_at',
       ];
       String cell(dynamic value) {
         var text = value?.toString() ?? '';
@@ -298,7 +315,7 @@ class _AccountScreenState extends State<AccountScreen> {
                       ),
                       const Divider(),
                       const Text(
-                        'Download an animal list for all herds you own, including pedigree-only animals and parent IDs. This CSV does not include photos, health records, weights, or breeding history.',
+                        'Download an animal list for all herds you own, including pedigree-only animals and parent IDs. Includes the latest recorded weight in pounds and its recorded date/time. Animals without a weight have blank weight fields. Photos, health records, full weight history, and breeding history are not included.',
                       ),
                       const SizedBox(height: 12),
                       OutlinedButton.icon(
