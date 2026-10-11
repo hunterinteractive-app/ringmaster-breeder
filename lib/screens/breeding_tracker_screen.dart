@@ -1,3 +1,4 @@
+import '../widgets/breeding_settings_dialog.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -7,15 +8,6 @@ import '../widgets/ringmaster_page_shell.dart';
 String breedingDate(dynamic value) => value == null
     ? 'Not recorded'
     : DateFormat('MM/dd/yyyy').format(DateTime.parse(value.toString()));
-DateTime estimatedDue(Map<String, dynamic> row) {
-  final start = DateTime.parse(row['breeding_date']);
-  return DateTime(
-    start.year,
-    start.month,
-    start.day + (row['dam']['species'] == 'cavy' ? 68 : 31),
-  );
-}
-
 String breedingStage(Map<String, dynamic> row) {
   final t = (row['tracking'] as Map?) ?? {};
   if ((t['status'] ?? row['status']) == 'cancelled') return 'Cancelled';
@@ -37,6 +29,7 @@ class BreedingTrackerScreen extends StatefulWidget {
 class _BreedingTrackerScreenState extends State<BreedingTrackerScreen> {
   late Future<List<Map<String, dynamic>>> records;
   String filter = 'Active';
+  Map<String, Map<String, dynamic>> settings = {};
   final client = Supabase.instance.client;
   @override
   void initState() {
@@ -49,6 +42,14 @@ class _BreedingTrackerScreenState extends State<BreedingTrackerScreen> {
   }
 
   Future<List<Map<String, dynamic>>> load() async {
+    final savedSettings = await client
+        .from('breeding_settings')
+        .select()
+        .eq('ring_id', widget.ringId);
+    settings = {
+      for (final row in savedSettings)
+        row['species'] as String: Map<String, dynamic>.from(row),
+    };
     final rows = await client
         .from('breeding_records')
         .select(
@@ -81,6 +82,27 @@ class _BreedingTrackerScreenState extends State<BreedingTrackerScreen> {
   Widget build(BuildContext context) => RingMasterPageShell(
     title: 'Breedings & litters',
     actions: [
+      IconButton(
+        tooltip: 'Breeding settings',
+        icon: const Icon(Icons.settings_outlined),
+        onPressed: () async {
+          try {
+            await records;
+          } catch (_) {
+            return;
+          }
+          if (!context.mounted) return;
+          final saved = await showDialog<bool>(
+            context: context,
+            barrierDismissible: false,
+            builder: (_) => BreedingSettingsDialog(
+              ringId: widget.ringId,
+              settings: settings,
+            ),
+          );
+          if (saved == true && mounted) refresh();
+        },
+      ),
       IconButton(
         onPressed: refresh,
         icon: const Icon(Icons.refresh),
@@ -145,20 +167,23 @@ class _BreedingTrackerScreenState extends State<BreedingTrackerScreen> {
     final t = Map<String, dynamic>.from(r['tracking'] ?? {});
     final dam = r['dam'] as Map;
     final sire = r['sire'] as Map;
-    final due = DateTime.tryParse(t['due_date'] ?? '') ?? estimatedDue(r);
+    final config = settings[dam['species']] ?? breedingDefaults(dam['species']);
+    final youngName = dam['species'] == 'cavy' ? 'pups' : 'kits';
     final now = DateTime.now();
     final today = DateTime(now.year, now.month, now.day);
-    final remaining = DateTime.utc(
-      due.year,
-      due.month,
-      due.day,
-    ).difference(DateTime.utc(today.year, today.month, today.day)).inDays;
     final start = DateTime.parse(r['breeding_date']);
     final elapsed = DateTime.utc(
       today.year,
       today.month,
       today.day,
     ).difference(DateTime.utc(start.year, start.month, start.day)).inDays;
+    String window(DateTime base, int low, int high) {
+      final first = breedingDate(breedingDay(base, low).toIso8601String());
+      return low == high
+          ? first
+          : '$first – ${breedingDate(breedingDay(base, high).toIso8601String())}';
+    }
+
     final children = (r['offspring'] as List? ?? []);
     return Card(
       margin: const EdgeInsets.only(bottom: 16),
@@ -184,12 +209,17 @@ class _BreedingTrackerScreenState extends State<BreedingTrackerScreen> {
                     : 'Day $elapsed since breeding',
               ),
               Text(
-                'Estimated due: ${breedingDate(due.toIso8601String())} • ${remaining < 0
-                    ? '${-remaining} days past estimate'
-                    : remaining == 0
-                    ? 'Today'
-                    : '$remaining days to go'}',
+                'Expected birth: ${window(start, config['gestation_min'], config['gestation_max'])}',
               ),
+              Text(
+                'Palpation: ${window(start, config['palpation_min'], config['palpation_max'])}',
+              ),
+              if (config['nesting_day'] != null)
+                Text(
+                  'Nesting box: ${window(start, config['nesting_day'], config['nesting_day'])}',
+                ),
+              if (t['due_date'] != null)
+                Text('Custom due date: ${breedingDate(t['due_date'])}'),
             ],
             Text(
               'Pregnancy check: ${t['check_result'] ?? 'Not checked'}${t['check_date'] == null ? '' : ' • ${breedingDate(t['check_date'])}'}',
@@ -198,9 +228,13 @@ class _BreedingTrackerScreenState extends State<BreedingTrackerScreen> {
               Text(
                 '${dam['species'] == 'cavy' ? 'Born' : 'Kindled'} ${breedingDate(t['birth_date'])} • ${t['born_alive']} alive • ${t['born_dead']} stillborn',
               ),
+            if (t['birth_date'] != null && t['wean_date'] == null)
+              Text(
+                'Expected weaning: ${window(DateTime.parse(t['birth_date']), config['weaning_min'] * 7, config['weaning_max'] * 7)}',
+              ),
             if (t['wean_date'] != null)
               Text(
-                'Weaned ${breedingDate(t['wean_date'])} • ${t['weaned']} young',
+                'Weaned ${breedingDate(t['wean_date'])} • ${t['weaned']} $youngName',
               ),
             if ((r['notes'] ?? '').toString().isNotEmpty)
               Text('Breeding notes: ${r['notes']}'),
@@ -275,7 +309,7 @@ class _LitterTrackingDialogState extends State<LitterTrackingDialog> {
   void initState() {
     super.initState();
     data = {
-      'due_date': DateFormat('yyyy-MM-dd').format(estimatedDue(widget.record)),
+      'due_date': null,
       'check_result': 'Not checked',
       'status': widget.record['status'],
       'notes': '',
@@ -432,9 +466,9 @@ class _LitterTrackingDialogState extends State<LitterTrackingDialog> {
                     style: TextStyle(fontWeight: FontWeight.bold),
                   ),
                   const Text(
-                    'Due dates are estimates. Adjust the date for this breeding.',
+                    'Estimated windows use your Ring’s breeding settings. You may also record a custom due date.',
                   ),
-                  date('due_date', 'Estimated due', future: true),
+                  date('due_date', 'Custom due date (optional)', future: true),
                   date('check_date', 'Pregnancy check / palpation'),
                   DropdownButtonFormField<String>(
                     initialValue: data['check_result'],
@@ -464,7 +498,12 @@ class _LitterTrackingDialogState extends State<LitterTrackingDialog> {
                         : 'Kindling date',
                     disabled: locked,
                   ),
-                  count('born_alive', 'Born alive'),
+                  count(
+                    'born_alive',
+                    widget.record['dam']['species'] == 'cavy'
+                        ? 'Pups born alive'
+                        : 'Kits born alive',
+                  ),
                   count('born_dead', 'Stillborn'),
                   date('wean_date', 'Weaning date', disabled: locked),
                   count('weaned', 'Number weaned', disabled: locked),
@@ -603,7 +642,7 @@ class _LitterOffspringDialogState extends State<LitterOffspringDialog> {
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     Text(
-                      'Create ${young.length} animals in your active herd. Birth date and both parents are filled from this litter. Review breed and enter each variety; leave unknown details blank.',
+                      'Create ${young.length} ${cavy ? 'pups' : 'kits'} in your active herd. Birth date and both parents are filled from this litter. Review breed and enter each variety; leave unknown details blank.',
                     ),
                     for (var i = 0; i < young.length; i++)
                       Card(

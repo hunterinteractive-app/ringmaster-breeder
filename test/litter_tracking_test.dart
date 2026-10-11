@@ -13,14 +13,6 @@ void main() {
   test(
     'Gestation estimates differ by species; litter stages reflect milestones',
     () {
-      expect(estimatedDue(record), DateTime(2026, 2, 1));
-      expect(
-        estimatedDue({
-          ...record,
-          'dam': {'species': 'cavy'},
-        }),
-        DateTime(2026, 3, 10),
-      );
       expect(
         breedingStage({
           ...record,
