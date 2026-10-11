@@ -1,8 +1,8 @@
+import '../widgets/breeding_dashboard.dart';
 import '../widgets/breeding_settings_dialog.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
-import '../utils/animal_labels.dart';
 import '../widgets/ringmaster_page_shell.dart';
 
 String breedingDate(dynamic value) => value == null
@@ -126,169 +126,21 @@ class _BreedingTrackerScreenState extends State<BreedingTrackerScreen> {
         if (!snapshot.hasData) {
           return const Center(child: CircularProgressIndicator());
         }
-        final rows = snapshot.data!
-            .where(
-              (r) =>
-                  filter == 'All' ||
-                  (filter == 'Active'
-                      ? r['status'] == 'active'
-                      : r['status'] != 'active'),
-            )
-            .toList();
-        return ListView(
-          padding: const EdgeInsets.all(20),
-          children: [
-            Wrap(
-              spacing: 8,
-              children: [
-                for (final f in ['Active', 'History', 'All'])
-                  ChoiceChip(
-                    label: Text(f),
-                    selected: filter == f,
-                    onSelected: (_) => setState(() => filter = f),
-                  ),
-              ],
-            ),
-            const SizedBox(height: 16),
-            if (rows.isEmpty)
-              const Padding(
-                padding: EdgeInsets.all(24),
-                child: Text(
-                  'No breedings here yet. Use Actions → Record breeding in your Ring to start.',
-                ),
-              ),
-            for (final r in rows) card(r),
-          ],
+        return BreedingDashboard(
+          records: snapshot.data!,
+          settings: settings,
+          filter: filter,
+          onFilter: (v) => setState(() => filter = v),
+          onEdit: edit,
+          onOffspring: offspring,
+          onOpen: (id) async {
+            await Navigator.pushNamed(context, '/animal-detail', arguments: id);
+            if (mounted) refresh();
+          },
         );
       },
     ),
   );
-  Widget card(Map<String, dynamic> r) {
-    final t = Map<String, dynamic>.from(r['tracking'] ?? {});
-    final dam = r['dam'] as Map;
-    final sire = r['sire'] as Map;
-    final config = settings[dam['species']] ?? breedingDefaults(dam['species']);
-    final youngName = dam['species'] == 'cavy' ? 'pups' : 'kits';
-    final now = DateTime.now();
-    final today = DateTime(now.year, now.month, now.day);
-    final start = DateTime.parse(r['breeding_date']);
-    final elapsed = DateTime.utc(
-      today.year,
-      today.month,
-      today.day,
-    ).difference(DateTime.utc(start.year, start.month, start.day)).inDays;
-    String window(DateTime base, int low, int high) {
-      final first = breedingDate(breedingDay(base, low).toIso8601String());
-      return low == high
-          ? first
-          : '$first – ${breedingDate(breedingDay(base, high).toIso8601String())}';
-    }
-
-    final children = (r['offspring'] as List? ?? []);
-    return Card(
-      margin: const EdgeInsets.only(bottom: 16),
-      child: Padding(
-        padding: const EdgeInsets.all(20),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              animalTitle(dam['name'], dam['tattoo']),
-              style: Theme.of(context).textTheme.titleLarge,
-            ),
-            Text('Sire: ${animalTitle(sire['name'], sire['tattoo'])}'),
-            Text(
-              '${dam['breed'] ?? ''} • Bred ${breedingDate(r['breeding_date'])}',
-            ),
-            const SizedBox(height: 8),
-            Chip(label: Text(breedingStage(r))),
-            if (t['birth_date'] == null && r['status'] == 'active') ...[
-              Text(
-                elapsed < 0
-                    ? 'Breeding scheduled in ${-elapsed} days'
-                    : 'Day $elapsed since breeding',
-              ),
-              Text(
-                'Expected birth: ${window(start, config['gestation_min'], config['gestation_max'])}',
-              ),
-              Text(
-                'Palpation: ${window(start, config['palpation_min'], config['palpation_max'])}',
-              ),
-              if (config['nesting_day'] != null)
-                Text(
-                  'Nesting box: ${window(start, config['nesting_day'], config['nesting_day'])}',
-                ),
-              if (t['due_date'] != null)
-                Text('Custom due date: ${breedingDate(t['due_date'])}'),
-            ],
-            Text(
-              'Pregnancy check: ${t['check_result'] ?? 'Not checked'}${t['check_date'] == null ? '' : ' • ${breedingDate(t['check_date'])}'}',
-            ),
-            if (t['birth_date'] != null)
-              Text(
-                '${dam['species'] == 'cavy' ? 'Born' : 'Kindled'} ${breedingDate(t['birth_date'])} • ${t['born_alive']} alive • ${t['born_dead']} stillborn',
-              ),
-            if (t['birth_date'] != null && t['wean_date'] == null)
-              Text(
-                'Expected weaning: ${window(DateTime.parse(t['birth_date']), config['weaning_min'] * 7, config['weaning_max'] * 7)}',
-              ),
-            if (t['wean_date'] != null)
-              Text(
-                'Weaned ${breedingDate(t['wean_date'])} • ${t['weaned']} $youngName',
-              ),
-            if ((r['notes'] ?? '').toString().isNotEmpty)
-              Text('Breeding notes: ${r['notes']}'),
-            if ((t['notes'] ?? '').toString().isNotEmpty) Text(t['notes']),
-            Wrap(
-              spacing: 12,
-              children: [
-                TextButton.icon(
-                  onPressed: () => edit(r),
-                  icon: const Icon(Icons.edit_outlined),
-                  label: const Text('Update tracking'),
-                ),
-                if ((t['weaned'] ?? 0) > 0 &&
-                    children.isEmpty &&
-                    r['status'] != 'cancelled')
-                  TextButton.icon(
-                    onPressed: () => offspring(r),
-                    icon: const Icon(Icons.add),
-                    label: const Text('Create offspring records'),
-                  ),
-              ],
-            ),
-            if (children.isNotEmpty) ...[
-              Text(
-                '${children.where((c) => animalIsMale(c['animal']?['sex'] ?? '')).length} ${dam['species'] == 'cavy' ? 'boars' : 'bucks'} • ${children.where((c) => !animalIsMale(c['animal']?['sex'] ?? '')).length} ${dam['species'] == 'cavy' ? 'sows' : 'does'}',
-              ),
-              Wrap(
-                spacing: 8,
-                children: [
-                  for (final child in children)
-                    ActionChip(
-                      label: Text(
-                        animalTitle(
-                          child['animal']?['name'],
-                          child['animal']?['tattoo'],
-                        ),
-                      ),
-                      onPressed: () async {
-                        await Navigator.pushNamed(
-                          context,
-                          '/animal-detail',
-                          arguments: child['animal_id'],
-                        );
-                        if (mounted) refresh();
-                      },
-                    ),
-                ],
-              ),
-            ],
-          ],
-        ),
-      ),
-    );
-  }
 }
 
 class LitterTrackingDialog extends StatefulWidget {
