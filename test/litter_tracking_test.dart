@@ -50,6 +50,8 @@ void main() {
                   'born_dead': 1,
                   'wean_date': '2026-03-01',
                   'weaned': 4,
+                  'weaned_males': 3,
+                  'weaned_females': 1,
                   'check_result': 'Positive',
                   'check_date': '2026-01-15',
                   'status': 'active',
@@ -70,8 +72,8 @@ void main() {
         findsOneWidget,
       );
       await tester.enterText(
-        find.widgetWithText(TextFormField, 'Number weaned'),
-        '2',
+        find.widgetWithText(TextFormField, 'Number of bucks'),
+        '1',
       );
       await tester.tap(find.text('Save tracking'));
       await tester.pumpAndSettle();

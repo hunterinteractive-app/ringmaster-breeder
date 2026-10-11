@@ -5,7 +5,7 @@ do $$ declare sid uuid; did uuid; bid uuid; n integer; begin
  insert into public.animals(ring_id,name,species,sex,pedigree_only) values('a0f9e2f6-44aa-4319-a240-22649099f103','Litter test sire','rabbit','Buck',true) returning id into sid;
  insert into public.animals(ring_id,name,species,sex,pedigree_only) values('a0f9e2f6-44aa-4319-a240-22649099f103','Litter test dam','rabbit','Doe',true) returning id into did;
  insert into public.breeding_records(sire_id,dam_id,breeding_date) values(sid,did,'2026-07-01') returning id into bid;
- perform public.save_breeding_tracking(bid,'{"check_result":"Positive","check_date":"2026-07-15","birth_date":"2026-08-01","born_alive":2,"born_dead":0,"wean_date":"2026-09-15","weaned":2,"status":"completed"}',0);
+ perform public.save_breeding_tracking(bid,'{"check_result":"Positive","check_date":"2026-07-15","birth_date":"2026-08-01","born_alive":2,"born_dead":0,"wean_date":"2026-09-15","weaned":2,"weaned_males":1,"weaned_females":1,"status":"completed"}',0);
  begin
   perform public.save_breeding_tracking(bid,'{"status":"active"}',0);
   raise exception 'Stale save guard failed';

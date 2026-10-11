@@ -453,16 +453,10 @@ class BreedingDashboard extends StatelessWidget {
                       'Nesting box',
                       date(breedingDay(start, c['nesting_day'])),
                     ),
-                  if (t['due_date'] != null)
-                    event(
-                      Icons.edit_calendar,
-                      'Custom due date',
-                      date(t['due_date']),
-                    ),
                 ],
                 event(
                   Icons.fact_check_outlined,
-                  'Pregnancy check',
+                  'Palpation result',
                   '${t['check_result'] ?? 'Not checked'}${t['check_date'] == null ? '' : ' • ${date(t['check_date'])}'}',
                 ),
                 if (born) ...[
@@ -484,6 +478,10 @@ class BreedingDashboard extends StatelessWidget {
                           ),
                   ),
                 ],
+                if (t['weaned_males'] != null)
+                  Text(
+                    '${t['weaned_males']} ${cavy ? 'boars' : 'bucks'} • ${t['weaned_females']} ${cavy ? 'sows' : 'does'}',
+                  ),
                 if ((r['notes'] ?? '').toString().isNotEmpty ||
                     (t['notes'] ?? '').toString().isNotEmpty)
                   ExpansionTile(
