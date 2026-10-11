@@ -75,6 +75,7 @@ class _DeleteAccountScreenState extends State<DeleteAccountScreen> {
 
   @override
   Widget build(BuildContext context) => RingMasterPageShell(
+    showAccountButton: false,
     title: 'Delete account',
     body: SingleChildScrollView(
       padding: const EdgeInsets.all(24),

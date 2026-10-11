@@ -165,13 +165,7 @@ class _ShowReportsScreenState extends State<ShowReportsScreen> {
   @override
   Widget build(BuildContext context) => RingMasterPageShell(
     title: widget.animalId == null ? 'Show reports' : 'Animal show history',
-    actions: [
-      IconButton(
-        tooltip: 'Refresh reports',
-        onPressed: busy ? null : load,
-        icon: const Icon(Icons.refresh),
-      ),
-    ],
+    onRefresh: busy ? null : load,
     body: ListView(
       padding: const EdgeInsets.all(24),
       children: [

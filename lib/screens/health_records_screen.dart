@@ -39,6 +39,7 @@ class _HealthRecordsScreenState extends State<HealthRecordsScreen> {
   @override
   Widget build(BuildContext context) {
     return RingMasterPageShell(
+      onRefresh: () => setState(() {}),
       title: 'Health & Vaccine Records',
       floatingActionButton: FloatingActionButton(
         onPressed: () => _openModal(),

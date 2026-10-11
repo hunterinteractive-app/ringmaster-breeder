@@ -1,3 +1,4 @@
+import 'screens/account_screen.dart';
 import 'screens/delete_account_screen.dart';
 import 'screens/legal/legal_gate.dart';
 import 'services/legal_service.dart';
@@ -54,6 +55,7 @@ class MyApp extends StatelessWidget {
     ),
     home: const AuthRoot(),
     routes: {
+      '/account': (_) => const AccountScreen(),
       '/animals': (context) {
         final args =
             ModalRoute.of(context)!.settings.arguments as Map<String, dynamic>;

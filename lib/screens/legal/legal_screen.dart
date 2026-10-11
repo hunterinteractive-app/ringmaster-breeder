@@ -9,6 +9,7 @@ class LegalScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     final sections = privacy ? privacySections : termsSections;
     return RingMasterPageShell(
+      showAccountButton: false,
       title: privacy ? 'Privacy Policy' : 'Terms of Service',
       showHomeButton: false,
       body: SingleChildScrollView(

@@ -105,6 +105,7 @@ class _BreedingTrackerScreenState extends State<BreedingTrackerScreen> {
   @override
   Widget build(BuildContext context) => RingMasterPageShell(
     title: 'Breedings & litters',
+    onRefresh: refresh,
     actions: [
       IconButton(
         tooltip: 'Breeding settings',
@@ -126,11 +127,6 @@ class _BreedingTrackerScreenState extends State<BreedingTrackerScreen> {
           );
           if (saved == true && mounted) refresh();
         },
-      ),
-      IconButton(
-        onPressed: refresh,
-        icon: const Icon(Icons.refresh),
-        tooltip: 'Refresh',
       ),
     ],
     body: FutureBuilder<List<Map<String, dynamic>>>(

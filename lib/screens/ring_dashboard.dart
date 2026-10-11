@@ -3,7 +3,6 @@ import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../services/family_service.dart';
 import '../services/license_service.dart';
-import 'account_screen.dart';
 import 'record_import_screen.dart';
 import '../widgets/name_dialog.dart';
 
@@ -108,29 +107,8 @@ class _RingDashboardState extends State<RingDashboard> {
     title: 'My Herds',
     showHomeButton: false,
     showBackButton: false,
-    actions: [
-      IconButton(
-        tooltip: 'Refresh herds',
-        icon: const Icon(Icons.refresh),
-        onPressed: _refresh,
-      ),
-      OutlinedButton.icon(
-        style: OutlinedButton.styleFrom(
-          foregroundColor: Colors.white,
-          side: const BorderSide(color: Colors.white54),
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-        ),
-        icon: const Icon(Icons.account_circle_outlined),
-        label: const Text('Account'),
-        onPressed: () async {
-          await Navigator.push(
-            context,
-            MaterialPageRoute<void>(builder: (_) => const AccountScreen()),
-          );
-          if (mounted) _refresh();
-        },
-      ),
-    ],
+    onRefresh: _refresh,
+    onAccountReturn: _refresh,
     body: FutureBuilder<List<Map<String, dynamic>>>(
       future: _rings,
       builder: (context, snapshot) {

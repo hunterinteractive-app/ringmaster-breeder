@@ -9,6 +9,10 @@ class RingMasterPageShell extends StatelessWidget {
   final String? subtitle;
   final Widget body;
 
+  final bool showAccountButton;
+  final bool isAccountPage;
+  final VoidCallback? onRefresh;
+  final VoidCallback? onAccountReturn;
   final bool showHomeButton;
   final bool showBackButton;
   final VoidCallback? onBack;
@@ -29,6 +33,10 @@ class RingMasterPageShell extends StatelessWidget {
     required this.title,
     required this.body,
     this.subtitle = 'RingMaster Breeder',
+    this.showAccountButton = true,
+    this.isAccountPage = false,
+    this.onRefresh,
+    this.onAccountReturn,
     this.showHomeButton = true,
     this.showBackButton = true,
     this.onBack,
@@ -114,6 +122,29 @@ class RingMasterPageShell extends StatelessWidget {
           onPressed: () {
             Navigator.of(context).popUntil((route) => route.isFirst);
           },
+        ),
+      if (onRefresh != null)
+        IconButton(
+          tooltip: 'Refresh',
+          icon: const Icon(Icons.refresh),
+          onPressed: onRefresh,
+        ),
+      if (showAccountButton)
+        OutlinedButton.icon(
+          style: OutlinedButton.styleFrom(
+            foregroundColor: Colors.white,
+            disabledForegroundColor: Colors.white70,
+            side: const BorderSide(color: Colors.white54),
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+          ),
+          icon: const Icon(Icons.account_circle_outlined),
+          label: const Text('Account'),
+          onPressed: isAccountPage
+              ? null
+              : () async {
+                  await Navigator.of(context).pushNamed('/account');
+                  if (context.mounted) onAccountReturn?.call();
+                },
         ),
       ...(actions ?? const []),
     ];

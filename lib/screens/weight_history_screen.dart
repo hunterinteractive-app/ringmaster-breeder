@@ -127,6 +127,8 @@ class _WeightHistoryScreenState extends State<WeightHistoryScreen> {
   @override
   Widget build(BuildContext context) {
     return RingMasterPageShell(
+      onRefresh: () =>
+          setState(() => _weights = AnimalService.weights(widget.animalId)),
       title: 'Weight History',
       floatingActionButton: isLocked
           ? null

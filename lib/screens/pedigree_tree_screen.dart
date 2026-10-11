@@ -11,7 +11,7 @@ class PedigreeTreeScreen extends StatefulWidget {
 }
 
 class _PedigreeTreeScreenState extends State<PedigreeTreeScreen> {
-  late final Future<Map<String, dynamic>> _pedigree;
+  late Future<Map<String, dynamic>> _pedigree;
   @override
   void initState() {
     super.initState();
@@ -21,6 +21,8 @@ class _PedigreeTreeScreenState extends State<PedigreeTreeScreen> {
   @override
   Widget build(BuildContext context) => RingMasterPageShell(
     title: 'Pedigree',
+    onRefresh: () =>
+        setState(() => _pedigree = PedigreeService.build(widget.animalId)),
     body: FutureBuilder<Map<String, dynamic>>(
       future: _pedigree,
       builder: (context, snapshot) {

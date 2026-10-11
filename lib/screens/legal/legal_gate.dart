@@ -97,6 +97,7 @@ class _LegalGateState extends State<LegalGate> {
             builder: (context) => PopScope(
               canPop: false,
               child: RingMasterPageShell(
+                showAccountButton: false,
                 title: 'Review our policies',
                 showHomeButton: false,
                 showBackButton: false,

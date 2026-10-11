@@ -217,6 +217,8 @@ class _AccountScreenState extends State<AccountScreen> {
   @override
   Widget build(BuildContext context) => RingMasterPageShell(
     title: 'Account',
+    isAccountPage: true,
+    onRefresh: dirty || saving || loading ? null : load,
     body: loading
         ? const Center(child: CircularProgressIndicator())
         : error != null

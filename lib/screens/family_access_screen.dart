@@ -61,6 +61,7 @@ class _FamilyAccessScreenState extends State<FamilyAccessScreen> {
 
   @override
   Widget build(BuildContext context) => RingMasterPageShell(
+    onRefresh: _busy ? null : () => _update(),
     title: 'Family Access',
     body: ListView(
       padding: const EdgeInsets.all(24),

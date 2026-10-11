@@ -57,6 +57,7 @@ class _AnimalListScreenState extends State<AnimalListScreen> {
 
   @override
   Widget build(BuildContext context) => RingMasterPageShell(
+    onRefresh: _refresh,
     title: widget.ringName,
     body: FutureBuilder<List<Map<String, dynamic>>>(
       future: _animals,

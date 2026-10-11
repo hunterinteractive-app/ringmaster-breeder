@@ -83,6 +83,7 @@ class _AnimalDetailScreenState extends State<AnimalDetailScreen> {
   @override
   Widget build(BuildContext context) {
     return RingMasterPageShell(
+      onRefresh: () => setState(() {}),
       title: "Animal Details",
       body: FutureBuilder(
         future: Future.wait([fetchAnimal(), fetchWeight()]),
