@@ -30,6 +30,40 @@ void main() {
       expect(breedingStage({...record, 'status': 'cancelled'}), 'Cancelled');
     },
   );
+  test('Offspring flow only opens for weaned litters without records', () {
+    final row = {
+      ...record,
+      'tracking': {'wean_date': '2026-03-01', 'weaned': 2, 'status': 'active'},
+    };
+    expect(needsOffspring(row), isTrue);
+    expect(
+      needsOffspring({
+        ...row,
+        'offspring': [
+          {'animal_id': 'child'},
+        ],
+      }),
+      isFalse,
+    );
+    expect(
+      needsOffspring({
+        ...row,
+        'tracking': {'wean_date': '2026-03-01', 'weaned': 0},
+      }),
+      isFalse,
+    );
+    expect(
+      needsOffspring({
+        ...row,
+        'tracking': {
+          'wean_date': '2026-03-01',
+          'weaned': 2,
+          'status': 'cancelled',
+        },
+      }),
+      isFalse,
+    );
+  });
   testWidgets(
     'Litter counts validate before saving, preserving event details',
     (tester) async {
@@ -64,7 +98,7 @@ void main() {
           ),
         ),
       );
-      await tester.tap(find.text('Save tracking'));
+      await tester.tap(find.text('Save tracking and create offspring records'));
       await tester.pumpAndSettle();
       expect(saved, isNull);
       expect(
@@ -75,7 +109,7 @@ void main() {
         find.widgetWithText(TextFormField, 'Number of bucks'),
         '1',
       );
-      await tester.tap(find.text('Save tracking'));
+      await tester.tap(find.text('Save tracking and create offspring records'));
       await tester.pumpAndSettle();
       expect(saved?['weaned'], 2);
       expect(saved?['born_alive'], 3);

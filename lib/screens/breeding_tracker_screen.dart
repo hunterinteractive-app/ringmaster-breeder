@@ -19,6 +19,14 @@ String breedingStage(Map<String, dynamic> row) {
       : 'Awaiting birth';
 }
 
+bool needsOffspring(Map<String, dynamic> row) {
+  final t = (row['tracking'] as Map?) ?? {};
+  return t['wean_date'] != null &&
+      (t['weaned'] ?? 0) > 0 &&
+      t['status'] != 'cancelled' &&
+      ((row['offspring'] as List?) ?? []).isEmpty;
+}
+
 class BreedingTrackerScreen extends StatefulWidget {
   final String ringId;
   const BreedingTrackerScreen({super.key, required this.ringId});
@@ -66,7 +74,22 @@ class _BreedingTrackerScreenState extends State<BreedingTrackerScreen> {
       barrierDismissible: false,
       builder: (_) => LitterTrackingDialog(record: row),
     );
-    if (saved == true && mounted) refresh();
+    if (saved != true || !mounted) return;
+    refresh();
+    try {
+      final updated = (await records).firstWhere((r) => r['id'] == row['id']);
+      if (mounted && needsOffspring(updated)) await offspring(updated);
+    } catch (_) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text(
+              'Tracking saved. Refresh and choose Create offspring records to continue.',
+            ),
+          ),
+        );
+      }
+    }
   }
 
   Future<void> offspring(Map<String, dynamic> row) async {
@@ -299,7 +322,7 @@ class _LitterTrackingDialogState extends State<LitterTrackingDialog> {
       enabled: !disabled,
       decoration: InputDecoration(labelText: label),
       keyboardType: TextInputType.number,
-      onChanged: (v) => data[key] = int.tryParse(v),
+      onChanged: (v) => setState(() => data[key] = int.tryParse(v)),
       validator: (v) =>
           v == null ||
               v.isEmpty ||
@@ -432,7 +455,21 @@ class _LitterTrackingDialogState extends State<LitterTrackingDialog> {
         ),
         FilledButton(
           onPressed: saving ? null : save,
-          child: Text(saving ? 'Saving…' : 'Save tracking'),
+          child: Text(
+            saving
+                ? 'Saving…'
+                : needsOffspring({
+                    ...widget.record,
+                    'tracking': {
+                      ...data,
+                      'weaned':
+                          (data['weaned_males'] ?? 0) +
+                          (data['weaned_females'] ?? 0),
+                    },
+                  })
+                ? 'Save tracking and create offspring records'
+                : 'Save tracking',
+          ),
         ),
       ],
     ),
