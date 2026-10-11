@@ -60,7 +60,7 @@ class _RingDashboardState extends State<RingDashboard> {
             });
           }
         } catch (_) {
-          /* Optional import remains available from the dashboard. */
+          /* Optional import remains available from Account. */
         }
       }
     }
@@ -106,59 +106,28 @@ class _RingDashboardState extends State<RingDashboard> {
   @override
   Widget build(BuildContext context) => RingMasterPageShell(
     title: 'My Herds',
+    showHomeButton: false,
+    showBackButton: false,
     actions: [
       IconButton(
-        tooltip: 'Import RingMaster records',
-        icon: const Icon(Icons.download),
-        onPressed: () async {
-          await Navigator.push(
-            context,
-            MaterialPageRoute<void>(builder: (_) => const RecordImportScreen()),
-          );
-          if (mounted) _refresh();
-        },
+        tooltip: 'Refresh herds',
+        icon: const Icon(Icons.refresh),
+        onPressed: _refresh,
       ),
-      IconButton(
-        tooltip: 'Imported profiles and show history',
-        icon: const Icon(Icons.emoji_events_outlined),
-        onPressed: () => Navigator.push(
-          context,
-          MaterialPageRoute<void>(
-            builder: (_) => const ImportedRecordsScreen(),
-          ),
+      OutlinedButton.icon(
+        style: OutlinedButton.styleFrom(
+          foregroundColor: Colors.white,
+          side: const BorderSide(color: Colors.white54),
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
         ),
-      ),
-      IconButton(
-        tooltip: 'Account',
         icon: const Icon(Icons.account_circle_outlined),
+        label: const Text('Account'),
         onPressed: () async {
           await Navigator.push(
             context,
             MaterialPageRoute<void>(builder: (_) => const AccountScreen()),
           );
           if (mounted) _refresh();
-        },
-      ),
-      IconButton(
-        tooltip: 'Refresh Herds',
-        icon: const Icon(Icons.refresh),
-        onPressed: _refresh,
-      ),
-      IconButton(
-        tooltip: 'Sign out',
-        icon: const Icon(Icons.logout),
-        onPressed: () async {
-          try {
-            await _client.auth.signOut();
-          } catch (_) {
-            if (context.mounted) {
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
-                  content: Text('Unable to sign out. Please try again.'),
-                ),
-              );
-            }
-          }
         },
       ),
     ],
