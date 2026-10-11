@@ -177,28 +177,21 @@ class _AccountScreenState extends State<AccountScreen> {
   }
 
   Widget section(String title, IconData icon, List<Widget> children) => Card(
-    margin: const EdgeInsets.only(bottom: 20),
-    child: Padding(
-      padding: const EdgeInsets.all(24),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          Row(
-            children: [
-              Icon(icon),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Text(
-                  title,
-                  style: Theme.of(context).textTheme.titleLarge,
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 20),
-          ...children,
-        ],
-      ),
+    margin: const EdgeInsets.only(bottom: 16),
+    clipBehavior: Clip.antiAlias,
+    child: ExpansionTile(
+      key: PageStorageKey<String>('account-$title'),
+      maintainState: true,
+      leading: Icon(icon),
+      title: Text(title, style: Theme.of(context).textTheme.titleLarge),
+      tilePadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
+      childrenPadding: const EdgeInsets.fromLTRB(24, 8, 24, 24),
+      children: [
+        Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: children,
+        ),
+      ],
     ),
   );
 
