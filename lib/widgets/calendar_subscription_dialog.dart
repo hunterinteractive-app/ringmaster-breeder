@@ -118,7 +118,37 @@ class _CalendarSubscriptionDialogState
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             const Text(
-              'Subscribe to this herd’s breeding, health, entered-show dates and favorite-show deadlines. Your calendar app refreshes on its own schedule. Favorite deadlines include alerts 1 day and 2 hours before. Some apps ignore subscription alerts; enable notifications or set reminders in your calendar app if needed.',
+              'Subscribe to this herd’s breeding, health, entered-show dates and favorite-show deadlines. Your calendar app refreshes on its own schedule.',
+            ),
+            const SizedBox(height: 12),
+            Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: Theme.of(context).colorScheme.secondaryContainer,
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Icon(Icons.notifications_active_outlined),
+                  const SizedBox(width: 12),
+                  const Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Check your calendar alerts',
+                          style: TextStyle(fontWeight: FontWeight.bold),
+                        ),
+                        SizedBox(height: 6),
+                        Text(
+                          'Favorite-show deadlines include alerts 1 day and 2 hours before. Some calendar apps ignore alerts supplied by subscriptions, so you may need to set notifications in your calendar app.',
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
             ),
             const SizedBox(height: 12),
             const Text(
