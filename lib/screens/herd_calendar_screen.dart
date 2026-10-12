@@ -1,3 +1,4 @@
+import '../widgets/calendar_subscription_dialog.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -236,6 +237,18 @@ class _HerdCalendarScreenState extends State<HerdCalendarScreen> {
         padding: const EdgeInsets.all(20),
         children: [
           if (widget.herdPicker != null) widget.herdPicker!,
+          Align(
+            alignment: Alignment.centerRight,
+            child: OutlinedButton.icon(
+              onPressed: () => showDialog<void>(
+                context: context,
+                builder: (_) =>
+                    CalendarSubscriptionDialog(ringId: widget.ringId),
+              ),
+              icon: const Icon(Icons.phonelink),
+              label: const Text('Connect device calendar'),
+            ),
+          ),
           Text(
             'Your herd, day by day',
             style: Theme.of(context).textTheme.headlineSmall,
