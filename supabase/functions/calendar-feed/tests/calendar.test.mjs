@@ -34,3 +34,16 @@ test('RFC dates, escaping, Unicode folding and stable UID',()=>{
  assert.match(text.replaceAll('\r\n ',''),/\\nBEGIN:VEVENT/);
  assert.match(text,/DESCRIPTION:a\\,b\\;c\\\\d/);
 });
+test('favorites without entries have timed deadlines and both alerts',()=>{
+ const s={id:'favorite',name:'Favorite Show',start_date:'2026-11-05',entry_count:0,is_favorite:true,entry_close_at:'2026-11-01T23:59:00-05:00'};
+ const events=calendarEvents([],{},[],[s,s],'America/Indiana/Indianapolis');
+ assert.equal(events.length,1); assert.equal(events[0].date,'2026-11-01');
+ const feed=renderCalendar('Herd',events);
+ assert.match(feed,/DTSTART:20261102T045900Z/);
+ assert.match(feed,/TRIGGER:-PT1440M/);assert.match(feed,/TRIGGER:-PT120M/);
+ assert.equal(calendarEvents([],{},[],[{...s,is_favorite:false}]).length,0);
+ const changed=calendarEvents([],{},[],[{...s,entry_close_at:'2026-11-03T12:00:00Z'}]);
+ assert.equal(changed[0].id,events[0].id);
+ assert.equal(calendarEvents([],{},[],[{...s,entry_count:2}]).length,2);
+ assert.equal(calendarEvents([],{},[],[{...s,entry_close_at:null}]).length,0);
+});

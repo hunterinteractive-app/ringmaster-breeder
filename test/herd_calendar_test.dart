@@ -15,6 +15,46 @@ Map<String, dynamic> record({
   'tracking': tracking,
 };
 void main() {
+  test(
+    'Favorite deadlines appear before entering and disappear when unstarred',
+    () {
+      final show = <String, dynamic>{
+        'id': 'favorite',
+        'name': 'Fall Show',
+        'start_date': '2026-11-05',
+        'entry_count': 0,
+        'is_favorite': true,
+        'entry_close_at': '2026-11-01T23:59:00-05:00',
+      };
+      final events = enteredShowEvents([show, show]);
+      expect(events, hasLength(1));
+      expect(events.single.title, 'Entry deadline • Fall Show');
+      expect(
+        events.single.start,
+        calendarDate(DateTime.parse(show['entry_close_at']).toLocal()),
+      );
+      expect(events.single.show?['calendar_kind'], 'deadline');
+      expect(events.single.note, contains('1 day and 2 hours'));
+      expect(
+        enteredShowEvents([
+          {...show, 'is_favorite': false},
+        ]),
+        isEmpty,
+      );
+      expect(
+        enteredShowEvents([
+          {...show, 'entry_close_at': null},
+        ]),
+        isEmpty,
+      );
+      expect(
+        enteredShowEvents([
+          {...show, 'entry_count': 1},
+        ]),
+        hasLength(2),
+      );
+    },
+  );
   test('Entered shows are deduplicated and only mark their opening date', () {
     final show = <String, dynamic>{
       'id': 's',

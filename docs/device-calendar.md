@@ -10,3 +10,10 @@ Anyone holding the URL can read the feed. Tokens are cryptographically random, s
 The calendar-feed Edge Function intentionally disables gateway JWT verification because calendar clients cannot supply app sessions. It authenticates the 256-bit private bearer token and calls a service-only resolver. Responses are non-cacheable at the HTTP layer; errors return 503 rather than an empty calendar. Tokens are never logged by application code.
 
 Verification: Node feed tests, SQL rollback access/lifecycle tests, Flutter analyzer and suite. Native builds currently use UTC for health-date projection; the deployed web app captures the device IANA timezone.
+
+## Favorite-show deadlines
+Star a published show in RingMaster Show to include its entry deadline in the linked owner's Breeder calendar, even before entering animals. Removing the star removes the deadline. Unpublished, demo, test and closed shows are excluded. Favorites are personal to the signed-in Show account, not shared household edits.
+
+Deadline events use the exact UTC instant from entry_close_at (displayed locally by the device), stable per-show UIDs and DISPLAY VALARMs at 1440 and 120 minutes before. These are calendar alerts only: no email, push or SMS scheduler is enabled. Some subscription clients ignore VALARM or refresh infrequently; users must enable or set notifications in that calendar app. A refreshed deadline updates the same event instead of creating duplicates.
+
+Validated favorite ownership and export isolation with rollback SQL tests, timed feed/alerts with Node tests, and Breeder calendar behavior with Flutter tests. Show's 46 production regression tests pass; its broad VM suite includes existing browser-only dart:html compilation failures.

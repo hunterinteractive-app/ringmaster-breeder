@@ -164,7 +164,9 @@ List<HerdCalendarEvent> enteredShowEvents(List<Map<String, dynamic>> shows) {
   final seen = <String>{};
   return [
     for (final show in shows)
-      if (show['start_date'] != null && seen.add(show['id'].toString()))
+      if (show['start_date'] != null &&
+          (show['entry_count'] as num? ?? 0) > 0 &&
+          seen.add(show['id'].toString()))
         HerdCalendarEvent(
           title: show['name'] ?? 'Entered show',
           animal: '${show['entry_count']} active entries • RingMaster Show',
@@ -181,6 +183,21 @@ List<HerdCalendarEvent> enteredShowEvents(List<Map<String, dynamic>> shows) {
               'Show dates: ${DateFormat('MM-dd-yy').format(calendarDate(show['start_date']))} – ${DateFormat('MM-dd-yy').format(calendarDate(show['end_date']))}',
             'Entered shows for this herd owner’s linked account.',
           ].join(' • '),
+        ),
+    for (final show in shows)
+      if (show['is_favorite'] == true &&
+          show['entry_close_at'] != null &&
+          seen.add('deadline-${show['id']}'))
+        HerdCalendarEvent(
+          title: 'Entry deadline • ${show['name'] ?? 'Favorite show'}',
+          animal: 'Favorite show • RingMaster Show',
+          category: 'Shows',
+          animalId: '',
+          start: calendarDate(DateTime.parse(show['entry_close_at']).toLocal()),
+          end: calendarDate(DateTime.parse(show['entry_close_at']).toLocal()),
+          show: {...show, 'calendar_kind': 'deadline'},
+          note:
+              'Entries close ${DateFormat('MM-dd-yy h:mm a').format(DateTime.parse(show['entry_close_at']).toLocal())} (your local time). Device calendar alerts: 1 day and 2 hours before; support depends on your calendar app.',
         ),
   ];
 }

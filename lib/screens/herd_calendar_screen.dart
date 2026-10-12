@@ -103,8 +103,8 @@ class _HerdCalendarScreenState extends State<HerdCalendarScreen> {
           ),
         );
         showNotice = data['connected'] == true
-            ? 'Entered shows refreshed from RingMaster Show. Shows belong to the herd owner’s linked account.'
-            : 'Connect RingMaster Show in Account to see your entered shows here.';
+            ? 'Entered shows and favorite deadlines refreshed from RingMaster Show. Shows belong to the herd owner’s linked account.'
+            : 'Connect RingMaster Show in Account to see your entered shows and favorite deadlines here.';
       } catch (_) {
         showNotice =
             'Entered shows could not refresh. Herd dates are available; use Refresh to try again.';
@@ -133,8 +133,10 @@ class _HerdCalendarScreenState extends State<HerdCalendarScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
+                  if (show['calendar_kind'] == 'deadline')
+                    Text(event.note ?? ''),
                   Text(
-                    '${DateFormat('MM-dd-yy').format(event.start)}${show['end_date'] == null ? '' : ' – ${DateFormat('MM-dd-yy').format(calendarDate(show['end_date']))}'}',
+                    '${DateFormat('MM-dd-yy').format(calendarDate(show['start_date']))}${show['end_date'] == null ? '' : ' – ${DateFormat('MM-dd-yy').format(calendarDate(show['end_date']))}'}',
                   ),
                   if (show['location_name'] != null)
                     Text(show['location_name']),
@@ -255,7 +257,7 @@ class _HerdCalendarScreenState extends State<HerdCalendarScreen> {
           ),
           const SizedBox(height: 6),
           const Text(
-            'Breeding milestones, health dates, and entered shows. Expected dates follow your breeding settings.',
+            'Breeding, health, shows and favorite entry deadlines. Expected dates follow your breeding settings.',
           ),
           if (showNotice != null)
             Padding(

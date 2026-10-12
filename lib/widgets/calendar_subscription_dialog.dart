@@ -118,7 +118,7 @@ class _CalendarSubscriptionDialogState
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             const Text(
-              'Subscribe to this herd’s breeding, health and entered-show dates. Changes are made in Breeder; your calendar app refreshes them on its own schedule.',
+              'Subscribe to this herd’s breeding, health, entered-show dates and favorite-show deadlines. Your calendar app refreshes on its own schedule. Favorite deadlines include alerts 1 day and 2 hours before. Some apps ignore subscription alerts; enable notifications or set reminders in your calendar app if needed.',
             ),
             const SizedBox(height: 12),
             const Text(

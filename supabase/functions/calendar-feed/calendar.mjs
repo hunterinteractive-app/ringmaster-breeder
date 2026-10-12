@@ -38,7 +38,8 @@ export function calendarEvents(breedings,settings,health,shows,timezone='UTC') {
  const seen=new Set();
  for(const s of shows){
   if(!s.start_date||seen.has(s.id))continue;seen.add(s.id);
-  events.push({id:`show-${s.id}`,title:s.name??'Entered show',date:day(s.start_date),location:[s.location_name,s.location_address].filter(Boolean).join(', '),description:`Show dates: ${day(s.start_date)} – ${day(s.end_date??s.start_date)}. ${s.entry_count} active entries.\nEntered shows for this herd owner’s linked RingMaster Show account.\n${(s.entries??[]).map(e=>[label({name:e.animal_name,tattoo:e.tattoo}),e.breed,e.class_name].filter(Boolean).join(' • ')).join('\n')}`});
+  if(s.is_favorite && s.entry_close_at) events.push({id:`show-deadline-${s.id}`,title:`Entry deadline • ${s.name??'Favorite show'}`,date:localDay(s.entry_close_at,timezone),timestamp:s.entry_close_at,alarms:[1440,120],description:'Favorite show entry deadline. Reminders: 1 day and 2 hours before. Enter at https://show.ringmasterone.com. Calendar app alert support varies.'});
+  if(Number(s.entry_count)>0) events.push({id:`show-${s.id}`,title:s.name??'Entered show',date:day(s.start_date),location:[s.location_name,s.location_address].filter(Boolean).join(', '),description:`Show dates: ${day(s.start_date)} – ${day(s.end_date??s.start_date)}. ${s.entry_count} active entries.\nEntered shows for this herd owner’s linked RingMaster Show account.\n${(s.entries??[]).map(e=>[label({name:e.animal_name,tattoo:e.tattoo}),e.breed,e.class_name].filter(Boolean).join(' • ')).join('\n')}`});
  }
  return events.sort((a,b)=>a.date.localeCompare(b.date)||a.id.localeCompare(b.id));
 }
@@ -48,8 +49,9 @@ export function renderCalendar(name,events,now=new Date()) {
  const stamp=now.toISOString().replace(/[-:]/g,'').replace(/\.\d{3}Z$/,'Z');
  const lines=['BEGIN:VCALENDAR','VERSION:2.0','PRODID:-//RingMaster Breeder//Herd Calendar//EN','CALSCALE:GREGORIAN',`X-WR-CALNAME:${escapeText(name+' • RingMaster Breeder')}`,'REFRESH-INTERVAL;VALUE=DURATION:PT6H','X-PUBLISHED-TTL:PT6H'];
  for(const e of events){
-  lines.push('BEGIN:VEVENT',`UID:${e.id}@breeder.ringmasterone.com`,`DTSTAMP:${stamp}`,`DTSTART;VALUE=DATE:${e.date.replaceAll('-','')}`,`DTEND;VALUE=DATE:${add(e.date,1).replaceAll('-','')}`,`SUMMARY:${escapeText(e.title)}`,`DESCRIPTION:${escapeText(e.description)}`,'CLASS:PRIVATE','TRANSP:TRANSPARENT');
+  lines.push('BEGIN:VEVENT',`UID:${e.id}@breeder.ringmasterone.com`,`DTSTAMP:${stamp}`,...(e.timestamp ? [`DTSTART:${new Date(e.timestamp).toISOString().replace(/[-:]/g,'').replace(/\.\d{3}Z$/,'Z')}`,`DTEND:${new Date(new Date(e.timestamp).getTime()+60000).toISOString().replace(/[-:]/g,'').replace(/\.\d{3}Z$/,'Z')}`] : [`DTSTART;VALUE=DATE:${e.date.replaceAll('-','')}`,`DTEND;VALUE=DATE:${add(e.date,1).replaceAll('-','')}`]),`SUMMARY:${escapeText(e.title)}`,`DESCRIPTION:${escapeText(e.description)}`,'CLASS:PRIVATE','TRANSP:TRANSPARENT');
   if(e.location)lines.push(`LOCATION:${escapeText(e.location)}`);
+  for(const minutes of e.alarms??[]) lines.push('BEGIN:VALARM','ACTION:DISPLAY',`TRIGGER:-PT${minutes}M`,`DESCRIPTION:${escapeText(e.title)}`,'END:VALARM');
   lines.push('END:VEVENT');
  }
  lines.push('END:VCALENDAR');return lines.map(fold).join('\r\n')+'\r\n';
