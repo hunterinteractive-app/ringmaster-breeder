@@ -378,7 +378,7 @@ class _HerdCalendarScreenState extends State<HerdCalendarScreen> {
                 ),
                 title: Text(event.title),
                 subtitle: Text(
-                  '${event.animal}\n${DateFormat('MM-dd-yy').format(event.start)}${event.start == event.end ? '' : ' – ${DateFormat('MM-dd-yy').format(event.end)}'}${event.estimated ? ' • Expected' : ''}',
+                  '${event.animal}\n${DateFormat('MM-dd-yy').format(event.start)}${event.start == event.end ? '' : ' – ${DateFormat('MM-dd-yy').format(event.end)}'}${event.estimated ? ' • Expected' : ''}${event.note == null ? '' : '\n${event.note}'}',
                 ),
                 isThreeLine: true,
                 trailing: const Icon(Icons.chevron_right),

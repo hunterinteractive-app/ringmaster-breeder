@@ -1,3 +1,4 @@
+import 'package:intl/intl.dart';
 import 'animal_labels.dart';
 import '../widgets/breeding_settings_dialog.dart';
 
@@ -10,6 +11,7 @@ class HerdCalendarEvent {
   final String title, animal, category, animalId;
   final DateTime start, end;
   final bool estimated;
+  final String? note;
   final Map<String, dynamic>? breeding;
   const HerdCalendarEvent({
     required this.title,
@@ -19,6 +21,7 @@ class HerdCalendarEvent {
     required this.start,
     required this.end,
     this.estimated = false,
+    this.note,
     this.breeding,
   });
   bool occursOn(DateTime day) => !day.isBefore(start) && !day.isAfter(end);
@@ -47,18 +50,28 @@ List<HerdCalendarEvent> herdCalendarEvents(
       DateTime? end,
       bool estimated = false,
     ]) {
-      events.add(
-        HerdCalendarEvent(
-          title: title,
-          category: category,
-          animal: animalTitle(dam['name'], dam['tattoo']),
-          animalId: dam['id'],
-          start: start,
-          end: end ?? start,
-          estimated: estimated,
-          breeding: r,
-        ),
-      );
+      final finish = end ?? start;
+      final hasWindow = finish != start;
+      final note = hasWindow
+          ? 'Expected window: ${DateFormat('MM-dd-yy').format(start)} – ${DateFormat('MM-dd-yy').format(finish)}. Based on your herd’s breeding settings; actual dates may vary.'
+          : null;
+      for (final date in hasWindow ? [start, finish] : [start]) {
+        events.add(
+          HerdCalendarEvent(
+            title: hasWindow
+                ? '$title • ${date == start ? 'Due window starts' : 'Final due day'}'
+                : title,
+            category: category,
+            animal: animalTitle(dam['name'], dam['tattoo']),
+            animalId: dam['id'],
+            start: date,
+            end: date,
+            note: note,
+            estimated: estimated,
+            breeding: r,
+          ),
+        );
+      }
     }
 
     add('Breeding recorded', 'Breeding', base);

@@ -15,29 +15,43 @@ Map<String, dynamic> record({
   'tracking': tracking,
 };
 void main() {
-  test('Rabbit windows include both boundaries and use herd settings', () {
-    final events = herdCalendarEvents(
-      [record()],
-      {
-        'rabbit': {'gestation_min': 29, 'gestation_max': 31},
-      },
-      [],
-    );
-    final birth = events.firstWhere((e) => e.category == 'Birth');
-    expect(birth.start, DateTime(2026, 10, 30));
-    expect(birth.end, DateTime(2026, 11, 1));
-    expect(birth.occursOn(DateTime(2026, 11, 1)), true);
-    expect(birth.occursOn(DateTime(2026, 11, 2)), false);
-    expect(
-      events.firstWhere((e) => e.category == 'Palpation').start,
-      DateTime(2026, 10, 15),
-    );
-  });
+  test(
+    'Rabbit windows show only start and final dates with an explanatory note',
+    () {
+      final events = herdCalendarEvents(
+        [record()],
+        {
+          'rabbit': {'gestation_min': 29, 'gestation_max': 31},
+        },
+        [],
+      );
+      final birth = events.firstWhere((e) => e.category == 'Birth');
+      expect(birth.start, DateTime(2026, 10, 30));
+      expect(birth.end, birth.start);
+      final finalDue = events.lastWhere((e) => e.category == 'Birth');
+      expect(finalDue.start, DateTime(2026, 11, 1));
+      expect(finalDue.title, contains('Final due day'));
+      expect(birth.note, contains('10-30-26 – 11-01-26'));
+      expect(finalDue.note, birth.note);
+      expect(
+        events.where(
+          (e) => e.category == 'Birth' && e.occursOn(DateTime(2026, 10, 31)),
+        ),
+        isEmpty,
+      );
+      expect(events.where((e) => e.category == 'Palpation').length, 1);
+      expect(birth.occursOn(DateTime(2026, 11, 2)), false);
+      expect(
+        events.firstWhere((e) => e.category == 'Palpation').start,
+        DateTime(2026, 10, 15),
+      );
+    },
+  );
   test('Cavy has no nesting and uses pup and weaning windows', () {
     final before = herdCalendarEvents([record(species: 'cavy')], {}, []);
     expect(before.any((e) => e.category == 'Nesting'), false);
     expect(
-      before.firstWhere((e) => e.category == 'Birth').end,
+      before.lastWhere((e) => e.category == 'Birth').end,
       DateTime(2026, 12, 12),
     );
     final after = herdCalendarEvents(
@@ -53,7 +67,7 @@ void main() {
       DateTime(2026, 12, 22),
     );
     expect(
-      after.firstWhere((e) => e.category == 'Weaning').end,
+      after.lastWhere((e) => e.category == 'Weaning').end,
       DateTime(2026, 12, 29),
     );
     expect(after.any((e) => e.category == 'Palpation'), false);
