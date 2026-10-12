@@ -15,6 +15,64 @@ Map<String, dynamic> record({
   'tracking': tracking,
 };
 void main() {
+  test('Entered shows are deduplicated and only mark their opening date', () {
+    final show = <String, dynamic>{
+      'id': 's',
+      'name': 'Fall Show',
+      'start_date': '2026-10-20',
+      'end_date': '2026-10-22',
+      'entry_count': 3,
+      'location_name': 'Fairgrounds',
+      'entries': [],
+    };
+    final events = enteredShowEvents([show, show]);
+    expect(events.length, 1);
+    expect(events.single.category, 'Shows');
+    expect(events.single.occursOn(DateTime(2026, 10, 20)), true);
+    expect(events.single.occursOn(DateTime(2026, 10, 21)), false);
+    expect(events.single.note, contains('10-20-26 – 10-22-26'));
+    expect(events.single.show!['entries'], isEmpty);
+  });
+  testWidgets('Show calendar event opens entered animal details', (
+    tester,
+  ) async {
+    final now = DateTime.now();
+    final events = enteredShowEvents([
+      {
+        'id': 's',
+        'name': 'Entered Show',
+        'start_date': DateTime(now.year, now.month, now.day).toIso8601String(),
+        'entry_count': 1,
+        'entries': [
+          {
+            'animal_name': 'Maple',
+            'tattoo': 'MPL',
+            'breed': 'Dutch',
+            'exhibitor_name': 'Exhibitor',
+          },
+        ],
+      },
+    ]);
+    await tester.pumpWidget(
+      MaterialApp(
+        home: HerdCalendarScreen(ringId: 'r', loader: () async => events),
+      ),
+    );
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Shows'));
+    await tester.pumpAndSettle();
+    await tester.scrollUntilVisible(
+      find.text('Entered Show'),
+      200,
+      scrollable: find.byType(Scrollable).first,
+    );
+    await tester.tap(find.text('Entered Show'));
+    await tester.pumpAndSettle();
+    expect(find.text('Maple • MPL'), findsOneWidget);
+    expect(find.textContaining('Manage these entries'), findsOneWidget);
+    expect(tester.takeException(), isNull);
+  });
+
   test(
     'Rabbit windows show only start and final dates with an explanatory note',
     () {

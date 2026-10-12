@@ -13,6 +13,7 @@ class HerdCalendarEvent {
   final bool estimated;
   final String? note;
   final Map<String, dynamic>? breeding;
+  final Map<String, dynamic>? show;
   const HerdCalendarEvent({
     required this.title,
     required this.animal,
@@ -23,6 +24,7 @@ class HerdCalendarEvent {
     this.estimated = false,
     this.note,
     this.breeding,
+    this.show,
   });
   bool occursOn(DateTime day) => !day.isBefore(start) && !day.isAfter(end);
 }
@@ -156,4 +158,29 @@ List<HerdCalendarEvent> herdCalendarEvents(
     return date != 0 ? date : a.animal.compareTo(b.animal);
   });
   return events;
+}
+
+List<HerdCalendarEvent> enteredShowEvents(List<Map<String, dynamic>> shows) {
+  final seen = <String>{};
+  return [
+    for (final show in shows)
+      if (show['start_date'] != null && seen.add(show['id'].toString()))
+        HerdCalendarEvent(
+          title: show['name'] ?? 'Entered show',
+          animal: '${show['entry_count']} active entries • RingMaster Show',
+          category: 'Shows',
+          animalId: '',
+          start: calendarDate(show['start_date']),
+          end: calendarDate(show['start_date']),
+          show: show,
+          note: [
+            if ((show['location_name'] ?? '').toString().isNotEmpty)
+              show['location_name'],
+            if (show['end_date'] != null &&
+                show['end_date'] != show['start_date'])
+              'Show dates: ${DateFormat('MM-dd-yy').format(calendarDate(show['start_date']))} – ${DateFormat('MM-dd-yy').format(calendarDate(show['end_date']))}',
+            'Entered shows for this herd owner’s linked account.',
+          ].join(' • '),
+        ),
+  ];
 }

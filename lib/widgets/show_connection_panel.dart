@@ -173,6 +173,14 @@ class _ShowConnectionPanelState extends State<ShowConnectionPanel> {
       ],
       const Divider(),
       if (connection != null) ...[
+        const ListTile(
+          contentPadding: EdgeInsets.zero,
+          leading: Icon(Icons.calendar_month_outlined),
+          title: Text('Entered shows on your calendar'),
+          subtitle: Text(
+            'Active show entries refresh automatically when you open or refresh the herd calendar.',
+          ),
+        ),
         SwitchListTile(
           contentPadding: EdgeInsets.zero,
           title: const Text('Receive show reports'),

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../utils/herd_calendar.dart';
+import '../utils/animal_labels.dart';
 import '../widgets/ringmaster_page_shell.dart';
 import '../theme/app_theme.dart';
 import 'breeding_tracker_screen.dart';
@@ -26,7 +27,7 @@ class _HerdCalendarScreenState extends State<HerdCalendarScreen> {
   late DateTime month = DateTime(selected.year, selected.month);
   List<HerdCalendarEvent> events = [];
   bool loading = true;
-  String? error;
+  String? error, showNotice;
   String filter = 'All';
   bool agenda = false;
   @override
@@ -48,6 +49,7 @@ class _HerdCalendarScreenState extends State<HerdCalendarScreen> {
     setState(() {
       loading = true;
       error = null;
+      showNotice = null;
     });
     try {
       if (widget.loader != null) {
@@ -87,6 +89,26 @@ class _HerdCalendarScreenState extends State<HerdCalendarScreen> {
       final value = herdCalendarEvents(results[0], {
         for (final s in results[2]) s['species']: s,
       }, results[1]);
+      try {
+        final response = await db.functions.invoke(
+          'show-calendar',
+          body: {'ring_id': widget.ringId},
+        );
+        final data = Map<String, dynamic>.from(response.data as Map);
+        if (data['error'] != null) throw StateError(data['error']);
+        value.addAll(
+          enteredShowEvents(
+            List<Map<String, dynamic>>.from(data['shows'] ?? []),
+          ),
+        );
+        showNotice = data['connected'] == true
+            ? 'Entered shows refreshed from RingMaster Show. Shows belong to the herd owner’s linked account.'
+            : 'Connect RingMaster Show in Account to see your entered shows here.';
+      } catch (_) {
+        showNotice =
+            'Entered shows could not refresh. Herd dates are available; use Refresh to try again.';
+      }
+      value.sort((a, b) => a.start.compareTo(b.start));
       if (mounted) setState(() => events = value);
     } catch (_) {
       if (mounted) {
@@ -98,6 +120,63 @@ class _HerdCalendarScreenState extends State<HerdCalendarScreen> {
   }
 
   Future<void> open(HerdCalendarEvent event) async {
+    if (event.show != null) {
+      final show = event.show!;
+      await showDialog<void>(
+        context: context,
+        builder: (ctx) => AlertDialog(
+          title: Text(event.title),
+          content: SizedBox(
+            width: 520,
+            child: SingleChildScrollView(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    '${DateFormat('MM-dd-yy').format(event.start)}${show['end_date'] == null ? '' : ' – ${DateFormat('MM-dd-yy').format(calendarDate(show['end_date']))}'}',
+                  ),
+                  if (show['location_name'] != null)
+                    Text(show['location_name']),
+                  if (show['location_address'] != null)
+                    Text(show['location_address']),
+                  const SizedBox(height: 16),
+                  Text(
+                    '${show['entry_count']} active entries',
+                    style: Theme.of(context).textTheme.titleMedium,
+                  ),
+                  for (final e in show['entries'] as List? ?? [])
+                    ListTile(
+                      contentPadding: EdgeInsets.zero,
+                      title: Text(animalTitle(e['animal_name'], e['tattoo'])),
+                      subtitle: Text(
+                        [
+                              e['exhibitor_name'],
+                              e['breed'],
+                              e['variety'],
+                              e['class_name'],
+                              e['sex'],
+                            ]
+                            .where((v) => v != null && v.toString().isNotEmpty)
+                            .join(' • '),
+                      ),
+                    ),
+                  const Text(
+                    'Manage these entries in RingMaster Show. Refresh the calendar to receive changes.',
+                  ),
+                ],
+              ),
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx),
+              child: const Text('Close'),
+            ),
+          ],
+        ),
+      );
+      return;
+    }
     if (event.breeding != null) {
       final saved = await showDialog<bool>(
         context: context,
@@ -124,6 +203,7 @@ class _HerdCalendarScreenState extends State<HerdCalendarScreen> {
   }
 
   Color color(String category) => switch (category) {
+    'Shows' => const Color(0xFF996A27),
     'Health' => const Color(0xFF337665),
     'Birth' => BreederColors.primary,
     'Weaning' => const Color(0xFF576BA0),
@@ -162,8 +242,13 @@ class _HerdCalendarScreenState extends State<HerdCalendarScreen> {
           ),
           const SizedBox(height: 6),
           const Text(
-            'Breeding milestones and health dates, together. Expected dates follow your breeding settings.',
+            'Breeding milestones, health dates, and entered shows. Expected dates follow your breeding settings.',
           ),
+          if (showNotice != null)
+            Padding(
+              padding: const EdgeInsets.only(top: 8),
+              child: Text(showNotice!),
+            ),
           const SizedBox(height: 18),
           Wrap(
             spacing: 8,
@@ -177,6 +262,7 @@ class _HerdCalendarScreenState extends State<HerdCalendarScreen> {
                 'Birth',
                 'Weaning',
                 'Health',
+                'Shows',
               ])
                 ChoiceChip(
                   label: Text(category),
@@ -370,7 +456,9 @@ class _HerdCalendarScreenState extends State<HerdCalendarScreen> {
                 leading: CircleAvatar(
                   backgroundColor: color(event.category).withValues(alpha: .12),
                   child: Icon(
-                    event.category == 'Health'
+                    event.category == 'Shows'
+                        ? Icons.emoji_events_outlined
+                        : event.category == 'Health'
                         ? Icons.medical_services_outlined
                         : Icons.event,
                     color: color(event.category),
