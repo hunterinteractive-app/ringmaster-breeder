@@ -1,5 +1,6 @@
 import { createClient } from "npm:@supabase/supabase-js@2.110.2";
 import { batch, historyBatch, open, seal, start } from "./collector.ts";
+import { inspectSales, salesRecords } from "./sales.ts";
 const cors = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers":
@@ -66,6 +67,14 @@ Deno.serve(async (request) => {
         body.password.length > 1024
       ) throw new Error("Enter your Global Pedigree username and password.");
       state = await start(user.id, body.username.trim(), body.password);
+      const page = await inspectSales(state);
+      state.salesRecords = salesRecords(page);
+      state.salesComplete = true;
+      for (const sale of state.salesRecords) {
+        const id = String(sale.animal_source_id);
+        if (!state.queue.includes(id)) state.queue.push(id);
+        if (!state.owned.includes(id)) state.owned.push(id);
+      }
       // Login and listing have their own request budget; detail collection starts next.
       return reply({
         status: state.queue.length ? "collecting" : "collected",
@@ -74,9 +83,20 @@ Deno.serve(async (request) => {
         token: state.queue.length ? await seal(state, secret) : null,
       });
     }
-    if (!Array.isArray(state.historyQueue) || !Array.isArray(state.live)) throw new Error("The import session needs a fresh connection for live herd status.");
+    if (!Array.isArray(state.historyQueue) || !Array.isArray(state.live)) {
+      throw new Error(
+        "The import session needs a fresh connection for live herd status.",
+      );
+    }
     const animals = state.queue.length ? await batch(state) : [];
     const history = animals.length ? [] : await historyBatch(state);
+    if (
+      !state.queue.length && !state.historyQueue?.length &&
+      state.salesRecords?.length
+    ) {
+      history.push(...state.salesRecords);
+      state.salesRecords = [];
+    }
     const complete = !state.queue.length && !state.historyQueue?.length;
     return reply({
       status: complete ? "collected" : "collecting",
@@ -84,6 +104,7 @@ Deno.serve(async (request) => {
       animals,
       history,
       history_complete: complete,
+      sales_complete: complete && state.salesComplete === true,
       show_results_available: false,
       token: complete ? null : await seal(state, secret),
     });

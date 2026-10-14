@@ -12,12 +12,17 @@ class SaleRecord {
         sum +
         (p['kind'] == 'refund' ? -1 : 1) * (p['amount_cents'] as num).toInt(),
   );
-  int? get balance => price == null ? null : price! - paid;
+  bool get imported => data['import_source'] == 'global_pedigree';
+  bool get paymentHistoryComplete => data['payment_history_complete'] != false;
+  int? get balance =>
+      !paymentHistoryComplete || price == null ? null : price! - paid;
   int get deposits => payments
       .where((p) => p['kind'] == 'deposit')
       .fold(0, (sum, p) => sum + (p['amount_cents'] as num).toInt());
   bool get open => status == 'for_sale' || status == 'reserved';
-  String get paymentStatus => price == null
+  String get paymentStatus => !paymentHistoryComplete
+      ? 'Payment history not recorded'
+      : price == null
       ? 'Price not set'
       : balance == 0
       ? 'Paid in full'

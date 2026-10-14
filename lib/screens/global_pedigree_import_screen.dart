@@ -55,6 +55,7 @@ class _GlobalPedigreeImportScreenState
           'account': draft['account'],
           'history': draft['history'] ?? [],
           'history_complete': draft['history_complete'] == true,
+          'sales_complete': draft['sales_complete'] == true,
           'animals': (draft['animals'] as List)
               .map((a) => Map<String, dynamic>.from(a as Map))
               .toList(),
@@ -340,8 +341,14 @@ class _GlobalPedigreeImportScreenState
                         '${(_data!['animals'] as List).length} rabbits and ancestors collected.',
                       ),
                       Text(
-                        '${(_data!['history'] as List? ?? []).where((r) => r['kind'] == 'litter').length} litter and breeding records; ${(_data!['history'] as List? ?? []).where((r) => r['kind'] == 'weight').length} dated weights collected.',
+                        '${(_data!['history'] as List? ?? []).where((r) => r['kind'] == 'litter').length} litter and breeding records; ${(_data!['history'] as List? ?? []).where((r) => r['kind'] == 'weight').length} dated weights; ${(_data!['history'] as List? ?? []).where((r) => r['kind'] == 'sale').length} historical sales collected.',
                       ),
+                      if ((_data!['history'] as List? ?? []).any(
+                        (r) => r['kind'] == 'sale',
+                      ))
+                        const Text(
+                          'Historical sales preserve recorded prices and blank buyers. Payment history is not recorded.',
+                        ),
                       const Text(
                         'Individual show results are not available on the inspected Global Pedigree pages. Show-leg totals are included with rabbit details.',
                       ),
@@ -576,6 +583,11 @@ class _GlobalPedigreeImportScreenState
                       '${_result!['animals_added']} new records imported. '
                       '${_result!['animals_existing']} existing records preserved.',
                     ),
+                    if ((_result!['sales_added'] ?? 0) > 0 ||
+                        (_result!['sales_existing'] ?? 0) > 0)
+                      Text(
+                        '${_result!['sales_added']} historical sales imported; ${_result!['sales_existing']} existing sales preserved.',
+                      ),
                     const SizedBox(height: 16),
                     FilledButton(
                       onPressed: () => Navigator.of(context).pop(),

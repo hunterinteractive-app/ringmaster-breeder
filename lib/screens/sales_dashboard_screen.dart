@@ -216,6 +216,10 @@ class _SalesDashboardScreenState extends State<SalesDashboardScreen> {
                 summary('Balance due', saleMoney(due)),
               ],
             ),
+            if (all.any((s) => !s.paymentHistoryComplete))
+              Text(
+                '${all.where((s) => !s.paymentHistoryComplete).length} historical sales have unrecorded payment history; their balances are excluded.',
+              ),
             const SizedBox(height: 20),
             Wrap(
               spacing: 12,
@@ -289,6 +293,10 @@ class _SalesDashboardScreenState extends State<SalesDashboardScreen> {
                           Chip(label: Text(saleStatus(sale.status))),
                         ],
                       ),
+                      if (sale.imported)
+                        Text(
+                          'Imported from Global Pedigree • Sale ${sale.data['import_source_id']}',
+                        ),
                       if ((sale.data['buyer_name'] as String).isNotEmpty)
                         Text('Buyer: ${sale.data['buyer_name']}'),
                       if (sale.data['sale_date'] != null)
@@ -302,9 +310,15 @@ class _SalesDashboardScreenState extends State<SalesDashboardScreen> {
                           Text(
                             'Agreed: ${saleMoney((sale.data['sale_cents'] as num?)?.toInt())}',
                           ),
-                          Text('Deposits: ${saleMoney(sale.deposits)}'),
-                          Text('Net paid: ${saleMoney(sale.paid)}'),
-                          Text('Balance: ${saleMoney(sale.balance)}'),
+                          Text(
+                            'Deposits: ${sale.paymentHistoryComplete ? saleMoney(sale.deposits) : 'Not recorded'}',
+                          ),
+                          Text(
+                            'Net paid: ${sale.paymentHistoryComplete ? saleMoney(sale.paid) : 'Not recorded'}',
+                          ),
+                          Text(
+                            'Balance: ${sale.paymentHistoryComplete ? saleMoney(sale.balance) : 'Not recorded'}',
+                          ),
                           Text(sale.paymentStatus),
                         ],
                       ),
@@ -410,6 +424,7 @@ class _SaleEditDialogState extends State<SaleEditDialog> {
   );
   late String status = widget.sale.status;
   late DateTime? date = DateTime.tryParse(widget.sale.data['sale_date'] ?? '');
+  late bool paymentComplete = widget.sale.paymentHistoryComplete;
   bool saving = false;
   String? error;
   @override
@@ -425,11 +440,14 @@ class _SaleEditDialogState extends State<SaleEditDialog> {
     try {
       final askingCents = parseSaleMoney(asking.text),
           saleCents = parseSaleMoney(agreed.text);
-      if (['reserved', 'sold'].contains(status) &&
+      if (!widget.sale.imported &&
+          ['reserved', 'sold'].contains(status) &&
           fields['buyer_name']!.text.trim().isEmpty) {
         throw StateError('Enter the buyer name.');
       }
-      if (status == 'sold' && (saleCents == null || date == null)) {
+      if (!widget.sale.imported &&
+          status == 'sold' &&
+          (saleCents == null || date == null)) {
         throw StateError('Enter the agreed sale price and sale date.');
       }
       if (status == 'cancelled') {
@@ -460,6 +478,7 @@ class _SaleEditDialogState extends State<SaleEditDialog> {
       });
       await SalesService.update(widget.sale, {
         'status': status,
+        if (widget.sale.imported) 'payment_history_complete': paymentComplete,
         'asking_cents': askingCents,
         'sale_cents': saleCents,
         'sale_date': date == null
@@ -518,6 +537,15 @@ class _SaleEditDialogState extends State<SaleEditDialog> {
                       ? null
                       : (v) => setState(() => status = v!),
                 ),
+                if (widget.sale.imported)
+                  CheckboxListTile(
+                    value: paymentComplete,
+                    onChanged: (v) => setState(() => paymentComplete = v!),
+                    title: const Text('Payment history is complete'),
+                    subtitle: const Text(
+                      'Confirm after recording all payments and refunds.',
+                    ),
+                  ),
                 field(asking, 'Asking price (USD)', money: true),
                 field(agreed, 'Agreed sale price (USD)', money: true),
                 for (final e in fields.entries)
@@ -533,7 +561,9 @@ class _SaleEditDialogState extends State<SaleEditDialog> {
                     final d = await showDatePicker(
                       context: context,
                       initialDate: date ?? DateTime.now(),
-                      firstDate: DateTime(2000),
+                      firstDate: widget.sale.imported
+                          ? DateTime(1)
+                          : DateTime(2000),
                       lastDate: DateTime.now(),
                     );
                     if (d != null && mounted) setState(() => date = d);

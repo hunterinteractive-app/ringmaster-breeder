@@ -22,7 +22,9 @@ class GlobalPedigreeImportService implements GlobalPedigreeImportGateway {
   Future<Map<String, dynamic>?> pendingDraft() async {
     final draft = await client
         .from('global_pedigree_import_drafts')
-        .select('ring_id,account,animals,history,history_complete')
+        .select(
+          'ring_id,account,animals,history,history_complete,sales_complete',
+        )
         .eq('auth_user_id', client.auth.currentUser!.id)
         .gt('expires_at', DateTime.now().toUtc().toIso8601String())
         .maybeSingle();
@@ -90,6 +92,7 @@ class GlobalPedigreeImportService implements GlobalPedigreeImportGateway {
             'animals': animals,
             'history': history,
             'history_complete': data['history_complete'] == true,
+            'sales_complete': data['sales_complete'] == true,
           };
         }
         if (data['status'] != 'collecting' || data['token'] is! String) {
@@ -118,7 +121,7 @@ class GlobalPedigreeImportService implements GlobalPedigreeImportGateway {
     bool commit,
   ) async {
     final result = await client.rpc(
-      'import_global_pedigree_with_history',
+      'import_global_pedigree_with_sales',
       params: {
         'p_ring': herd,
         'p_account': data['account'],
@@ -126,6 +129,7 @@ class GlobalPedigreeImportService implements GlobalPedigreeImportGateway {
         'p_commit': commit,
         'p_history': data['history'] ?? [],
         'p_history_complete': data['history_complete'] == true,
+        'p_sales_complete': data['sales_complete'] == true,
       },
     );
     return Map<String, dynamic>.from(result as Map);

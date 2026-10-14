@@ -12,6 +12,8 @@ export type State = {
   live?: string[];
   queue: string[];
   seen: string[];
+  salesRecords?: Record<string, unknown>[];
+  salesComplete?: boolean;
   historyQueue?: Record<string, unknown>[];
 };
 const clean = (v: string | null | undefined) =>

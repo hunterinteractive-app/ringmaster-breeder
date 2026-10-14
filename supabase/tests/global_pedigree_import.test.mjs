@@ -7,7 +7,7 @@ import assert from 'node:assert/strict';
 const repo=new URL('../../', import.meta.url).pathname.replace(/\/$/, '');
 const db=new PGlite();
 await db.exec(`
-create role anon; create role authenticated;
+create role anon; create role authenticated; create role service_role;
 create schema auth; create schema breeder_private;
 create table auth.users(id uuid primary key);
 insert into auth.users values('11111111-1111-4111-8111-111111111111'),('22222222-2222-4222-8222-222222222222');
@@ -138,4 +138,23 @@ await db.exec("select set_config('request.jwt.claim.sub','22222222-2222-4222-822
 assert.equal((await db.query('select count(*)::int n from public.global_pedigree_history')).rows[0].n,0);
 await assert.rejects(runHistory(ha,hh,true),/Select a herd you own/);
 await db.exec("select set_config('request.jwt.claim.sub','11111111-1111-4111-8111-111111111111',false)");
+await db.exec('reset role; create function breeder_private.has_access(p_owner text) returns boolean language sql as $$select breeder_private.owns(p_owner)$$;');
+await db.exec(readFileSync(repo+'/supabase/migrations/20261014012604_sales_dashboard.sql','utf8'));
+await db.exec(readFileSync(repo+'/supabase/migrations/20261014021444_global_pedigree_sales_source_preview.sql','utf8'));
+await db.exec(readFileSync(repo+'/supabase/migrations/20261014020726_global_pedigree_sales_history.sql','utf8'));
+await db.exec('set role authenticated');
+const sa=[{source_id:'sale-animal',name:'Historic Sale',sex:'Buck',status:'archived'}];
+const sh=[{kind:'sale',source_id:'sale-1',animal_source_id:'sale-animal',sale_date:'2021-05-30',sale_cents:300},{kind:'sale',source_id:'sale-2',animal_source_id:'sale-animal',sale_date:'2021-05-30',sale_cents:0}];
+async function runSales(h,commit=false){return (await db.query('select public.import_global_pedigree_with_sales($1,$2,$3::jsonb,$4::jsonb,true,$5,true) result',[ring,'sales-fixture',JSON.stringify(sa),JSON.stringify(h),commit])).rows[0].result;}
+result=await runSales(sh);assert.equal(result.sales_count,2);assert.equal(result.status,'preview');
+assert.equal((await db.query('select count(*)::int n from animal_sales')).rows[0].n,0);
+result=await runSales(sh,true);assert.equal(result.status,'imported');assert.equal(result.sales_added,2);
+assert.equal((await db.query("select status from animals where name='Historic Sale'")).rows[0].status,'archived');
+assert.equal((await db.query('select count(*)::int n from animal_sale_payments')).rows[0].n,0);
+assert.deepEqual((await db.query('select buyer_name,payment_history_complete,sale_cents::int from animal_sales order by import_source_id')).rows,[{buyer_name:'',payment_history_complete:false,sale_cents:300},{buyer_name:'',payment_history_complete:false,sale_cents:0}]);
+assert.equal((await runSales(sh,true)).sales_added,0);
+result=await runSales([{...sh[0],source_id:'future',sale_date:'2999-01-01'}],true);assert.equal(result.status,'preview');assert(result.issues.length>0);
+await db.exec("select set_config('request.jwt.claim.sub','22222222-2222-4222-8222-222222222222',false)");
+assert.equal((await db.query('select count(*)::int n from animal_sales')).rows[0].n,0);await assert.rejects(runSales(sh,true),/Select a herd you own/);
+console.log('Historical sales checks passed: separate source IDs, zero price, blank buyer, unknown receipts, stable animal status, retries, future date and ownership.');
 await db.close();

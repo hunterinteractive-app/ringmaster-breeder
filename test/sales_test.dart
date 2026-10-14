@@ -5,6 +5,20 @@ import 'package:ringmaster_breeder/widgets/bulk_sale_dialog.dart';
 import 'package:ringmaster_breeder/screens/sales_dashboard_screen.dart';
 
 void main() {
+  test('historical prices do not fabricate unpaid balances or receipts', () {
+    const sale = SaleRecord({
+      'id': 'historic',
+      'status': 'sold',
+      'sale_cents': 300,
+      'import_source': 'global_pedigree',
+      'payment_history_complete': false,
+    });
+    expect(sale.price, 300);
+    expect(sale.balance, isNull);
+    expect(sale.paymentStatus, 'Payment history not recorded');
+    expect(sale.imported, isTrue);
+    expect(sale.paid, 0);
+  });
   test(
     'money parsing is exact and rejects extra precision or negative amounts',
     () {
