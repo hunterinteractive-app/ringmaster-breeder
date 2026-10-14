@@ -12,6 +12,7 @@ class RingMasterPageShell extends StatelessWidget {
   final bool showAccountButton;
   final bool isAccountPage;
   final bool isCalendarPage;
+  final bool isSalesPage;
   final VoidCallback? onRefresh;
   final VoidCallback? onAccountReturn;
   final bool showHomeButton;
@@ -37,6 +38,7 @@ class RingMasterPageShell extends StatelessWidget {
     this.showAccountButton = true,
     this.isAccountPage = false,
     this.isCalendarPage = false,
+    this.isSalesPage = false,
     this.onRefresh,
     this.onAccountReturn,
     this.showHomeButton = true,
@@ -132,6 +134,14 @@ class RingMasterPageShell extends StatelessWidget {
           onPressed: isCalendarPage
               ? null
               : () => Navigator.of(context).pushNamed('/calendar'),
+        ),
+      if (showAccountButton)
+        IconButton(
+          tooltip: 'Sales dashboard',
+          icon: const Icon(Icons.sell_outlined),
+          onPressed: isSalesPage
+              ? null
+              : () => Navigator.of(context).pushNamed('/sales'),
         ),
       if (onRefresh != null)
         IconButton(
@@ -438,13 +448,16 @@ class _WideHeader extends StatelessWidget {
           ),
         ),
         if (actions.isNotEmpty)
-          Wrap(
-            spacing: 8,
-            runSpacing: 8,
-            crossAxisAlignment: WrapCrossAlignment.center,
-            children: actions
-                .map((action) => _HeaderActionContainer(child: action))
-                .toList(),
+          Flexible(
+            child: Wrap(
+              alignment: WrapAlignment.end,
+              spacing: 8,
+              runSpacing: 8,
+              crossAxisAlignment: WrapCrossAlignment.center,
+              children: actions
+                  .map((action) => _HeaderActionContainer(child: action))
+                  .toList(),
+            ),
           ),
       ],
     );

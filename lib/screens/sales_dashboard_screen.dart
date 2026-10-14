@@ -147,6 +147,7 @@ class _SalesDashboardScreenState extends State<SalesDashboardScreen> {
   @override
   Widget build(BuildContext context) => RingMasterPageShell(
     title: 'Sales',
+    isSalesPage: true,
     onRefresh: refresh,
     body: FutureBuilder<List<SaleRecord>>(
       future: records,
