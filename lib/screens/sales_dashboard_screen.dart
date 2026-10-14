@@ -94,13 +94,18 @@ class _SalesDashboardScreenState extends State<SalesDashboardScreen> {
   }
 
   Future<void> edit(SaleRecord sale) async {
-    if (await showDialog<bool>(
-              context: context,
-              barrierDismissible: false,
-              builder: (_) => SaleEditDialog(sale: sale),
-            ) ==
-            true &&
-        mounted) {
+    final savedStatus = await showDialog<String>(
+      context: context,
+      barrierDismissible: false,
+      builder: (_) => SaleEditDialog(sale: sale),
+    );
+    if (savedStatus != null && mounted) {
+      if (savedStatus == 'sold') {
+        setState(() {
+          filter = 'Sold';
+          query = '';
+        });
+      }
       refresh();
     }
   }
@@ -250,6 +255,15 @@ class _SalesDashboardScreenState extends State<SalesDashboardScreen> {
               ],
             ),
             const SizedBox(height: 16),
+            if (filter == 'Open')
+              Padding(
+                padding: const EdgeInsets.only(bottom: 12),
+                child: TextButton.icon(
+                  onPressed: () => setState(() => filter = 'Sold'),
+                  icon: const Icon(Icons.email_outlined),
+                  label: const Text('View sold animals and email pedigrees'),
+                ),
+              ),
             if (visible.isEmpty)
               const Padding(
                 padding: EdgeInsets.all(28),
@@ -311,10 +325,10 @@ class _SalesDashboardScreenState extends State<SalesDashboardScreen> {
                               label: const Text('Record payment / refund'),
                             ),
                           if (sale.status == 'sold')
-                            TextButton.icon(
+                            FilledButton.icon(
                               onPressed: () => emailPedigree(sale),
                               icon: const Icon(Icons.email_outlined),
-                              label: const Text('Email pedigree'),
+                              label: const Text('Email pedigree to buyer'),
                             ),
                           TextButton.icon(
                             onPressed: () => history(sale),
@@ -461,7 +475,7 @@ class _SaleEditDialogState extends State<SaleEditDialog> {
           buyerEmail: fields['buyer_email']!.text.trim(),
         );
       }
-      if (mounted) Navigator.pop(context, true);
+      if (mounted) Navigator.pop(context, status);
     } catch (e) {
       if (mounted) {
         setState(() {
