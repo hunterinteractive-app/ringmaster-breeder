@@ -1,3 +1,5 @@
+import '../widgets/pedigree_email_dialog.dart';
+import 'global_pedigree_history_screen.dart';
 import '../utils/color_details.dart';
 import '../widgets/ringmaster_page_shell.dart';
 import 'package:flutter/material.dart';
@@ -219,6 +221,29 @@ class _AnimalDetailScreenState extends State<AnimalDetailScreen> {
                 ),
 
                 const SizedBox(height: 12),
+
+                ElevatedButton(
+                  onPressed: () => Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => GlobalPedigreeHistoryScreen(
+                        animalId: widget.animalId,
+                      ),
+                    ),
+                  ),
+                  child: const Text('Global Pedigree history'),
+                ),
+                const SizedBox(height: 12),
+
+                if (animal['status'] == 'sold') ...[
+                  ElevatedButton.icon(
+                    onPressed: () =>
+                        offerBuyerPedigree(context, animalId: widget.animalId),
+                    icon: const Icon(Icons.email_outlined),
+                    label: const Text('Email pedigree to buyer'),
+                  ),
+                  const SizedBox(height: 12),
+                ],
 
                 /// Weight History
                 ElevatedButton(

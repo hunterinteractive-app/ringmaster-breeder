@@ -1,3 +1,4 @@
+import 'global_pedigree_history_screen.dart';
 import 'super_admin_screen.dart';
 import 'delete_account_screen.dart';
 import '../widgets/show_connection_panel.dart';
@@ -11,6 +12,7 @@ import '../services/family_service.dart';
 import '../services/license_service.dart';
 import 'family_access_screen.dart';
 import 'record_import_screen.dart';
+import 'global_pedigree_import_screen.dart';
 
 class AccountScreen extends StatefulWidget {
   const AccountScreen({super.key});
@@ -305,6 +307,22 @@ class _AccountScreenState extends State<AccountScreen> {
                       const ShowConnectionPanel(),
                     ]),
                     section('Import & export', Icons.import_export, [
+                      ListTile(
+                        contentPadding: EdgeInsets.zero,
+                        title: const Text('Import from Global Pedigree'),
+                        subtitle: const Text(
+                          'Bring in your rabbits and pedigree ancestors.',
+                        ),
+                        trailing: const Icon(Icons.chevron_right),
+                        onTap: () => open(const GlobalPedigreeImportScreen()),
+                      ),
+                      ListTile(
+                        title: const Text('Global Pedigree history'),
+                        subtitle: const Text(
+                          'Imported litters, breedings, and dated weights.',
+                        ),
+                        onTap: () => open(const GlobalPedigreeHistoryScreen()),
+                      ),
                       ListTile(
                         contentPadding: EdgeInsets.zero,
                         title: const Text('Import RingMaster records'),

@@ -167,6 +167,17 @@ class _RingDashboardState extends State<RingDashboard> {
                   ),
                 ),
               ),
+            Card(
+              child: ListTile(
+                leading: const Icon(Icons.sell_outlined),
+                title: const Text('Sales dashboard'),
+                subtitle: const Text(
+                  'Listings, buyers, payments and sale history',
+                ),
+                trailing: const Icon(Icons.chevron_right),
+                onTap: () => Navigator.pushNamed(context, '/sales'),
+              ),
+            ),
             if (rings.isEmpty)
               const Padding(
                 padding: EdgeInsets.all(24),

@@ -1,3 +1,4 @@
+import '../widgets/pedigree_email_dialog.dart';
 import '../widgets/ringmaster_page_shell.dart';
 import 'package:flutter/material.dart';
 import '../services/animal_service.dart';
@@ -29,6 +30,7 @@ class _EditAnimalScreenState extends State<EditAnimalScreen> {
   String species = '';
   String sex = 'Buck';
   String status = 'active';
+  String originalStatus = 'active';
 
   bool isSaving = false;
   bool isLoaded = false;
@@ -51,6 +53,7 @@ class _EditAnimalScreenState extends State<EditAnimalScreen> {
     species = animal['species'].toString().toLowerCase(); // rabbit / cavy
     sex = animal['sex']; // Buck/Doe or Boar/Sow
     status = animal['status'];
+    originalStatus = status;
 
     setState(() => isLoaded = true);
   }
@@ -80,6 +83,9 @@ class _EditAnimalScreenState extends State<EditAnimalScreen> {
         'leg_details': legDetailsController.text,
       });
 
+      if (mounted && status == 'sold' && originalStatus != 'sold') {
+        await offerBuyerPedigree(context, animalId: widget.animalId);
+      }
       if (mounted) Navigator.pop(context, true);
     } catch (e) {
       if (!mounted) return;
@@ -160,6 +166,7 @@ class _EditAnimalScreenState extends State<EditAnimalScreen> {
                 DropdownMenuItem(value: 'active', child: Text('Active')),
                 DropdownMenuItem(value: 'sold', child: Text('Sold')),
                 DropdownMenuItem(value: 'retired', child: Text('Retired')),
+                DropdownMenuItem(value: 'archived', child: Text('Archived')),
                 DropdownMenuItem(value: 'deceased', child: Text('Deceased')),
               ],
               onChanged: (v) => setState(() => status = v!),

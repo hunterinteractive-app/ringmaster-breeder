@@ -1,3 +1,4 @@
+import 'screens/sales_dashboard_screen.dart';
 import 'screens/calendar_home_screen.dart';
 import 'screens/account_screen.dart';
 import 'screens/delete_account_screen.dart';
@@ -56,6 +57,7 @@ class MyApp extends StatelessWidget {
     ),
     home: const AuthRoot(),
     routes: {
+      '/sales': (_) => SalesDashboardScreen(ownerId: FamilyService.ownerId!),
       '/calendar': (_) => const CalendarHomeScreen(),
       '/account': (_) => const AccountScreen(),
       '/animals': (context) {

@@ -1,0 +1,4 @@
+
+[functions.email-buyer-pedigree]
+# Handler verifies each user with getUser and checks family access.
+verify_jwt = false

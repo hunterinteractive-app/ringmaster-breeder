@@ -1,0 +1,74 @@
+# Global Pedigree importer
+
+Account Settings → Import & export → Import from Global Pedigree collects the account's All Rabbits list and recursively follows sire/dam links. It previews the import into an owned, non-demo herd and saves only after the user chooses Import into herd.
+
+## Data and matching
+
+The collector reads names, tattoos, breed, variety, sex, date of birth, current weight in pounds, registration and grand champion numbers, show legs, deceased status, notes, and parent IDs. Unowned ancestors become pedigree-only records. Unknown sex requires an explicit Buck/Doe choice and another preview. Missing ancestors, pedigree cycles, duplicate source IDs, future dates, invalid sex, and unresolved duplicate decisions prevent saving. A shared ear number by itself does not prevent import.
+
+Source-account IDs are hashes of the dashboard's account referral identifier, so signing in by username or email uses the same import identity. Source rabbit IDs are retained in a private provenance table. A repeat import reuses those records. Otherwise, an existing rabbit is reused only when exactly one record matches the normalized name and tattoo, species, breed, sex, and birth date. Placeholder names never match automatically. Explicit keep-separate decisions disable automatic matching. Imported animals have a source-scoped global_pedigree_identity; ordinary manual records retain the tattoo uniqueness index. Existing animals and their weights/parents are preserved. Apparent duplicate groups use name + tattoo + breed + sex as suggestions only. Users choose separate records or one canonical record. Canonical choices require compatible identity and birth dates, retain provenance for every source ID, and redirect child parent references. Conflicting choices, alias chains, cycles created by merging, and attempts to merge records previously imported separately are rejected. The selected record supplies its details; choosing a merge can omit the other record’s differing details, which the preview explains. New animals, weights, provenance, and parent links are saved atomically. Global Pedigree is read only.
+
+Global Pedigree exposes deceased status on the observed detail pages; the importer does not infer sold/retired status. It imports the current displayed weight, not weight history. Photos, litter/show histories, owner contact details, and genotype are outside this importer. Up to 2,000 combined herd animals and ancestors are supported. Collection fails instead of returning a partial pedigree when a page is unavailable or the limit is exceeded.
+
+## Session handling
+
+The Edge Function checks the caller's authenticated, verified Breeder account. Credentials are sent only to Global Pedigree's fixed HTTPS login form and never persisted or logged. Only the upstream session cookies survive sign-in, inside AES-GCM authenticated continuation tokens bound to the Breeder user and expiring after one hour. Continuation tokens remain in memory. Animal data is saved as a private draft during preview, keyed to the authenticated owner and destination herd. Drafts contain no credentials or upstream session tokens. The app resumes a draft for 24 hours; completing an import or choosing another account deletes it. Expired drafts are filtered from restoration and overwritten by a new preview; no background physical-expiry cleanup is currently configured. Redirects outside the fixed origin are rejected before another request can send credentials/cookies. HTML is parsed without executing scripts. Detail requests run sequentially, six per invocation, with timeouts and response-size limits.
+
+The encryption key comes from GLOBAL_PEDIGREE_SESSION_KEY when configured, otherwise a domain-separated derivation from the function's existing SUPABASE_SERVICE_ROLE_KEY. The service role client is never used for data writes. The database RPC runs with the caller's privileges and verifies herd ownership.
+
+## Deployment
+
+Apply `supabase/migrations/20261013133020_global_pedigree_import.sql`, deploy `supabase functions deploy global-pedigree`, and ship the Flutter application containing the new screen. Keep JWT verification enabled. An optional dedicated GLOBAL_PEDIGREE_SESSION_KEY can be configured through Supabase secrets. Do not disable authorization or expose continuation tokens in logs.
+
+Deployed on 2026-10-13 to the existing Breeder Supabase project and Cloudflare Pages. The remote migration history records global_pedigree_import as version 20261013150802; the Edge Function is version 1 with JWT verification enabled. Web deployment: https://fd5ff1ec.ringmaster-breeder.pages.dev, production: https://breeder.ringmasterone.com. The footer identifies 43f3bab-global-pedigree-beta; this was a direct deployment from the local working tree, not a GitHub release. Live-schema synthetic preview, parent-link, and repeat-import tests passed in a rolled-back transaction; unauthenticated function invocation returned HTTP 401. No beta-user animals have been imported. The logged-in beta account's listing and detail DOM were inspected to verify selectors and field mapping (63 All Rabbits records, 32 live). Fresh server-side credential login and complete ancestry collection succeeded for the beta account (155 records). The collection was preserved as a private draft and restored in the updated deployed screen without a new Global Pedigree login. The beta-user commit remains pending sex corrections and duplicate choices; the existing browser login is not transferred to the server.
+
+## Validation
+
+- `flutter analyze --no-pub`
+- `flutter test --no-pub test/global_pedigree_import_test.dart test/global_pedigree_collection_test.dart test/record_import_test.dart`
+- `npx --yes deno check supabase/functions/global-pedigree/index.ts`
+- `npx --yes deno test --allow-env supabase/functions/global-pedigree/collector_test.ts`
+- Install `@electric-sql/pglite@0.3.14` in a temporary test directory; set PGLITE_MODULE to its dist/index.js absolute path, then run `node supabase/tests/global_pedigree_import.test.mjs`.
+
+The database test uses an isolated database with matching minimal tables and the repository's real animal-validation trigger. It verifies no-write previews, unordered parent links, historical-status handling, retries, existing-data preservation, conflicts, cycles, invalid input, and cross-herd denial. It does not replace a full deployed-schema integration check.
+
+## Duplicate-review release, 2026-10-13
+
+Apply the additional migration `supabase/migrations/20261013154734_global_pedigree_identity_review.sql`. The source collector function is unchanged. The web release is https://d5c91bb2.ringmaster-breeder.pages.dev and the production footer identifies `43f3bab-global-pedigree-review`. The current test herd’s 155 records were restored successfully. The original nine parent-sex warnings represented missing parent sex and are now suppressed until a known sex contradicts the parent role. Three duplicate pairs and five unknown sexes still require user decisions. No beta animals have been committed.
+
+Validation: 13 Flutter tests, clean analysis, successful release build, expanded isolated database regression tests, and a rolled-back live-schema test of a canonical alias, shared tattoo, child parent link, private draft, and repeat import. Additional tests verify keeping separate records cannot collapse into an existing match, conflicting birth dates cannot merge, and other users cannot read or save drafts in the owner’s herd. Security advisors report expected authenticated GraphQL schema discoverability for these exposed tables; row access remains restricted by ownership policies.
+
+## Readable review details, 2026-10-13
+
+The preview now resolves sire/dam source IDs to collected parent ear numbers and names. Duplicate dropdown options and missing-sex controls show DOB in MM/DD/YYYY format or explicitly say DOB unknown. Source IDs remain the internal choice values and are shown as record references where needed to distinguish equal dates.
+
+Unknown-sex controls show evidence from parent roles in the collected graph. Sire-only usage suggests Buck; dam-only usage suggests Doe; both roles produce a conflict hint; no roles produce no suggestion. Hints do not set sex or permit import without a choice. In the beta collection, W28V appears as sire twice, WILLIE WONKA six times, and GARRETTS MR ANGEL once. HIGHER GROUND ANGEL and SARA’S JASON KELCE have no parent-role evidence in this collection. The source detail field supplied no usable sex for those five. The user’s W28V → Buck correction was saved and retained during the update.
+
+Deployed web version: 43f3bab-global-pedigree-details, https://411cd230.ringmaster-breeder.pages.dev. Fifteen Flutter tests, clean analysis, and a release build passed. Live inspection verified parent ear numbers, DOB dropdown options, sex hints, and restoration of all 155 collected records. No backend/schema changes were needed for this revision.
+
+
+## Historical records release (2026-10-13)
+
+Release `43f3bab-global-pedigree-history` collects herd litters from the observed `archive=show` URL, including hidden records. Sara's observed list contains 73 records. Each litter retains its source ID, both parents, category, dates, totals (including fostered/added/raised), comments, recorded litter events, and available offspring source IDs. Offspring missing from the initial animal graph are collected before completion. Multiple same-date failed breedings remain distinct.
+
+History is stored in `global_pedigree_history`, with herd-owner RLS, atomic animal/history commits, original-source provenance, and retry deduplication. Rabbit merges resolve history from both IDs onto the kept animal. Account Settings, rabbit detail, and Breedings & litters link to a read-only imported-history view. Imported litter records are separate from the active tracking workflow, whose same-date uniqueness and active-parent requirements cannot represent source archives without loss. No new offspring are fabricated from numeric litter totals.
+
+Full dated weight tables are collected for every animal in the source All Rabbits list, including historical herd animals. Ancestor-only source records retain profile details but are not treated as the user's owned weight history. Chart birth-date zeroes are ignored. When collection is complete, new imports use dated source weights for rabbits with weight history instead of creating a current-time snapshot from their profiles. Known ancestor profile weights without accessible recording dates remain available as undated-source snapshots. Historical locked-animal weights require an accessible history record with exactly matching original date and weight; ordinary locked-animal additions remain rejected.
+
+Individual show result pages were not found, and the user did not know of one. The preview explicitly reports this limitation; show-leg totals continue to be preserved. Questionable litter dates such as 1970 and 2926 are preserved verbatim and flagged in the preview. The source is not edited.
+
+Testing: 10 collector/parser tests; 13 affected Flutter tests; isolated PostgreSQL preview, alias, atomicity, dated-weight, locked-animal, retry and cross-owner checks. Source fixtures parsed 73 archived litters and the observed 2025-05-15 weight. Live synthetic weight/litter commits and retries passed inside a rolled-back transaction; no verification rows remain.
+
+The initial Testing For Sara reset attempt was unperformed: Supabase connector deletion calls return `Invalid or expired requestState`, CLI SQL execution fails creating its login role. A local backup exists at `/private/tmp/global-pedigree-import/testing-for-sara-before-reset.json` (152 animals, 155 source mappings, 57 weights). No other herd was changed.
+
+
+Testing For Sara reset completed on 2026-10-13 after the user renewed the request. All 152 animals were deleted; cascading weight/source-history/source-mapping removal was verified, with zero remaining animals, source mappings, or imported history. The herd itself was retained. The pre-reset backup remains available locally.
+
+
+## Live herd status correction (2026-10-13)
+
+Release `43f3bab-global-pedigree-live-status` reads and verifies both All Rabbits and All Live Rabbits lists, requesting the complete number of rows and checking that live IDs are a subset of collected herd IDs. The importer archives non-deceased owned records outside the live list, preserving deceased status and pedigree-only ancestor classification. `archived` deliberately does not infer sold or retired. Keeping a historical duplicate with a live alias retains active status. Old continuation tokens require reconnection to avoid unverified status mapping.
+
+Sara's existing import was corrected against the observed 32-member live list: 32 active, 19 archived, 9 deceased herd rabbits. The correction changed only those 19 active statuses; 187 total animals, 64 weights, 79 history records and 247 parent links were unchanged. An exact status backup and source membership list are stored locally at `/private/tmp/global-pedigree-import/sara-status-correction-backup.json`. No reimport is needed. Archived rabbits remain available in the animal list Archived filter.
+
+Verification: 12 collector/history tests, 15 Flutter import tests, isolated PostgreSQL tests for archived insertion and a kept historical duplicate with a live alias. Analysis and release web build passed; the active Edge Function is version 4 with JWT verification enabled.

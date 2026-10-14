@@ -1,3 +1,5 @@
+import '../widgets/bulk_sale_dialog.dart';
+import 'sales_dashboard_screen.dart';
 import '../services/family_service.dart';
 import 'herd_calendar_screen.dart';
 import 'breeding_tracker_screen.dart';
@@ -183,10 +185,39 @@ class _AnimalBrowserState extends State<AnimalBrowser> {
     }
   }
 
+  Future<void> _sales() async {
+    final owner = FamilyService.ownerId;
+    if (owner == null) return;
+    await Navigator.push(
+      context,
+      MaterialPageRoute<void>(
+        builder: (_) =>
+            SalesDashboardScreen(ownerId: owner, ringId: widget.ringId),
+      ),
+    );
+    if (mounted) widget.onRefresh();
+  }
+
+  Future<void> _forSale() async {
+    final count = await showDialog<int>(
+      context: context,
+      barrierDismissible: false,
+      builder: (_) =>
+          BulkSaleDialog(animals: widget.animals.where(_matches).toList()),
+    );
+    if (count != null && mounted) {
+      widget.onRefresh();
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('$count animals marked For Sale.')),
+      );
+    }
+  }
+
   bool _matches(Map<String, dynamic> a) {
     final status = a['status'] ?? 'active';
     if (_status == 'Active' && status != 'active') return false;
     if (_status == 'Sold' && status != 'sold') return false;
+    if (_status == 'For Sale' && a['sale_status'] != 'for_sale') return false;
     if (_status == 'Archived' &&
         !['retired', 'deceased', 'archived'].contains(status)) {
       return false;
@@ -298,7 +329,7 @@ class _AnimalBrowserState extends State<AnimalBrowser> {
                 _dropdown(
                   'Status',
                   _status,
-                  ['Active', 'Sold', 'Archived', 'All'],
+                  ['Active', 'For Sale', 'Sold', 'Archived', 'All'],
                   (v) => setState(() => _status = v!),
                   150,
                 ),
@@ -327,6 +358,8 @@ class _AnimalBrowserState extends State<AnimalBrowser> {
                 PopupMenuButton<String>(
                   tooltip: 'Actions',
                   onSelected: (v) {
+                    if (v == 'sales') _sales();
+                    if (v == 'for_sale') _forSale();
                     if (v == 'add') widget.onAdd();
                     if (v == 'refresh') widget.onRefresh();
                     if (v == 'breeding') _recordBreeding();
@@ -335,6 +368,20 @@ class _AnimalBrowserState extends State<AnimalBrowser> {
                     if (v == 'weights' || v == 'health') _bulk(v == 'weights');
                   },
                   itemBuilder: (_) => const [
+                    PopupMenuItem(
+                      value: 'sales',
+                      child: ListTile(
+                        leading: Icon(Icons.sell_outlined),
+                        title: Text('Sales dashboard'),
+                      ),
+                    ),
+                    PopupMenuItem(
+                      value: 'for_sale',
+                      child: ListTile(
+                        leading: Icon(Icons.checklist),
+                        title: Text('Bulk mark For Sale'),
+                      ),
+                    ),
                     PopupMenuItem(
                       value: 'calendar',
                       child: ListTile(
@@ -463,6 +510,10 @@ class _AnimalBrowserState extends State<AnimalBrowser> {
                             title: Text(animalTitle(a['name'], a['tattoo'])),
                             subtitle: Text(
                               [
+                                if (a['sale_status'] != null)
+                                  a['sale_status'] == 'reserved'
+                                      ? 'Reserved'
+                                      : 'For Sale',
                                 a['species'] == 'cavy' ? 'Cavy' : 'Rabbit',
                                 '${a['breed'] ?? 'Breed not recorded'}${a['breed_unrecognized'] == true ? ' (Unrecognized)' : ''}',
                                 '${varietyLabel(a).isEmpty ? 'Variety not recorded' : varietyLabel(a)}${a['variety_unrecognized'] == true ? ' (Unrecognized)' : ''}',
@@ -602,6 +653,16 @@ class AnimalRecordCard extends StatelessWidget {
                   ),
                 ),
               ),
+              if (animal['sale_status'] != null)
+                Center(
+                  child: Chip(
+                    label: Text(
+                      animal['sale_status'] == 'reserved'
+                          ? 'Reserved'
+                          : 'For Sale',
+                    ),
+                  ),
+                ),
               const SizedBox(height: 12),
               Text(
                 title,

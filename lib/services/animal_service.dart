@@ -1,4 +1,5 @@
 import 'catalog_service.dart';
+import 'sales_service.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:file_picker/file_picker.dart';
 
@@ -15,17 +16,24 @@ class AnimalService {
         .maybeSingle();
   }
 
-  static Future<List<Map<String, dynamic>>> list(String ringId) async =>
-      Future.wait(
-        List<Map<String, dynamic>>.from(
-          await _client
-              .from('animals')
-              .select()
-              .eq('ring_id', ringId)
-              .eq('pedigree_only', false)
-              .order('created_at'),
-        ).map(_withPhoto),
-      );
+  static Future<List<Map<String, dynamic>>> list(String ringId) async {
+    final tags = await SalesService.tags(ringId);
+    final animals = await Future.wait(
+      List<Map<String, dynamic>>.from(
+        await _client
+            .from('animals')
+            .select()
+            .eq('ring_id', ringId)
+            .eq('pedigree_only', false)
+            .order('created_at'),
+      ).map(_withPhoto),
+    );
+    for (final a in animals) {
+      a['sale_status'] = tags[a['id']];
+    }
+    return animals;
+  }
+
   static Future<Map<String, dynamic>> _withPhoto(
     Map<String, dynamic> animal,
   ) async {
