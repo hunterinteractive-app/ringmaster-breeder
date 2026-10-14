@@ -22,10 +22,10 @@ begin
  begin update public.animal_sales set sale_cents=1000 where id=sale; raise exception 'Price below paid allowed'; exception when raise_exception then if sqlerrm='Price below paid allowed' then raise; end if; end;
  begin update public.animal_sales set status='cancelled' where id=sale; raise exception 'Paid cancellation allowed'; exception when raise_exception then if sqlerrm='Paid cancellation allowed' then raise; end if; end;
  update public.animal_sales set status='reserved',buyer_name='Buyer',buyer_email='buyer@example.invalid',buyer_address='Private address',sale_cents=9000 where id=sale;
+ begin update public.animals set status='sold' where id=a; raise exception 'Open listing bypassed'; exception when raise_exception then if sqlerrm='Open listing bypassed' then raise; end if; end;
  insert into public.animal_sale_payments(sale_id,kind,amount_cents,method) values(sale,'payment',6500,'Cash');
  insert into public.animal_sale_payments(sale_id,kind,amount_cents) values(sale,'refund',1000);
  begin insert into public.animal_sale_payments(sale_id,kind,amount_cents) values(sale,'refund',9000); raise exception 'Excess refund allowed'; exception when raise_exception then if sqlerrm='Excess refund allowed' then raise; end if; end;
- begin update public.animals set status='sold' where id=a; raise exception 'Open listing bypassed'; exception when raise_exception then if sqlerrm='Open listing bypassed' then raise; end if; end;
  update public.animal_sales set status='sold',sale_date=current_date where id=sale;
  if (select status from public.animals where id=a)<>'sold' then raise exception 'Animal not marked sold'; end if;
  if (select sum(case when kind='refund' then -amount_cents else amount_cents end) from public.animal_sale_payments where sale_id=sale)<>8000 then raise exception 'Payment/refund arithmetic incorrect'; end if;

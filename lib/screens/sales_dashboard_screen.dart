@@ -121,13 +121,18 @@ class _SalesDashboardScreenState extends State<SalesDashboardScreen> {
   }
 
   Future<void> payment(SaleRecord sale) async {
-    if (await showDialog<bool>(
-              context: context,
-              barrierDismissible: false,
-              builder: (_) => SalePaymentDialog(sale: sale),
-            ) ==
-            true &&
-        mounted) {
+    final savedStatus = await showDialog<String>(
+      context: context,
+      barrierDismissible: false,
+      builder: (_) => SalePaymentDialog(sale: sale),
+    );
+    if (savedStatus != null && mounted) {
+      if (savedStatus == 'sold') {
+        setState(() {
+          filter = 'Sold';
+          query = '';
+        });
+      }
       refresh();
     }
   }
@@ -476,7 +481,7 @@ class _SaleEditDialogState extends State<SaleEditDialog> {
         saving = true;
         error = null;
       });
-      await SalesService.update(widget.sale, {
+      final savedStatus = await SalesService.update(widget.sale, {
         'status': status,
         if (widget.sale.imported) 'payment_history_complete': paymentComplete,
         'asking_cents': askingCents,
@@ -486,6 +491,7 @@ class _SaleEditDialogState extends State<SaleEditDialog> {
             : DateFormat('yyyy-MM-dd').format(date!),
         for (final e in fields.entries) e.key: e.value.text.trim(),
       });
+      status = savedStatus;
       if (mounted && status == 'sold' && widget.sale.status != 'sold') {
         await offerBuyerPedigree(
           context,
@@ -521,7 +527,12 @@ class _SaleEditDialogState extends State<SaleEditDialog> {
               children: [
                 DropdownButtonFormField<String>(
                   initialValue: status,
-                  decoration: const InputDecoration(labelText: 'Sale status'),
+                  decoration: const InputDecoration(
+                    labelText: 'Sale status',
+                    helperText:
+                        'Buyer name reserves the rabbit. Full agreed payment marks it Sold.',
+                    helperMaxLines: 3,
+                  ),
                   items:
                       (widget.sale.status == 'sold'
                               ? ['sold']
@@ -669,8 +680,20 @@ class _SalePaymentDialogState extends State<SalePaymentDialog> {
         saving = true;
         error = null;
       });
-      await SalesService.payment(id, widget.sale.id, payload);
-      if (mounted) Navigator.pop(context, true);
+      final savedStatus = await SalesService.payment(
+        id,
+        widget.sale.id,
+        payload,
+      );
+      if (mounted && savedStatus == 'sold' && widget.sale.status != 'sold') {
+        await offerBuyerPedigree(
+          context,
+          animalId: widget.sale.data['animal_id'],
+          saleId: widget.sale.id,
+          buyerEmail: widget.sale.data['buyer_email'] ?? '',
+        );
+      }
+      if (mounted) Navigator.pop(context, savedStatus);
     } catch (e) {
       if (mounted) {
         setState(() {

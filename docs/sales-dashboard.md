@@ -30,3 +30,7 @@ Each email attaches pedigree.pdf and pedigree.json. The server prepares an allow
 Delivery follows Show's existing Resend setup through its server-only send-breeder-pedigree endpoint. Both projects already contain the same Breeder bridge server credential; no mail key is copied to Breeder or exposed to clients. Sender display name comes from the herd owner's profile. The actual From mailbox remains the verified RingMaster sender, with Reply-To set to the owner's verified Auth email. An invited family member sends on behalf of the family owner.
 
 Draft snapshots and provider acceptance are stored in the service-only pedigree_buyer_emails table. Retrying the same dialog reuses the request ID, PDF, and recipient. The relay preserves Resend's idempotency key, and retries older than 23 hours are refused unless already accepted. Provider acceptance is logged in sale history when associated with a sale; acceptance does not confirm inbox delivery. No email is sent merely by saving a sale.
+
+
+## Automatic status
+Entering a buyer name reserves a current listing, including before any payment. Net receipts equal to a positive agreed price mark both the sale and animal Sold. Asking price alone does not complete a sale. The sale date defaults to the latest receipt date when blank. Saving buyer/price edits also reconciles existing payments. Completed/imported sales and cancellations are preserved; a refund does not automatically reopen a sale. The app offers PDF and JSON pedigree email after a newly completed sale, with explicit send confirmation.

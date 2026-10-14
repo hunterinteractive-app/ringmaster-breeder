@@ -94,7 +94,7 @@ class SalesService {
         );
   }
 
-  static Future<void> update(
+  static Future<String> update(
     SaleRecord sale,
     Map<String, dynamic> changes,
   ) async {
@@ -103,13 +103,14 @@ class SalesService {
         .update(changes)
         .eq('id', sale.id)
         .eq('version', sale.data['version'])
-        .select('id');
+        .select('id,status');
     if (rows.isEmpty) {
       throw StateError('This sale changed. Close and refresh before editing.');
     }
+    return rows.first['status'] as String;
   }
 
-  static Future<void> payment(
+  static Future<String> payment(
     String id,
     String saleId,
     Map<String, dynamic> payment,
@@ -133,6 +134,12 @@ class SalesService {
         rethrow;
       }
     }
+    final sale = await client
+        .from('animal_sales')
+        .select('status')
+        .eq('id', saleId)
+        .single();
+    return sale['status'] as String;
   }
 
   static Future<List<Map<String, dynamic>>> history(String saleId) =>
