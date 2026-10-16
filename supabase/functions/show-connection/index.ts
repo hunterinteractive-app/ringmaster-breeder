@@ -10,14 +10,14 @@ Deno.serve(async req=>{
  let settingsSaved=false;
  try{
   const body=await req.json();
-  if(!['status','connect','save','disconnect','sync','pull'].includes(body.action))return reply({error:'Unknown action'},400);
+  if(!['status','connect','save','disconnect','sync','pull','show_status'].includes(body.action))return reply({error:'Unknown action'},400);
   const showUrl=Deno.env.get('SHOW_SUPABASE_URL'),showKey=Deno.env.get('SHOW_SUPABASE_SERVICE_ROLE_KEY');
   if(!showUrl||!showKey)return reply({error:'Show connection is not configured'},503);
   admin=createClient(Deno.env.get('SUPABASE_URL')!,Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!,options);
   const show=createClient(showUrl,showKey,options);
   const token=(req.headers.get('Authorization')??'').replace(/^Bearer /i,'');
   let user:any,herds:any[]=[];
-  if(body.action==='pull'){
+  if(body.action==='pull'||body.action==='show_status'){
    const verified=await show.auth.getUser(token);user=verified.data.user;
    if(verified.error||!user?.email_confirmed_at)return reply({error:'Sign in to Show again'},401);
    const owner=body.owner_id??user.id;
@@ -28,6 +28,7 @@ Deno.serve(async req=>{
    }
    const found=await admin.from('show_connections').select('*').eq('show_user_id',owner).maybeSingle();if(found.error)throw found.error;connection=found.data;
    if(!connection)return reply({connected:false,count:0});
+   if(body.action==='show_status')return reply({connected:connection.enabled,connection_id:connection.id,last_refreshed_at:connection.last_synced_at});
   }else{
    const verified=await admin.auth.getUser(token);user=verified.data.user;
    if(verified.error||!user?.email_confirmed_at)return reply({error:'Sign in to Breeder again'},401);
@@ -62,8 +63,10 @@ Deno.serve(async req=>{
   const imports=await rows((a,b)=>admin.from('breeder_imported_animals').select('animal_id,source_id').eq('owner_id',identity.data.id).eq('source_app','ringmaster_show').order('animal_id').range(a,b));
   const provenance=new Map(imports.map(a=>[a.animal_id,a.source_id]));
   const result=await show.rpc('apply_breeder_animals',{p_connection:connection.id,p_owner:connection.show_user_id,p_version:connection.updated_at,p_animals:animals.map(a=>({...a,show_id:provenance.get(a.id)??null,pattern:a.color_details?.pattern??'',sex:['M','Buck','Boar'].includes(a.sex)?(a.species==='cavy'?'Boar':'Buck'):['F','Doe','Sow'].includes(a.sex)?(a.species==='cavy'?'Sow':'Doe'):null}))});if(result.error)throw result.error;
-  await admin.from('show_connections').update({last_synced_at:new Date().toISOString(),last_error:null}).eq('id',connection.id).eq('updated_at',connection.updated_at);
-  return reply({connected:connection.enabled,count:result.data});
+  const syncedAt=new Date().toISOString();
+  const savedStatus=await admin.from('show_connections').update({last_synced_at:syncedAt,last_error:null}).eq('id',connection.id).eq('updated_at',connection.updated_at).select('id');
+  if(savedStatus.error||savedStatus.data?.length!==1)throw Error('Connection changed during refresh');
+  return reply({connected:connection.enabled,count:result.data,connection_id:connection.id,last_refreshed_at:syncedAt});
  }catch(error){
   console.error('show-connection failed', {code:(error as any)?.code??'request_failed'});
   if(connection&&admin)await admin.from('show_connections').update({last_error:'Refresh failed. Please retry.'}).eq('id',connection.id);
