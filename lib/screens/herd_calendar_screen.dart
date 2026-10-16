@@ -1,3 +1,4 @@
+import '../services/herd_calendar_service.dart';
 import '../widgets/calendar_subscription_dialog.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
@@ -12,11 +13,13 @@ import 'health_records_screen.dart';
 class HerdCalendarScreen extends StatefulWidget {
   final String ringId;
   final Widget? herdPicker;
+  final Future<List<HerdCalendarEvent>> Function(CalendarWindow)? windowLoader;
   final Future<List<HerdCalendarEvent>> Function()? loader;
   const HerdCalendarScreen({
     super.key,
     required this.ringId,
     this.loader,
+    this.windowLoader,
     this.herdPicker,
   });
   @override
@@ -37,86 +40,72 @@ class _HerdCalendarScreenState extends State<HerdCalendarScreen> {
     load();
   }
 
-  Future<List<Map<String, dynamic>>> pages(dynamic Function(int) query) async {
-    final rows = <Map<String, dynamic>>[];
-    for (int offset = 0; ; offset += 500) {
-      final batch = List<Map<String, dynamic>>.from(await query(offset));
-      rows.addAll(batch);
-      if (batch.length < 500) return rows;
-    }
+  int _request = 0;
+  @override
+  void didUpdateWidget(covariant HerdCalendarScreen oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.ringId != widget.ringId) load();
   }
 
   Future<void> load() async {
+    final request = ++_request;
+    final window = CalendarWindow.around(month);
     setState(() {
       loading = true;
+      events = [];
       error = null;
       showNotice = null;
     });
     try {
-      if (widget.loader != null) {
-        final value = await widget.loader!();
-        if (mounted) setState(() => events = value);
-        return;
+      final value = widget.windowLoader != null
+          ? await widget.windowLoader!(window)
+          : widget.loader != null
+          ? await widget.loader!()
+          : await HerdCalendarService(
+              Supabase.instance.client,
+            ).load(widget.ringId, window);
+      if (!mounted || request != _request) return;
+      String? notice;
+      if (widget.loader == null && widget.windowLoader == null) {
+        try {
+          final response = await Supabase.instance.client.functions.invoke(
+            'show-calendar',
+            body: {
+              'ring_id': widget.ringId,
+              'start_date': HerdCalendarService.day(window.start),
+              'end_date': HerdCalendarService.day(window.end),
+            },
+          );
+          final data = Map<String, dynamic>.from(response.data as Map);
+          if (data['error'] != null) {
+            throw StateError(data['error']);
+          }
+          value.addAll(
+            enteredShowEvents(
+              List<Map<String, dynamic>>.from(data['shows'] ?? []),
+            ),
+          );
+          notice = data['connected'] == true
+              ? 'Entered shows and favorite deadlines refreshed from RingMaster Show.'
+              : 'Connect RingMaster Show in Account to see your entered shows and favorite deadlines here.';
+        } catch (_) {
+          notice =
+              'Entered shows could not refresh. Herd dates are available; use Refresh to try again.';
+        }
       }
-      final db = Supabase.instance.client;
-      final results = await Future.wait([
-        pages(
-          (offset) => db
-              .from('breeding_records')
-              .select(
-                '*,dam:animals!breeding_records_dam_id_fkey!inner(*),sire:animals!breeding_records_sire_id_fkey(*),tracking:breeding_tracking(*),offspring:breeding_offspring(*)',
-              )
-              .eq('dam.ring_id', widget.ringId)
-              .order('id')
-              .range(offset, offset + 499),
-        ),
-        pages(
-          (offset) => db
-              .from('animal_health_records')
-              .select('*,animal:animals!inner(id,name,tattoo,ring_id)')
-              .eq('animal.ring_id', widget.ringId)
-              .order('id')
-              .range(offset, offset + 499),
-        ),
-        pages(
-          (offset) => db
-              .from('breeding_settings')
-              .select()
-              .eq('ring_id', widget.ringId)
-              .order('species')
-              .range(offset, offset + 499),
-        ),
-      ]);
-      final value = herdCalendarEvents(results[0], {
-        for (final s in results[2]) s['species']: s,
-      }, results[1]);
-      try {
-        final response = await db.functions.invoke(
-          'show-calendar',
-          body: {'ring_id': widget.ringId},
-        );
-        final data = Map<String, dynamic>.from(response.data as Map);
-        if (data['error'] != null) throw StateError(data['error']);
-        value.addAll(
-          enteredShowEvents(
-            List<Map<String, dynamic>>.from(data['shows'] ?? []),
-          ),
-        );
-        showNotice = data['connected'] == true
-            ? 'Entered shows and favorite deadlines refreshed from RingMaster Show. Shows belong to the herd owner’s linked account.'
-            : 'Connect RingMaster Show in Account to see your entered shows and favorite deadlines here.';
-      } catch (_) {
-        showNotice =
-            'Entered shows could not refresh. Herd dates are available; use Refresh to try again.';
-      }
-      value.sort((a, b) => a.start.compareTo(b.start));
-      if (mounted) setState(() => events = value);
+      if (!mounted || request != _request) return;
+      final bounded = value.where(window.includes).toList()
+        ..sort((a, b) => a.start.compareTo(b.start));
+      setState(() {
+        events = bounded;
+        showNotice = notice;
+      });
     } catch (_) {
-      if (mounted) {
+      if (mounted && request == _request) {
         setState(() => error = 'Unable to load calendar. Please try again.');
       }
     } finally {
-      if (mounted) setState(() => loading = false);
+      if (mounted && request == _request) setState(() => loading = false);
     }
   }
 
@@ -214,10 +203,14 @@ class _HerdCalendarScreenState extends State<HerdCalendarScreen> {
     'Nesting' => const Color(0xFF805A8B),
     _ => const Color(0xFF5C6874),
   };
-  void move(int delta) => setState(() {
-    month = DateTime(month.year, month.month + delta);
-    selected = month;
-  });
+  void move(int delta) {
+    setState(() {
+      month = DateTime(month.year, month.month + delta);
+      selected = month;
+    });
+    load();
+  }
+
   @override
   Widget build(BuildContext context) {
     final visible = events
@@ -318,10 +311,13 @@ class _HerdCalendarScreenState extends State<HerdCalendarScreen> {
                     crossAxisAlignment: WrapCrossAlignment.center,
                     children: [
                       TextButton(
-                        onPressed: () => setState(() {
-                          selected = calendarDate(DateTime.now());
-                          month = DateTime(selected.year, selected.month);
-                        }),
+                        onPressed: () {
+                          setState(() {
+                            selected = calendarDate(DateTime.now());
+                            month = DateTime(selected.year, selected.month);
+                          });
+                          load();
+                        },
                         child: const Text('Today'),
                       ),
                       ChoiceChip(

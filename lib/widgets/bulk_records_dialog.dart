@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
+import '../services/record_write_attempt.dart';
 import '../utils/animal_labels.dart';
 
 typedef BulkRecordWriter =
@@ -32,6 +32,7 @@ class _BulkRecordsDialogState extends State<BulkRecordsDialog> {
   DateTime? expires, readminister;
   String type = 'health';
   bool saving = false;
+  RecordWriteAttempt? attempt;
   String? error;
   late final animals = widget.animals
       .where((a) => !animalIsLocked(a['status'] ?? 'active'))
@@ -103,20 +104,25 @@ class _BulkRecordsDialogState extends State<BulkRecordsDialog> {
         });
       }
     }
+    attempt ??= RecordWriteAttempt(
+      widget.weights ? 'animal_weights' : 'animal_health_records',
+      rows,
+    );
     setState(() => saving = true);
     try {
       final table = widget.weights ? 'animal_weights' : 'animal_health_records';
       if (widget.writer != null) {
-        await widget.writer!(table, rows);
+        await widget.writer!(table, attempt!.rows);
       } else {
-        await Supabase.instance.client.from(table).insert(rows);
+        await attempt!.save();
       }
       if (mounted) Navigator.pop(context, rows.length);
     } catch (_) {
       if (mounted) {
         setState(() {
           saving = false;
-          error = 'Unable to save the records. Please try again.';
+          error =
+              'Unable to confirm the save. Retry to check and finish these same records.';
         });
       }
     }
@@ -147,7 +153,7 @@ class _BulkRecordsDialogState extends State<BulkRecordsDialog> {
         width: 640,
         child: SingleChildScrollView(
           child: AbsorbPointer(
-            absorbing: saving,
+            absorbing: saving || attempt != null,
             child: Column(
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.stretch,

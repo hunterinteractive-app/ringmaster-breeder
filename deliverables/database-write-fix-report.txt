@@ -1,0 +1,40 @@
+RingMaster Breeder — write-safety fixes verified
+2026-10-16
+
+Fixed
+- Single-weight dialogs and bulk weight/health entry retain stable UUIDs and an
+  immutable payload across retries. A retry reads matching IDs before inserting
+  missing records. Concurrent duplicate inserts are confirmed by ID and content.
+- Existing IDs with different contents are rejected, never overwritten.
+- Animal forms and photo updates compare the originally loaded database revision.
+  Database writes increment that revision, including sales-driven status changes.
+  A stale form keeps its draft visible and offers an explicit reload.
+- A weight dialog cannot be dismissed while its save is in flight.
+
+Validation
+- All 136 portable Flutter tests passed.
+- Five new portable regression tests passed; analysis clean; release web build passed.
+- All 11 database/API checks passed on 1,000 active animals, 100 archived animals,
+  and 500,000 seeded historical records.
+- Actual Dart production services saved 1,001 weight records, repeated the same
+  save, and verified exactly 1,001 new records and complete 1,181-record history.
+- Racing retries retained one record. A changed retry payload was rejected.
+- Racing animal edits yielded one success and one AnimalEditConflict.
+- Attempts to forge the revision were ignored; the database incremented it.
+- Transactional SQL regression confirmed stale edits and family isolation.
+
+Deployment
+Database migration 20261016222731_animal_edit_revision was applied to Breeder and
+verified: trigger exists and no animal has a null or invalid revision. Security
+advisory counts were unchanged. Existing animal business fields were preserved.
+App changes are built locally and have not been published to the website.
+
+Limits
+Retry identity persists within the open save dialog. Closing it or reloading the
+browser ends that attempt; a deliberate new entry receives a new ID. Older app
+versions do not perform revision checks until updated. The earlier slow broad
+SQL diagnostic and local subscription-test crash are separate follow-up items.
+
+Evidence: database-stress-results.json, database-write-fix-results.json,
+record_write_attempt_test.dart, save_recovery_test.dart, and
+supabase/tests/animal_edit_revision.sql.

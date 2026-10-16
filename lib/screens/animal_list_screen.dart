@@ -536,22 +536,30 @@ class _AnimalBrowserState extends State<AnimalBrowser> {
                         : 1;
                     final width =
                         (size.maxWidth - 40 - (columns - 1) * 16) / columns;
-                    return SingleChildScrollView(
+                    // Build a viewport of rows while letting each card keep its
+                    // natural height for wrapped details and larger text sizes.
+                    return ListView.builder(
+                      key: ValueKey('animal-cards-$columns'),
                       padding: const EdgeInsets.fromLTRB(20, 0, 20, 24),
-                      child: Wrap(
-                        spacing: 16,
-                        runSpacing: 16,
-                        children: animals
-                            .map(
-                              (a) => SizedBox(
-                                width: width,
-                                child: AnimalRecordCard(
-                                  animal: a,
-                                  onTap: () => widget.onOpen(a),
+                      itemCount: (animals.length / columns).ceil(),
+                      itemBuilder: (context, row) => Padding(
+                        padding: const EdgeInsets.only(bottom: 16),
+                        child: Wrap(
+                          spacing: 16,
+                          children: [
+                            for (var column = 0; column < columns; column++)
+                              if (row * columns + column < animals.length)
+                                SizedBox(
+                                  width: width,
+                                  child: AnimalRecordCard(
+                                    animal: animals[row * columns + column],
+                                    onTap: () => widget.onOpen(
+                                      animals[row * columns + column],
+                                    ),
+                                  ),
                                 ),
-                              ),
-                            )
-                            .toList(),
+                          ],
+                        ),
                       ),
                     );
                   },
@@ -695,11 +703,13 @@ class AnimalRecordCard extends StatelessWidget {
               const Row(
                 mainAxisAlignment: MainAxisAlignment.end,
                 children: [
-                  Text(
-                    'View details',
-                    style: TextStyle(
-                      color: BreederColors.primary,
-                      fontWeight: FontWeight.w600,
+                  Flexible(
+                    child: Text(
+                      'View details',
+                      style: TextStyle(
+                        color: BreederColors.primary,
+                        fontWeight: FontWeight.w600,
+                      ),
                     ),
                   ),
                   SizedBox(width: 4),

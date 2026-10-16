@@ -56,3 +56,12 @@ export function renderCalendar(name,events,now=new Date()) {
  }
  lines.push('END:VCALENDAR');return lines.map(fold).join('\r\n')+'\r\n';
 }
+
+// Keep a small recent history without imposing any future event cutoff.
+export function subscriptionWindow(now = new Date(), timezone = 'UTC') {
+ const [year, month] = localDay(now.toISOString(), timezone).split('-').map(Number);
+ return {start: new Date(Date.UTC(year, month - 2, 1)).toISOString().slice(0,10), end: null};
+}
+export function upcomingEvents(events, window) {
+ return events.filter(e => e.date >= window.start && (!window.end || e.date < window.end));
+}

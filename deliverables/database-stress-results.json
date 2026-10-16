@@ -1,0 +1,115 @@
+[
+  {
+    "test": "seeded_counts",
+    "passed": true,
+    "seconds": 0.057,
+    "detail": {
+      "animals": 1100,
+      "weights": 180000,
+      "health": 300000,
+      "breedings": 20000
+    }
+  },
+  {
+    "test": "pagination_beyond_1000",
+    "passed": true,
+    "seconds": 0.037,
+    "detail": {
+      "unpaginated_count": 1000,
+      "paginated_count": 1100,
+      "requests": 4
+    }
+  },
+  {
+    "test": "family_isolation",
+    "passed": true,
+    "seconds": 0.091,
+    "detail": {
+      "record_counts": "owner 300 / member 300 / outsider 0",
+      "milliseconds": {
+        "owner": 31.6,
+        "member": 30.3,
+        "outsider": 26.7
+      }
+    }
+  },
+  {
+    "test": "invalid_bulk_atomicity",
+    "passed": true,
+    "seconds": 0.07,
+    "detail": {
+      "rejected_status": 400,
+      "partial_rows": 0
+    }
+  },
+  {
+    "test": "simultaneous_litter_edits",
+    "passed": true,
+    "seconds": 0.014,
+    "detail": {
+      "statuses": [
+        400,
+        204
+      ],
+      "revision": 1
+    }
+  },
+  {
+    "test": "simultaneous_sale_edits",
+    "passed": true,
+    "seconds": 0.006,
+    "detail": {
+      "updated_rows": [
+        0,
+        1
+      ],
+      "version": 2
+    }
+  },
+  {
+    "test": "simultaneous_payments",
+    "passed": true,
+    "seconds": 0.005,
+    "detail": {
+      "statuses": [
+        201,
+        400
+      ],
+      "paid_cents": 6000,
+      "price_cents": 10000
+    }
+  },
+  {
+    "test": "payment_retry",
+    "passed": true,
+    "seconds": 0.005,
+    "detail": {
+      "receipts_after_retry": 1
+    }
+  },
+  {
+    "test": "interrupted_write",
+    "passed": true,
+    "seconds": 0.297,
+    "detail": {
+      "backend_terminated_before_commit": true,
+      "partial_rows": 0
+    }
+  },
+  {
+    "test": "lost_bulk_acknowledgement",
+    "passed": true,
+    "seconds": 0.054,
+    "detail": {
+      "records_after_retry": 1
+    }
+  },
+  {
+    "test": "simultaneous_animal_edits",
+    "passed": true,
+    "seconds": 0.049,
+    "detail": {
+      "successful_edits": 1
+    }
+  }
+]

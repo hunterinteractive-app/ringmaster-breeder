@@ -1,0 +1,28 @@
+[
+  {
+    "test": "app_three_months",
+    "passed": true,
+    "milliseconds": 1693,
+    "api_requests": 11,
+    "source_rows_transferred": 3090,
+    "health_records_loaded": 2917,
+    "retained_events": 2934,
+    "expected_health_events": 2931
+  },
+  {
+    "test": "phone_last_month_onward",
+    "passed": true,
+    "milliseconds": 3633,
+    "api_requests": 15,
+    "source_rows_transferred": 5063,
+    "health_records_loaded": 4890,
+    "retained_events": 6434,
+    "expected_health_events": 6431
+  },
+  {
+    "test": "calendar_family_isolation",
+    "passed": true,
+    "member_health_records": 2917,
+    "outsider_health_records": 0
+  }
+]

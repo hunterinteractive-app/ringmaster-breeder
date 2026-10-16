@@ -1,3 +1,4 @@
+import '../services/sales_service.dart';
 import '../utils/weight_date.dart';
 import '../widgets/ringmaster_page_shell.dart';
 import '../widgets/weight_graph.dart';
@@ -36,87 +37,107 @@ class _WeightHistoryScreenState extends State<WeightHistoryScreen> {
       text: record?['weight']?.toString() ?? '',
     );
 
+    final recordId = SalesService.newId();
+    final recordedAt = DateTime.now();
+    double? pendingWeight;
     await showDialog(
       context: context,
+      barrierDismissible: false,
       builder: (_) => StatefulBuilder(
-        builder: (dialogContext, setDialogState) => AlertDialog(
-          title: Text(record == null ? 'Add Weight' : 'Edit Latest Weight'),
-          content: TextField(
-            controller: controller,
-            keyboardType: const TextInputType.numberWithOptions(decimal: true),
-            decoration: const InputDecoration(
-              labelText: 'Weight (lb)',
-              hintText: 'Example: 4.25',
+        builder: (dialogContext, setDialogState) => PopScope(
+          canPop: !isSaving,
+          child: AlertDialog(
+            title: Text(record == null ? 'Add Weight' : 'Edit Latest Weight'),
+            content: TextField(
+              controller: controller,
+              enabled: !isSaving && pendingWeight == null,
+              keyboardType: const TextInputType.numberWithOptions(
+                decimal: true,
+              ),
+              decoration: const InputDecoration(
+                labelText: 'Weight (lb)',
+                hintText: 'Example: 4.25',
+              ),
             ),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: const Text('Cancel'),
-            ),
-            ElevatedButton(
-              onPressed: isSaving
-                  ? null
-                  : () async {
-                      setDialogState(() => isSaving = true);
+            actions: [
+              TextButton(
+                onPressed: isSaving ? null : () => Navigator.pop(dialogContext),
+                child: const Text('Cancel'),
+              ),
+              ElevatedButton(
+                onPressed: isSaving
+                    ? null
+                    : () async {
+                        setDialogState(() => isSaving = true);
 
-                      final value = double.tryParse(controller.text.trim());
+                        final value = double.tryParse(controller.text.trim());
 
-                      if (value == null || !value.isFinite || value <= 0) {
-                        if (dialogContext.mounted) {
-                          setDialogState(() => isSaving = false);
-                        }
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(
-                            content: Text('Weight must be a positive number'),
-                            backgroundColor: Colors.red,
-                          ),
-                        );
-                        return;
-                      }
-
-                      try {
-                        if (record == null) {
-                          await AnimalService.addWeight(widget.animalId, value);
-                        } else {
-                          await AnimalService.editLatestWeight(
-                            widget.animalId,
-                            record['id'],
-                            value,
-                          );
-                        }
-                        if (!mounted) return;
-                        Navigator.pop(context);
-                        if (mounted) {
-                          setState(
-                            () => _weights = AnimalService.weights(
-                              widget.animalId,
+                        if (value == null || !value.isFinite || value <= 0) {
+                          if (dialogContext.mounted) {
+                            setDialogState(() => isSaving = false);
+                          }
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                              content: Text('Weight must be a positive number'),
+                              backgroundColor: Colors.red,
                             ),
                           );
+                          return;
                         }
-                      } catch (e) {
-                        if (!mounted) return;
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(
-                            content: Text('Failed to save weight: $e'),
-                            backgroundColor: Colors.red,
-                          ),
-                        );
-                      } finally {
-                        if (dialogContext.mounted) {
-                          setDialogState(() => isSaving = false);
+
+                        try {
+                          if (record == null) {
+                            pendingWeight ??= value;
+                            await AnimalService.addWeight(
+                              widget.animalId,
+                              pendingWeight!,
+                              recordId: recordId,
+                              recordedAt: recordedAt,
+                            );
+                          } else {
+                            await AnimalService.editLatestWeight(
+                              widget.animalId,
+                              record['id'],
+                              value,
+                            );
+                          }
+                          if (!mounted) return;
+                          Navigator.pop(context);
+                          if (mounted) {
+                            setState(
+                              () => _weights = AnimalService.weights(
+                                widget.animalId,
+                              ),
+                            );
+                          }
+                        } catch (e) {
+                          if (!mounted) return;
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: Text(
+                                record == null
+                                    ? 'Unable to confirm the save. Retry to check and finish this same weight.'
+                                    : 'Failed to save weight: $e',
+                              ),
+                              backgroundColor: Colors.red,
+                            ),
+                          );
+                        } finally {
+                          if (dialogContext.mounted) {
+                            setDialogState(() => isSaving = false);
+                          }
                         }
-                      }
-                    },
-              child: isSaving
-                  ? const SizedBox(
-                      width: 18,
-                      height: 18,
-                      child: CircularProgressIndicator(strokeWidth: 2),
-                    )
-                  : const Text('Save'),
-            ),
-          ],
+                      },
+                child: isSaving
+                    ? const SizedBox(
+                        width: 18,
+                        height: 18,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      )
+                    : const Text('Save'),
+              ),
+            ],
+          ),
         ),
       ),
     );

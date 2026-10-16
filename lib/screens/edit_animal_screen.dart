@@ -9,8 +9,15 @@ import '../widgets/sex_field.dart';
 
 class EditAnimalScreen extends StatefulWidget {
   final String animalId;
+  final Future<Map<String, dynamic>> Function(String)? loader;
+  final Future<void> Function(String, Map<String, dynamic>, int)? writer;
 
-  const EditAnimalScreen({super.key, required this.animalId});
+  const EditAnimalScreen({
+    super.key,
+    required this.animalId,
+    this.loader,
+    this.writer,
+  });
 
   @override
   State<EditAnimalScreen> createState() => _EditAnimalScreenState();
@@ -32,12 +39,14 @@ class _EditAnimalScreenState extends State<EditAnimalScreen> {
   String status = 'active';
   String originalStatus = 'active';
 
+  int revision = 0;
+  bool conflicted = false;
   bool isSaving = false;
   bool isLoaded = false;
   bool loadFailed = false;
 
   Future<void> loadAnimal() async {
-    final animal = await AnimalService.get(widget.animalId);
+    final animal = await (widget.loader ?? AnimalService.get)(widget.animalId);
     if (!mounted) return;
 
     nameController.text = animal['name'] ?? '';
@@ -55,7 +64,11 @@ class _EditAnimalScreenState extends State<EditAnimalScreen> {
     status = animal['status'];
     originalStatus = status;
 
-    setState(() => isLoaded = true);
+    revision = (animal['revision'] as num).toInt();
+    setState(() {
+      isLoaded = true;
+      conflicted = false;
+    });
   }
 
   Future<void> saveChanges() async {
@@ -71,7 +84,7 @@ class _EditAnimalScreenState extends State<EditAnimalScreen> {
         details,
       );
       if (detailError != null) throw Exception(detailError);
-      await AnimalService.update(widget.animalId, {
+      final changes = <String, dynamic>{
         'name': nameController.text.trim(),
         'color_details': details,
         'dob': dob.isEmpty ? null : dob,
@@ -81,7 +94,16 @@ class _EditAnimalScreenState extends State<EditAnimalScreen> {
         'registration_number': registrationController.text.trim(),
         'grand_champion_number': gcController.text.trim(),
         'leg_details': legDetailsController.text,
-      });
+      };
+      if (widget.writer != null) {
+        await widget.writer!(widget.animalId, changes, revision);
+      } else {
+        await AnimalService.update(
+          widget.animalId,
+          changes,
+          expectedRevision: revision,
+        );
+      }
 
       if (mounted && status == 'sold' && originalStatus != 'sold') {
         await offerBuyerPedigree(context, animalId: widget.animalId);
@@ -89,6 +111,7 @@ class _EditAnimalScreenState extends State<EditAnimalScreen> {
       if (mounted) Navigator.pop(context, true);
     } catch (e) {
       if (!mounted) return;
+      if (e is AnimalEditConflict) setState(() => conflicted = true);
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text('Update failed: $e'),
@@ -151,6 +174,43 @@ class _EditAnimalScreenState extends State<EditAnimalScreen> {
         padding: const EdgeInsets.all(16),
         child: ListView(
           children: [
+            if (conflicted)
+              Card(
+                child: Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text(
+                        'This animal changed since you opened it. Your edits are still shown. Reload the latest record before saving.',
+                      ),
+                      TextButton(
+                        onPressed: isSaving
+                            ? null
+                            : () async {
+                                setState(() => isSaving = true);
+                                try {
+                                  await loadAnimal();
+                                } catch (_) {
+                                  if (context.mounted) {
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      const SnackBar(
+                                        content: Text(
+                                          'Unable to reload. Your edits are still here.',
+                                        ),
+                                      ),
+                                    );
+                                  }
+                                } finally {
+                                  if (mounted) setState(() => isSaving = false);
+                                }
+                              },
+                        child: const Text('Reload latest record'),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
             // NAME
             TextField(
               controller: nameController,
@@ -253,7 +313,7 @@ class _EditAnimalScreenState extends State<EditAnimalScreen> {
             const SizedBox(height: 24),
 
             ElevatedButton(
-              onPressed: isSaving ? null : saveChanges,
+              onPressed: isSaving || conflicted ? null : saveChanges,
               child: isSaving
                   ? const CircularProgressIndicator()
                   : const Text('Save Changes'),

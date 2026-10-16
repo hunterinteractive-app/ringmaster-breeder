@@ -51,3 +51,13 @@ Imports retain provenance and source IDs; repeated imports do not create duplica
 Results-only import is the default. Animal creation requires an explicit opt-in. Results can link an existing personally owned animal only when tattoo/tag, species, breed, sex, and variety identify exactly one record. Unmatched or ambiguous results remain in show history without creating or modifying animals; repeated imports retain the same source entry.
 
 Policy changes: increment the affected version in `lib/config/legal_config.dart` and update its effective date when changing the Terms or Privacy Policy. The app checks each signed-in user's acceptance before mounting application routes. Both acknowledgments must be saved successfully before proceeding; each family member agrees separately. The database retains each accepted version and its server timestamp. This is an application access gate, matching Show and Club; it is not a substitute for database authorization.
+
+## Large herds and calendar history
+
+Animal lists, weight history, health history, and breeding history fetch ordered pages until all available records have loaded, rather than stopping at the API row limit. The in-app calendar fetches the viewed month plus its preceding and following months, and replaces that window on navigation, Today, or Refresh. Bounded queries include older source records when their follow-up or calculated breeding events can land in that window.
+
+Device subscriptions export dates from the first day of the previous month onward, using the subscription timezone, with no future cutoff. Older historical dates are excluded; the start advances on each subscription refresh. A historical source record can still contribute an upcoming follow-up. Existing device caches update on the calendar app's refresh schedule.
+
+## Record save safety
+
+Weight-entry dialogs and bulk weight/health saves retain their record IDs and payload while a save is uncertain. Retrying confirms matching saved records before inserting any missing records. A retry cannot overwrite an existing record with different data. Animal edits compare the revision originally loaded by the form; stale edits keep the draft visible and require an explicit reload. Database-triggered animal updates also advance the revision. Apply the animal revision migration before publishing the corresponding app version.

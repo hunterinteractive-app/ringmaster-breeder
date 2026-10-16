@@ -1,3 +1,4 @@
+import '../services/pagination.dart';
 import 'global_pedigree_history_screen.dart';
 import '../utils/offspring_names.dart';
 import '../widgets/catalog_field.dart';
@@ -61,13 +62,17 @@ class _BreedingTrackerScreenState extends State<BreedingTrackerScreen> {
       for (final row in savedSettings)
         row['species'] as String: Map<String, dynamic>.from(row),
     };
-    final rows = await client
-        .from('breeding_records')
-        .select(
-          '*, sire:animals!breeding_records_sire_id_fkey(*), dam:animals!breeding_records_dam_id_fkey!inner(*), tracking:breeding_tracking(*), offspring:breeding_offspring(*,animal:animals(name,tattoo,sex))',
-        )
-        .eq('dam.ring_id', widget.ringId)
-        .order('breeding_date', ascending: false);
+    final rows = await fetchAllPages(
+      (from, to) => client
+          .from('breeding_records')
+          .select(
+            '*, sire:animals!breeding_records_sire_id_fkey(*), dam:animals!breeding_records_dam_id_fkey!inner(*), tracking:breeding_tracking(*), offspring:breeding_offspring(*,animal:animals(name,tattoo,sex))',
+          )
+          .eq('dam.ring_id', widget.ringId)
+          .order('breeding_date', ascending: false)
+          .order('id')
+          .range(from, to),
+    );
     return List<Map<String, dynamic>>.from(rows);
   }
 

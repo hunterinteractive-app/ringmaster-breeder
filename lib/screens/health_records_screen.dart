@@ -1,3 +1,4 @@
+import '../services/animal_service.dart';
 import '../widgets/ringmaster_page_shell.dart';
 import 'dart:typed_data';
 import 'package:flutter/material.dart';
@@ -16,15 +17,16 @@ class HealthRecordsScreen extends StatefulWidget {
 class _HealthRecordsScreenState extends State<HealthRecordsScreen> {
   final supabase = Supabase.instance.client;
 
-  Future<List<Map<String, dynamic>>> _fetchRecords() async {
-    final res = await supabase
-        .from('animal_health_records')
-        .select()
-        .eq('animal_id', widget.animalId)
-        .order('administered_date', ascending: false);
-
-    return List<Map<String, dynamic>>.from(res);
+  late Future<List<Map<String, dynamic>>> _records;
+  @override
+  void initState() {
+    super.initState();
+    _records = _fetchRecords();
   }
+
+  void refresh() => setState(() => _records = _fetchRecords());
+  Future<List<Map<String, dynamic>>> _fetchRecords() =>
+      AnimalService.healthRecords(widget.animalId);
 
   void _openModal({Map<String, dynamic>? existing}) async {
     await showModalBottomSheet(
@@ -33,20 +35,20 @@ class _HealthRecordsScreenState extends State<HealthRecordsScreen> {
       builder: (_) =>
           HealthRecordModal(animalId: widget.animalId, existing: existing),
     );
-    if (mounted) setState(() {});
+    if (mounted) refresh();
   }
 
   @override
   Widget build(BuildContext context) {
     return RingMasterPageShell(
-      onRefresh: () => setState(() {}),
+      onRefresh: refresh,
       title: 'Health & Vaccine Records',
       floatingActionButton: FloatingActionButton(
         onPressed: () => _openModal(),
         child: const Icon(Icons.add),
       ),
       body: FutureBuilder(
-        future: _fetchRecords(),
+        future: _records,
         builder: (context, snapshot) {
           if (snapshot.hasError) {
             return Center(child: Text("Error: ${snapshot.error}"));
@@ -79,7 +81,7 @@ class _HealthRecordsScreenState extends State<HealthRecordsScreen> {
                           .from('animal_health_records')
                           .delete()
                           .eq('id', r['id']);
-                      if (mounted) setState(() {});
+                      if (mounted) refresh();
                     },
                   ),
                   onTap: () => _openModal(existing: r),

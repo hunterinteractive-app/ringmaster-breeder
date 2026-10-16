@@ -1,0 +1,10 @@
+{
+  "test": "100_authenticated_weight_reads_8_concurrent",
+  "passed": true,
+  "requests": 100,
+  "median_ms": 22.9,
+  "p95_ms": 88.5,
+  "max_ms": 97.3,
+  "errors": 0,
+  "note": "Rerun after local database recovered from the separate calendar-subscription check."
+}

@@ -118,7 +118,7 @@ class _CalendarSubscriptionDialogState
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             const Text(
-              'Subscribe to this herd’s breeding, health, entered-show dates and favorite-show deadlines. Your calendar app refreshes on its own schedule.',
+              'Subscribe to this herd’s breeding, health, entered-show dates and favorite-show deadlines. Dates from the start of last month onward are shared, with no cutoff for future events. Older history is excluded. The window advances automatically when your calendar app refreshes.',
             ),
             const SizedBox(height: 12),
             Container(

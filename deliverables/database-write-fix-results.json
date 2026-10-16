@@ -1,0 +1,11 @@
+{
+  "actor": "e1000000-0000-4000-8000-000000000001",
+  "bulk_records_after_retry": 1001,
+  "complete_weight_history": 1181,
+  "changed_retry_payload": "rejected",
+  "concurrent_retry_records": 1,
+  "animal_edit_successes": 1,
+  "animal_edit_conflicts": 1,
+  "forged_revision": "ignored; server incremented",
+  "passed": true
+}

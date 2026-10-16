@@ -1,3 +1,4 @@
+import {showInWindow} from '../_shared/calendar-records.mjs';
 import { createClient } from 'npm:@supabase/supabase-js@2.110.2';
 const cors = {'Access-Control-Allow-Origin':'*','Access-Control-Allow-Headers':'authorization, apikey, content-type, x-client-info','Access-Control-Allow-Methods':'POST, OPTIONS'};
 const reply=(data:unknown,status=200)=>new Response(JSON.stringify(data),{status,headers:{...cors,'Content-Type':'application/json'}});
@@ -13,6 +14,10 @@ Deno.serve(async req=>{
   if(auth.error||!auth.data.user?.email_confirmed_at)return reply({error:'Sign in to Breeder again.'},401);
   const body=await req.json();
   if(typeof body.ring_id!=='string')return reply({error:'Choose a herd.'},400);
+  const today=new Date();
+  const start=body.start_date??new Date(Date.UTC(today.getUTCFullYear(),today.getUTCMonth()-1,1)).toISOString().slice(0,10);
+  const end=body.end_date??new Date(Date.UTC(today.getUTCFullYear(),today.getUTCMonth()+2,1)).toISOString().slice(0,10);
+  if(!/^\d{4}-\d{2}-\d{2}$/.test(start)||!/^\d{4}-\d{2}-\d{2}$/.test(end)||!Number.isFinite(Date.parse(start))||!Number.isFinite(Date.parse(end))||end<=start||Date.parse(end)-Date.parse(start)>94*86400000)return reply({error:'Choose a three-month calendar window.'},400);
   // Resolve ownership through the caller's RLS scope, never trust a supplied owner ID.
   const scoped=createClient(url,Deno.env.get('SUPABASE_ANON_KEY')!,{...options,global:{...options.global,headers:{Authorization:`Bearer ${token}`}}});
   const herd=await scoped.from('farms').select('owner_id').eq('id',body.ring_id).maybeSingle();
@@ -30,11 +35,10 @@ Deno.serve(async req=>{
   if(breederAuth.error||showAuth.error||!b?.email_confirmed_at||!s?.email_confirmed_at||b.email?.trim().toLowerCase()!==s.email?.trim().toLowerCase())return reply({error:'Reconnect Show using the same verified email.'},409);
   const shows:any[]=[];let after:string|null=null;
   for(;;){
-   const page=await show.rpc('breeder_calendar_export',{p_owner:found.data.show_user_id,p_after:after});
+   const page:any=await show.rpc('breeder_calendar_export',{p_owner:found.data.show_user_id,p_after:after});
    if(page.error)throw page.error;
-   const rows=page.data??[];shows.push(...rows.map((r:any)=>r.payload));
-   if(shows.length>10000)throw Error('Calendar limit exceeded');
-   if(rows.length<500)break;
+   const rows:any[]=page.data??[];shows.push(...rows.map((r:any)=>r.payload).filter((s:any)=>showInWindow(s,start,end)));
+   if(rows.length===0)break;
    after=rows[rows.length-1].id;
   }
   return reply({connected:true,shows,refreshed_at:new Date().toISOString()});

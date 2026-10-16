@@ -1,0 +1,64 @@
+RingMaster Breeder — isolated database stress test
+2026-10-16
+
+Dataset and environment
+1,000 active animals plus 100 archived animals; 180,000 weights;
+300,000 health records; 20,000 breeding records (500,000 history rows).
+Production application schema, triggers, policies, indexes, and functions were
+copied through read-only catalog queries into a disposable local Postgres 17.6
+container. No production records were copied or written. Auth claim readers
+match production; Auth tables and storage metadata are compatibility fixtures.
+The local PostgREST API enforced a 1,000-row response cap and signed synthetic
+owner/member/outsider identities. These timings are local, not production SLAs.
+
+Confirmed findings requiring fixes
+1. Lost success acknowledgement / weight retry: the first weight insert committed;
+   resending the identical bulk-dialog payload without stable IDs created a second
+   record. Expected one logical weight entry; observed two. This models an
+   acknowledgement lost after commit, rather than a failed pre-commit write.
+2. Simultaneous animal edits: both authenticated updates to the same name field
+   returned success; the later write silently replaced the earlier edit. Animal
+   updates lack the revision protection already used for litter and sale edits.
+
+Passed checks
+- Pagination retrieved all 1,100 animals, versus 1,000 without pagination.
+- Owner/member history access was correct; outsiders received zero family rows.
+- A bulk insert containing one invalid weight left no partial records.
+- Competing litter edits: one accepted and one rejected; revision advanced once.
+- Competing versioned sale edits: only one update applied.
+- Competing payments could not overpay; replaying a payment ID did not duplicate it.
+- Terminating a database session before commit rolled back its inserted weight.
+- Existing family-access, sales-dashboard, and automatic-sale-status SQL suites passed.
+- Real app calendar query helpers: 3,090 source rows transferred in 11 requests,
+  approximately 1.69 seconds; all expected in-window health events were retained.
+- Phone calendar query helpers: 5,063 source rows transferred in 15 requests,
+  approximately 3.63 seconds; older dates excluded and distant future dates retained.
+- Calendar owner/member/outsider isolation passed with more than 1,000 matching rows.
+- 100 authenticated weight-history reads, eight concurrent: zero errors;
+  median 22.9 ms, p95 88.5 ms, maximum 97.3 ms after database recovery.
+
+Performance follow-up
+An additional direct SQL calendar-style join under row-level security took 24.17
+seconds. Its plan scanned health rows repeatedly across 1,100 animals. This was
+a broader diagnostic query, not the measured application loader above. Avoid
+unbounded scans and review this plan before adding broader reporting features.
+Per-animal weight-history SQL took approximately 15 ms.
+
+Inconclusive check
+The calendar-subscription control test terminated the local database backend with
+signal 11 (segmentation fault). The server recovered. This check needs rerunning
+in a full matching Supabase test environment; it is not evidence that production
+subscriptions fail. The exported feed date/query helpers passed independently.
+
+Scope limits
+This was a database/API test, not a real-phone subscription, browser endurance,
+email delivery, attachment-file transfer, or production hosting capacity test.
+No application fixes or production deployments were made in this test run.
+
+Evidence
+- database-stress-results.json: pass/fail details for the 11 core checks
+- database-calendar-results.json: real calendar query results
+- database-concurrent-reads.json: concurrent read latencies
+- database-existing-tests.json: existing SQL-suite outcomes
+- database-query-plans.json: EXPLAIN ANALYZE output
+- ../tool/database_stress/: synthetic fixtures and local-only test runners

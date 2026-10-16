@@ -47,3 +47,17 @@ test('favorites without entries have timed deadlines and both alerts',()=>{
  assert.equal(calendarEvents([],{},[],[{...s,entry_count:2}]).length,2);
  assert.equal(calendarEvents([],{},[],[{...s,entry_close_at:null}]).length,0);
 });
+
+test('phone feeds start last month and include distant future events without a cutoff', async()=>{
+ const {subscriptionWindow,upcomingEvents}=await import('../calendar.mjs');
+ const now=new Date('2026-11-01T02:00:00Z');
+ const window=subscriptionWindow(now,'America/Indiana/Indianapolis');
+ assert.deepEqual(window,{start:'2026-09-01',end:null});
+ const records=calendarEvents([],{},[{id:'old',animal:{name:'Doe'},administered_date:'2001-01-01',readminister_date:'2026-09-01',expires_date:'2035-12-01'}],[]);
+ const upcoming=upcomingEvents(records,window);
+ assert.deepEqual(upcoming.map(e=>e.id),['health-old-readminister_date','health-old-expires_date']);
+ const feed=renderCalendar('Herd',upcoming,now);
+ assert.doesNotMatch(feed,/20010101/);assert.match(feed,/20351201/);
+ assert.equal(upcomingEvents([{id:'recent',date:'2026-09-01',timestamp:'2026-09-01T01:00:00Z'},{id:'old',date:'2026-08-31'}],window).length,1);
+ assert.deepEqual(subscriptionWindow(new Date('2027-01-15T12:00:00Z')),{start:'2026-12-01',end:null});
+});

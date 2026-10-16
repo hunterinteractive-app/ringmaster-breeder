@@ -1,0 +1,24 @@
+[
+  {
+    "test": "family_access",
+    "passed": true,
+    "error": null
+  },
+  {
+    "test": "sales_dashboard",
+    "passed": true,
+    "error": null
+  },
+  {
+    "test": "automatic_sale_status",
+    "passed": true,
+    "error": null
+  },
+  {
+    "test": "calendar_subscriptions",
+    "passed": false,
+    "error": "server closed the connection unexpectedly\n\tThis probably means the server terminated abnormally\n\tbefore or while processing the request.\nconnection to server was lost\n",
+    "outcome": "inconclusive",
+    "reason": "The local Postgres 17.6 container backend terminated with signal 11 during the calendar-subscription control test. This is not a confirmed production application failure."
+  }
+]
