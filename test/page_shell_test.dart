@@ -104,7 +104,10 @@ void main() {
       );
       await tester.pumpAndSettle();
       expect(tester.takeException(), isNull);
-      expect(find.text('RingMaster Breeder'), findsOneWidget);
+      expect(
+        find.text('RingMaster Breeder'),
+        width < 380 ? findsNothing : findsOneWidget,
+      );
       for (var i = 0; i < 5; i++) {
         expect(find.byTooltip('Action $i'), findsOneWidget);
       }

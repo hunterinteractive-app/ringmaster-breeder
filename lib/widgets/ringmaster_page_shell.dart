@@ -61,9 +61,74 @@ class RingMasterPageShell extends StatelessWidget {
     return Navigator.of(context).canPop();
   }
 
+  Future<void> _openAccount(BuildContext context) async {
+    await Navigator.of(context).pushNamed('/account');
+    if (context.mounted) onAccountReturn?.call();
+  }
+
+  Widget? _navigationMenu(BuildContext context) {
+    final entries = <PopupMenuEntry<VoidCallback>>[
+      if (showHomeButton)
+        PopupMenuItem(
+          value: () => Navigator.of(context).popUntil((route) => route.isFirst),
+          child: const ListTile(
+            leading: Icon(Icons.home_outlined),
+            title: Text('Home'),
+            contentPadding: EdgeInsets.zero,
+          ),
+        ),
+      if (showAccountButton) ...[
+        PopupMenuItem(
+          enabled: !isCalendarPage,
+          value: () => Navigator.of(context).pushNamed('/calendar'),
+          child: const ListTile(
+            leading: Icon(Icons.calendar_month_outlined),
+            title: Text('Herd calendar'),
+            contentPadding: EdgeInsets.zero,
+          ),
+        ),
+        PopupMenuItem(
+          enabled: !isSalesPage,
+          value: () => Navigator.of(context).pushNamed('/sales'),
+          child: const ListTile(
+            leading: Icon(Icons.sell_outlined),
+            title: Text('Sales dashboard'),
+            contentPadding: EdgeInsets.zero,
+          ),
+        ),
+        PopupMenuItem(
+          enabled: !isAccountPage,
+          value: () => _openAccount(context),
+          child: const ListTile(
+            leading: Icon(Icons.account_circle_outlined),
+            title: Text('Account'),
+            contentPadding: EdgeInsets.zero,
+          ),
+        ),
+      ],
+      if (onRefresh != null)
+        PopupMenuItem(
+          value: onRefresh,
+          child: const ListTile(
+            leading: Icon(Icons.refresh),
+            title: Text('Refresh'),
+            contentPadding: EdgeInsets.zero,
+          ),
+        ),
+    ];
+    if (entries.isEmpty) return null;
+    return PopupMenuButton<VoidCallback>(
+      tooltip: 'Page menu',
+      icon: const Icon(Icons.more_vert, color: Colors.white),
+      onSelected: (action) => action(),
+      itemBuilder: (_) => entries,
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final screenWidth = MediaQuery.of(context).size.width;
+    final keyboardVisible = MediaQuery.viewInsetsOf(context).bottom > 0;
 
     final isMobile = screenWidth < 700;
     final isTablet = screenWidth >= 700 && screenWidth < 1100;
@@ -162,12 +227,7 @@ class RingMasterPageShell extends StatelessWidget {
           ),
           icon: const Icon(Icons.account_circle_outlined),
           label: const Text('Account'),
-          onPressed: isAccountPage
-              ? null
-              : () async {
-                  await Navigator.of(context).pushNamed('/account');
-                  if (context.mounted) onAccountReturn?.call();
-                },
+          onPressed: isAccountPage ? null : () => _openAccount(context),
         ),
       ...(actions ?? const []),
     ];
@@ -178,68 +238,161 @@ class RingMasterPageShell extends StatelessWidget {
       floatingActionButtonLocation: floatingActionButtonLocation,
       body: SafeArea(
         bottom: false,
-        child: Column(
-          children: [
-            Container(
-              color: topColor,
-              padding: EdgeInsets.fromLTRB(
-                horizontalPadding,
-                topPadding,
-                horizontalPadding,
-                18,
-              ),
-              child: isMobile
-                  ? _MobileHeader(
-                      title: title,
-                      subtitle: subtitle,
-                      logo: resolvedLogo,
-                      leading: leading,
-                      showBack: shouldShowBack,
-                      onBack: onBack,
-                      actions: resolvedActions,
-                      topColor: topColor,
-                      logoSize: logoSize,
-                      titleSize: titleSize,
-                      subtitleSize: subtitleSize,
-                      iconSize: iconSize,
-                    )
-                  : _WideHeader(
-                      title: title,
-                      subtitle: subtitle,
-                      logo: resolvedLogo,
-                      leading: leading,
-                      showBack: shouldShowBack,
-                      onBack: onBack,
-                      actions: resolvedActions,
-                      topColor: topColor,
-                      logoSize: logoSize,
-                      titleSize: titleSize,
-                      subtitleSize: subtitleSize,
-                      iconSize: iconSize,
+        child: LayoutBuilder(
+          builder: (context, constraints) {
+            // A phone keyboard can either add viewInsets or shrink the browser's
+            // viewport. Use the Scaffold's actual remaining height for both.
+            final compact =
+                keyboardVisible ||
+                constraints.maxHeight < 600 ||
+                constraints.maxWidth < 380;
+            return Column(
+              children: [
+                Container(
+                  color: topColor,
+                  padding: EdgeInsets.fromLTRB(
+                    compact ? 8 : horizontalPadding,
+                    compact ? 4 : topPadding,
+                    compact ? 8 : horizontalPadding,
+                    compact ? 4 : 18,
+                  ),
+                  child: compact
+                      ? _CompactHeader(
+                          title: title,
+                          leading: leading,
+                          showBack: shouldShowBack,
+                          onBack: onBack,
+                          keyboardVisible: keyboardVisible,
+                          menu: _navigationMenu(context),
+                          actions: actions ?? const [],
+                        )
+                      : isMobile
+                      ? _MobileHeader(
+                          title: title,
+                          subtitle: subtitle,
+                          logo: resolvedLogo,
+                          leading: leading,
+                          showBack: shouldShowBack,
+                          onBack: onBack,
+                          actions: resolvedActions,
+                          topColor: topColor,
+                          logoSize: logoSize,
+                          titleSize: titleSize,
+                          subtitleSize: subtitleSize,
+                          iconSize: iconSize,
+                        )
+                      : _WideHeader(
+                          title: title,
+                          subtitle: subtitle,
+                          logo: resolvedLogo,
+                          leading: leading,
+                          showBack: shouldShowBack,
+                          onBack: onBack,
+                          actions: resolvedActions,
+                          topColor: topColor,
+                          logoSize: logoSize,
+                          titleSize: titleSize,
+                          subtitleSize: subtitleSize,
+                          iconSize: iconSize,
+                        ),
+                ),
+                Expanded(
+                  child: Container(
+                    width: double.infinity,
+                    decoration: BoxDecoration(
+                      color: pageBg,
+                      borderRadius: BorderRadius.vertical(
+                        top: Radius.circular(bottomRadius),
+                      ),
                     ),
-            ),
-            Expanded(
-              child: Container(
-                width: double.infinity,
-                decoration: BoxDecoration(
-                  color: pageBg,
-                  borderRadius: BorderRadius.vertical(
-                    top: Radius.circular(bottomRadius),
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.vertical(
+                        top: Radius.circular(bottomRadius),
+                      ),
+                      child: Material(color: pageBg, child: resolvedBody),
+                    ),
                   ),
                 ),
-                child: ClipRRect(
-                  borderRadius: BorderRadius.vertical(
-                    top: Radius.circular(bottomRadius),
-                  ),
-                  child: Material(color: pageBg, child: resolvedBody),
-                ),
-              ),
-            ),
-          ],
+              ],
+            );
+          },
         ),
       ),
     );
   }
+}
+
+class _CompactHeader extends StatelessWidget {
+  final String title;
+  final Widget? leading;
+  final bool showBack;
+  final VoidCallback? onBack;
+  final bool keyboardVisible;
+  final Widget? menu;
+  final List<Widget> actions;
+
+  const _CompactHeader({
+    required this.title,
+    required this.leading,
+    required this.showBack,
+    required this.onBack,
+    required this.keyboardVisible,
+    required this.menu,
+    required this.actions,
+  });
+
+  @override
+  Widget build(BuildContext context) => Column(
+    mainAxisSize: MainAxisSize.min,
+    children: [
+      Row(
+        children: [
+          if (showBack)
+            leading ??
+                IconButton(
+                  tooltip: 'Back',
+                  icon: const Icon(Icons.arrow_back, color: Colors.white),
+                  onPressed: onBack ?? () => Navigator.of(context).maybePop(),
+                ),
+          Expanded(
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 8),
+              child: Tooltip(
+                message: title,
+                child: Text(
+                  title,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 20,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ),
+            ),
+          ),
+          if (OfflineRuntime.enabled) const SyncHeaderButton(compact: true),
+          if (keyboardVisible)
+            IconButton(
+              tooltip: 'Hide keyboard',
+              icon: const Icon(Icons.keyboard_hide, color: Colors.white),
+              onPressed: () => FocusManager.instance.primaryFocus?.unfocus(),
+            ),
+          if (menu != null) menu!,
+        ],
+      ),
+      if (actions.isNotEmpty)
+        SingleChildScrollView(
+          scrollDirection: Axis.horizontal,
+          child: Row(
+            children: actions
+                .map((action) => _HeaderActionContainer(child: action))
+                .toList(),
+          ),
+        ),
+    ],
+  );
 }
 
 class _MobileHeader extends StatelessWidget {

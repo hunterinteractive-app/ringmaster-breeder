@@ -277,6 +277,67 @@ async function main() {
     }
     await herd().click({ timeout: 30000 });
     await page.getByText('Willow', { exact: false }).first().waitFor({ timeout: 30000 });
+    if (process.env.RESPONSIVE_FORM === 'true') {
+      await page.getByText('Willow', { exact: false }).first().click();
+      await click('Edit Animal');
+      const settle = async () => {
+        await page.evaluate(() => new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve))));
+        await page.waitForTimeout(150);
+      };
+      const name = page.getByRole('textbox', { name: 'Name', exact: true });
+      await name.click();
+      await settle();
+      await page.locator('input:focus, textarea:focus').fill('Unsaved barn edit');
+      // Model a browser that resizes its viewport when the phone keyboard opens.
+      await page.setViewportSize({ width: 360, height: 260 });
+      await settle();
+      assert.equal(await page.locator('input:focus, textarea:focus').inputValue(), 'Unsaved barn edit');
+      const nameBox = await name.boundingBox();
+      assert.ok(nameBox && nameBox.y >= 50 && nameBox.y + nameBox.height <= 260, 'The focused name must fit above the keyboard');
+      await page.getByRole('button', { name: 'Sync', exact: true }).waitFor();
+      await page.getByRole('button', { name: 'Page menu', exact: true }).waitFor();
+      await page.screenshot({ path: `/tmp/breeder-responsive-keyboard-${useWebKit ? 'webkit' : 'chrome'}.png` });
+      const scrollTo = async label => {
+        const target = page.getByRole('textbox', { name: label, exact: true });
+        for (let attempt = 0; attempt < 40; attempt++) {
+          const box = await target.count() ? await target.boundingBox() : null;
+          if (box && box.y >= 56 && box.y + box.height <= 260) return target;
+          await page.mouse.move(180, 180);
+          await page.mouse.wheel(0, 80);
+          await settle();
+        }
+        throw new Error(`Field ${label} was unreachable above the keyboard`);
+      };
+      const registration = await scrollTo('Registration Number');
+      await registration.click();
+      await settle();
+      await page.locator('input:focus, textarea:focus').fill('BARN-42');
+      for (let attempt = 0; attempt < 30; attempt++) {
+        const save = page.getByRole('button', { name: 'Save Changes', exact: true });
+        const box = await save.count() ? await save.boundingBox() : null;
+        if (box && box.height >= 40 && box.y >= 56 && box.y + box.height <= 260) break;
+        await page.mouse.move(340, 180);
+        await page.mouse.wheel(0, 100);
+        await settle();
+        if (attempt === 29) throw new Error('Save Changes was unreachable above the keyboard: ' + JSON.stringify(box));
+      }
+      await page.screenshot({ path: `/tmp/breeder-responsive-save-${useWebKit ? 'webkit' : 'chrome'}.png` });
+      await page.setViewportSize({ width: 1280, height: 900 });
+      await settle();
+      await page.mouse.move(640, 500);
+      await page.mouse.wheel(0, -4000);
+      await settle();
+      await name.waitFor();
+      await name.click();
+      await settle();
+      assert.equal(await page.locator('input:focus, textarea:focus').inputValue(), 'Unsaved barn edit');
+      const desktopName = await name.boundingBox();
+      assert.ok(desktopName.width <= 1200, 'Desktop forms must remain readable rather than stretching indefinitely');
+      await page.screenshot({ path: `/tmp/breeder-responsive-desktop-${useWebKit ? 'webkit' : 'chrome'}.png` });
+      assert.deepEqual(failures, []);
+      console.log(`PASS: keyboard-sized form, lower fields, save access, persistent draft, Sync/menu, and desktop resize (${useWebKit ? 'WebKit' : 'Chrome'})`);
+      return;
+    }
     if (process.env.SMALL_HERD_SCREEN === 'true') {
       await page.setViewportSize({ width: 360, height: 520 });
       const settle = async () => {
@@ -286,7 +347,7 @@ async function main() {
       const animalVisible = async () => {
         const title = page.getByText('Willow', { exact: false }).first();
         const box = await title.count() ? await title.boundingBox() : null;
-        return box && box.y >= 180 && box.y + box.height <= 490;
+        return box && box.y >= 56 && box.y + box.height <= 490;
       };
       await settle();
       await page.mouse.move(180, 410);
@@ -311,7 +372,7 @@ async function main() {
         await settle();
       }
       const search = await page.getByRole('textbox', { name: 'Search animals', exact: true }).boundingBox();
-      assert.ok(search && search.y >= 180 && search.y + search.height <= 520, 'The search control must be reachable again after scrolling back');
+      assert.ok(search && search.y >= 56 && search.y + search.height <= 520, 'The search control must be reachable again after scrolling back');
       await page.mouse.wheel(0, 1600);
       await settle();
       await page.screenshot({ path: `/tmp/breeder-herd-scroll-${useWebKit ? 'webkit' : 'chrome'}.png` });

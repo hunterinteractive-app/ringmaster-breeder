@@ -9,7 +9,8 @@ import '../screens/global_pedigree_import_screen.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 class SyncHeaderButton extends StatelessWidget {
-  const SyncHeaderButton({super.key});
+  final bool compact;
+  const SyncHeaderButton({super.key, this.compact = false});
   @override
   Widget build(BuildContext context) => ValueListenableBuilder(
     valueListenable: OfflineRuntime.current,
@@ -19,41 +20,47 @@ class SyncHeaderButton extends StatelessWidget {
         OfflineRuntime.problem,
         OfflineRuntime.workspaceStatus,
       ]),
-      builder: (context, _) => OutlinedButton.icon(
-        style: OutlinedButton.styleFrom(
-          foregroundColor: Colors.white,
-          side: const BorderSide(color: Colors.white54),
-        ),
-        icon: Icon(
-          (engine?.attention ?? 0) > 0 ||
-                  (OfflineRuntime.workspaceStatus.value['jobs'] as List? ?? [])
-                      .any(
-                        (j) => [
-                          'needs_input',
-                          'review',
-                          'failed',
-                        ].contains(j['state']),
-                      )
-              ? Icons.sync_problem
-              : Icons.sync,
-        ),
-        label: Text(
-          engine != null &&
-                  (engine.pending > 0 ||
-                      (OfflineRuntime.workspaceStatus.value['jobs'] as List? ??
-                              [])
-                          .any(
-                            (j) =>
-                                !['complete', 'cancelled'].contains(j['state']),
-                          ))
-              ? 'Sync (${engine.pending + (OfflineRuntime.workspaceStatus.value['jobs'] as List? ?? []).where((j) => !['complete', 'cancelled'].contains(j['state'])).length})'
-              : 'Sync',
-        ),
-        onPressed: () => showDialog<void>(
+      builder: (context, _) {
+        final jobs =
+            OfflineRuntime.workspaceStatus.value['jobs'] as List? ?? [];
+        final pending =
+            (engine?.pending ?? 0) +
+            jobs
+                .where((j) => !['complete', 'cancelled'].contains(j['state']))
+                .length;
+        final attention =
+            (engine?.attention ?? 0) > 0 ||
+            jobs.any(
+              (j) => ['needs_input', 'review', 'failed'].contains(j['state']),
+            );
+        final label = pending > 0 ? 'Sync ($pending)' : 'Sync';
+        final icon = Icon(attention ? Icons.sync_problem : Icons.sync);
+        void openStatus() => showDialog<void>(
           context: context,
           builder: (_) => SyncStatusDialog(engine: engine),
-        ),
-      ),
+        );
+        if (compact) {
+          return IconButton(
+            tooltip: label,
+            color: Colors.white,
+            icon: Badge(
+              isLabelVisible: pending > 0,
+              label: Text(pending > 99 ? '99+' : '$pending'),
+              child: icon,
+            ),
+            onPressed: openStatus,
+          );
+        }
+        return OutlinedButton.icon(
+          style: OutlinedButton.styleFrom(
+            foregroundColor: Colors.white,
+            side: const BorderSide(color: Colors.white54),
+          ),
+          icon: icon,
+          label: Text(label),
+          onPressed: openStatus,
+        );
+      },
     ),
   );
 }
