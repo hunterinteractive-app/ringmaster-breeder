@@ -1,3 +1,4 @@
+import 'adaptive_layout.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import '../theme/app_theme.dart';
@@ -49,9 +50,10 @@ class BreedingDashboard extends StatelessWidget {
     IconData icon,
     Color color,
     double width,
+    bool compact,
   ) => Container(
     width: width,
-    padding: const EdgeInsets.all(18),
+    padding: EdgeInsets.all(compact ? 12 : 18),
     decoration: BoxDecoration(
       color: Colors.white,
       borderRadius: BorderRadius.circular(18),
@@ -59,14 +61,14 @@ class BreedingDashboard extends StatelessWidget {
     child: Row(
       children: [
         Container(
-          padding: const EdgeInsets.all(10),
+          padding: EdgeInsets.all(compact ? 6 : 10),
           decoration: BoxDecoration(
             color: color.withValues(alpha: .09),
             borderRadius: BorderRadius.circular(12),
           ),
-          child: Icon(icon, color: color),
+          child: Icon(icon, color: color, size: compact ? 20 : 24),
         ),
-        const SizedBox(width: 12),
+        SizedBox(width: compact ? 8 : 12),
         Expanded(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -74,7 +76,7 @@ class BreedingDashboard extends StatelessWidget {
               Text(
                 '$value',
                 style: TextStyle(
-                  fontSize: 28,
+                  fontSize: compact ? 20 : 28,
                   fontWeight: FontWeight.w800,
                   color: color,
                 ),
@@ -112,7 +114,8 @@ class BreedingDashboard extends StatelessWidget {
     });
     return LayoutBuilder(
       builder: (context, box) {
-        final width = box.maxWidth - 40;
+        final compact = BreederLayout.compact(context);
+        final width = box.maxWidth - (compact ? 24 : 40);
         final columns = width >= 1050
             ? 3
             : width >= 720
@@ -121,12 +124,12 @@ class BreedingDashboard extends StatelessWidget {
         final cardWidth = (width - (columns - 1) * 16) / columns;
         final statsColumns = width >= 760
             ? 4
-            : width >= 340
+            : width >= 280
             ? 2
             : 1;
         final statWidth = (width - (statsColumns - 1) * 12) / statsColumns;
         return SingleChildScrollView(
-          padding: const EdgeInsets.all(20),
+          padding: BreederLayout.pagePadding(context, normal: 20),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -141,7 +144,7 @@ class BreedingDashboard extends StatelessWidget {
                 'From pairing to weaning • ${DateFormat('EEEE, MMMM d').format(today)}',
                 style: const TextStyle(color: Color(0xFF606B7C)),
               ),
-              const SizedBox(height: 20),
+              const AdaptiveGap(height: 20),
               Wrap(
                 spacing: 12,
                 runSpacing: 12,
@@ -152,6 +155,7 @@ class BreedingDashboard extends StatelessWidget {
                     Icons.favorite_outline,
                     BreederColors.primary,
                     statWidth,
+                    compact,
                   ),
                   stat(
                     'Birth window · next 7 days',
@@ -159,6 +163,7 @@ class BreedingDashboard extends StatelessWidget {
                     Icons.event_available,
                     const Color(0xFF9C681A),
                     statWidth,
+                    compact,
                   ),
                   stat(
                     'Nursing litters',
@@ -172,6 +177,7 @@ class BreedingDashboard extends StatelessWidget {
                     Icons.child_care,
                     const Color(0xFF326C5D),
                     statWidth,
+                    compact,
                   ),
                   stat(
                     'Kits & pups weaned',
@@ -184,10 +190,11 @@ class BreedingDashboard extends StatelessWidget {
                     Icons.pets_outlined,
                     BreederColors.text,
                     statWidth,
+                    compact,
                   ),
                 ],
               ),
-              const SizedBox(height: 24),
+              const AdaptiveGap(height: 24),
               Wrap(
                 spacing: 16,
                 runSpacing: 8,
@@ -217,10 +224,10 @@ class BreedingDashboard extends StatelessWidget {
                 '${rows.length} records • Earliest expected birth first',
                 style: const TextStyle(fontSize: 12, color: Color(0xFF606B7C)),
               ),
-              const SizedBox(height: 16),
+              const AdaptiveGap(height: 16),
               if (rows.isEmpty)
                 const Card(
-                  child: Padding(
+                  child: AdaptivePadding(
                     padding: EdgeInsets.all(32),
                     child: Text(
                       'No breedings here yet. Start with Actions → Record breeding in your Herd.',
@@ -247,7 +254,7 @@ class BreedingDashboard extends StatelessWidget {
     String label,
     String value, {
     bool emphasize = false,
-  }) => Padding(
+  }) => AdaptivePadding(
     padding: const EdgeInsets.symmetric(vertical: 7),
     child: Row(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -316,8 +323,8 @@ class BreedingDashboard extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           Container(height: 5, color: tone),
-          Padding(
-            padding: const EdgeInsets.all(20),
+          AdaptivePadding(
+            padding: BreederLayout.pagePadding(context, normal: 20),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -372,7 +379,7 @@ class BreedingDashboard extends StatelessWidget {
                     color: Color(0xFF687286),
                   ),
                 ),
-                const SizedBox(height: 12),
+                const AdaptiveGap(height: 12),
                 Text(
                   'SIRE',
                   style: TextStyle(
@@ -386,7 +393,7 @@ class BreedingDashboard extends StatelessWidget {
                   animalTitle(sire['name'], sire['tattoo']),
                   style: const TextStyle(fontSize: 13),
                 ),
-                const SizedBox(height: 16),
+                const AdaptiveGap(height: 16),
                 if (!born && isActive) ...[
                   Row(
                     children: [
@@ -410,7 +417,7 @@ class BreedingDashboard extends StatelessWidget {
                       ),
                     ],
                   ),
-                  const SizedBox(height: 8),
+                  const AdaptiveGap(height: 8),
                   ClipRRect(
                     borderRadius: BorderRadius.circular(6),
                     child: LinearProgressIndicator(
@@ -514,7 +521,7 @@ class BreedingDashboard extends StatelessWidget {
                     label: const Text('Create offspring records'),
                   ),
                 if (children.isNotEmpty) ...[
-                  const SizedBox(height: 12),
+                  const AdaptiveGap(height: 12),
                   Text(
                     '${children.where((c) => animalIsMale(c['animal']?['sex'] ?? '')).length} ${cavy ? 'boars' : 'bucks'} • ${children.where((c) => !animalIsMale(c['animal']?['sex'] ?? '')).length} ${cavy ? 'sows' : 'does'}',
                     style: const TextStyle(fontSize: 12),

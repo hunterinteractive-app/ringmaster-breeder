@@ -1,3 +1,4 @@
+import '../widgets/adaptive_layout.dart';
 import '../offline/offline_runtime.dart';
 import 'package:flutter/material.dart';
 import '../services/global_pedigree_import_service.dart';
@@ -249,25 +250,25 @@ class _GlobalPedigreeImportScreenState
         body: _loading
             ? const Center(child: CircularProgressIndicator())
             : ListView(
-                padding: const EdgeInsets.all(24),
+                padding: BreederLayout.pagePadding(context, normal: 24),
                 children: [
                   const Text(
                     'Bring your rabbits and pedigrees into Breeder',
                     style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
                   ),
-                  const SizedBox(height: 12),
+                  const AdaptiveGap(height: 12),
                   const Text(
                     'Sign in to Global Pedigree, choose a destination herd, '
                     'and review your rabbits and ancestors before importing. '
                     'Your Global Pedigree records will remain unchanged.',
                   ),
-                  const SizedBox(height: 12),
+                  const AdaptiveGap(height: 12),
                   const Text(
                     'Your login is used only to read your records during '
                     'this import. Your password is not saved. Your collected '
                     'preview is saved privately for 24 hours so you can resume.',
                   ),
-                  const SizedBox(height: 24),
+                  const AdaptiveGap(height: 24),
                   if (_herds.isEmpty) ...[
                     const Text('Create a herd in Breeder before importing.'),
                     TextButton(
@@ -294,7 +295,7 @@ class _GlobalPedigreeImportScreenState
                               _review = null;
                             }),
                     ),
-                    const SizedBox(height: 24),
+                    const AdaptiveGap(height: 24),
                     if (_data == null)
                       Form(
                         key: _form,
@@ -311,7 +312,7 @@ class _GlobalPedigreeImportScreenState
                                   ? 'Enter your username or email.'
                                   : null,
                             ),
-                            const SizedBox(height: 16),
+                            const AdaptiveGap(height: 16),
                             TextFormField(
                               controller: _password,
                               enabled: !_busy,
@@ -325,7 +326,7 @@ class _GlobalPedigreeImportScreenState
                                   ? 'Enter your password.'
                                   : null,
                             ),
-                            const SizedBox(height: 20),
+                            const AdaptiveGap(height: 20),
                             FilledButton.icon(
                               onPressed: _busy ? null : _collect,
                               icon: const Icon(Icons.travel_explore),
@@ -363,7 +364,7 @@ class _GlobalPedigreeImportScreenState
                           ),
                         ),
                       if (_unknownSex.isNotEmpty) ...[
-                        const SizedBox(height: 16),
+                        const AdaptiveGap(height: 16),
                         const Text(
                           'Choose the sex for records marked unknown in Global Pedigree, then review again.',
                         ),
@@ -373,7 +374,7 @@ class _GlobalPedigreeImportScreenState
                                 a['source_id'].toString(),
                               ),
                             ))
-                          Padding(
+                          AdaptivePadding(
                             padding: const EdgeInsets.symmetric(vertical: 8),
                             child: DropdownButtonFormField<String>(
                               key: ValueKey('sex-${animal['source_id']}'),
@@ -409,7 +410,7 @@ class _GlobalPedigreeImportScreenState
                       ],
                       for (final group in _duplicates)
                         Card(
-                          child: Padding(
+                          child: AdaptivePadding(
                             padding: const EdgeInsets.all(16),
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
@@ -429,7 +430,7 @@ class _GlobalPedigreeImportScreenState
                                       '${_dobLabel(record)} • ${record['status'] ?? 'active'} • Record ${record['source_id']}',
                                     ),
                                     children: [
-                                      Padding(
+                                      AdaptivePadding(
                                         padding: const EdgeInsets.all(8),
                                         child: Text(
                                           [
@@ -487,7 +488,7 @@ class _GlobalPedigreeImportScreenState
                           child: const Text('Review import'),
                         ),
                       if (_review != null) ...[
-                        const SizedBox(height: 16),
+                        const AdaptiveGap(height: 16),
                         Text(
                           '${_review!['animals_added'] ?? 0} new records • '
                           '${_review!['animals_existing'] ?? 0} existing records',
@@ -501,7 +502,7 @@ class _GlobalPedigreeImportScreenState
                           'not in your herd are added as pedigree-only records.',
                         ),
                         for (final issue in issues)
-                          Padding(
+                          AdaptivePadding(
                             padding: const EdgeInsets.symmetric(vertical: 8),
                             child: Text(
                               issue,
@@ -531,7 +532,7 @@ class _GlobalPedigreeImportScreenState
                               ),
                             ),
                           ),
-                        const SizedBox(height: 16),
+                        const AdaptiveGap(height: 16),
                         FilledButton.icon(
                           onPressed: _busy || issues.isNotEmpty || rows.isEmpty
                               ? null
@@ -561,14 +562,14 @@ class _GlobalPedigreeImportScreenState
                     ],
                   ],
                   if (_busy)
-                    const Padding(
+                    const AdaptivePadding(
                       padding: EdgeInsets.all(16),
                       child: LinearProgressIndicator(),
                     ),
                   if (_error != null)
                     Semantics(
                       liveRegion: true,
-                      child: Padding(
+                      child: AdaptivePadding(
                         padding: const EdgeInsets.symmetric(vertical: 16),
                         child: Text(_error!),
                       ),
@@ -590,7 +591,7 @@ class _GlobalPedigreeImportScreenState
                       Text(
                         '${_result!['sales_added']} historical sales imported; ${_result!['sales_existing']} existing sales preserved.',
                       ),
-                    const SizedBox(height: 16),
+                    const AdaptiveGap(height: 16),
                     FilledButton(
                       onPressed: () => Navigator.of(context).pop(),
                       child: const Text('Done'),

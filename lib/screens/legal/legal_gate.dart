@@ -1,3 +1,4 @@
+import '../../widgets/adaptive_layout.dart';
 import 'package:flutter/material.dart';
 import '../../config/legal_config.dart';
 import '../../services/legal_service.dart';
@@ -111,7 +112,7 @@ class _LegalGateState extends State<LegalGate> {
                     : SingleChildScrollView(
                         padding: const EdgeInsets.all(24),
                         child: Card(
-                          child: Padding(
+                          child: AdaptivePadding(
                             padding: const EdgeInsets.all(24),
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.stretch,

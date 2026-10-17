@@ -1,3 +1,4 @@
+import '../widgets/adaptive_layout.dart';
 import '../services/animal_service.dart';
 import '../widgets/ringmaster_page_shell.dart';
 import 'dart:typed_data';
@@ -267,7 +268,7 @@ class _HealthRecordModalState extends State<HealthRecordModal> {
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
+    return AdaptivePadding(
       padding: EdgeInsets.fromLTRB(
         16,
         16,
@@ -316,7 +317,7 @@ class _HealthRecordModalState extends State<HealthRecordModal> {
               maxLines: 3,
             ),
 
-            const SizedBox(height: 12),
+            const AdaptiveGap(height: 12),
 
             _dateRow(
               'Administered',
@@ -345,7 +346,7 @@ class _HealthRecordModalState extends State<HealthRecordModal> {
                   : (v) => setState(() => retention = v!),
             ),
 
-            const SizedBox(height: 8),
+            const AdaptiveGap(height: 8),
 
             if (isEditing && attachmentUrl != null)
               ElevatedButton.icon(
@@ -379,7 +380,7 @@ class _HealthRecordModalState extends State<HealthRecordModal> {
                 onPressed: _pickFile,
               ),
 
-            const SizedBox(height: 16),
+            const AdaptiveGap(height: 16),
             ElevatedButton(
               onPressed: saving ? null : _save,
               child: const Text('Save Record'),

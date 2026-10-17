@@ -1,3 +1,4 @@
+import '../widgets/adaptive_layout.dart';
 import '../offline/offline_runtime.dart';
 import '../services/pagination.dart';
 import 'global_pedigree_history_screen.dart';
@@ -330,24 +331,25 @@ class _LitterTrackingDialogState extends State<LitterTrackingDialog> {
         ),
     ],
   );
-  Widget count(String key, String label, {bool disabled = false}) => Padding(
-    padding: const EdgeInsets.symmetric(vertical: 6),
-    child: TextFormField(
-      initialValue: data[key]?.toString(),
-      enabled: !disabled,
-      decoration: InputDecoration(labelText: label),
-      keyboardType: TextInputType.number,
-      onChanged: (v) => setState(() => data[key] = int.tryParse(v)),
-      validator: (v) =>
-          v == null ||
-              v.isEmpty ||
-              (int.tryParse(v) != null &&
-                  int.parse(v) >= 0 &&
-                  int.parse(v) <= 100)
-          ? null
-          : 'Enter a whole number from 0 to 100',
-    ),
-  );
+  Widget count(String key, String label, {bool disabled = false}) =>
+      AdaptivePadding(
+        padding: const EdgeInsets.symmetric(vertical: 6),
+        child: TextFormField(
+          initialValue: data[key]?.toString(),
+          enabled: !disabled,
+          decoration: InputDecoration(labelText: label),
+          keyboardType: TextInputType.number,
+          onChanged: (v) => setState(() => data[key] = int.tryParse(v)),
+          validator: (v) =>
+              v == null ||
+                  v.isEmpty ||
+                  (int.tryParse(v) != null &&
+                      int.parse(v) >= 0 &&
+                      int.parse(v) <= 100)
+              ? null
+              : 'Enter a whole number from 0 to 100',
+        ),
+      );
   @override
   Widget build(BuildContext context) => PopScope(
     canPop: !saving,
@@ -386,7 +388,7 @@ class _LitterTrackingDialogState extends State<LitterTrackingDialog> {
                     ],
                     onChanged: (v) => data['check_result'] = v,
                   ),
-                  const SizedBox(height: 16),
+                  const AdaptiveGap(height: 16),
                   const Text(
                     'Birth & weaning',
                     style: TextStyle(fontWeight: FontWeight.bold),
@@ -424,7 +426,7 @@ class _LitterTrackingDialogState extends State<LitterTrackingDialog> {
                     const Text(
                       'Offspring records are already linked. Edit individual animals from your herd.',
                     ),
-                  const SizedBox(height: 12),
+                  const AdaptiveGap(height: 12),
                   DropdownButtonFormField<String>(
                     initialValue: data['status'],
                     decoration: const InputDecoration(
@@ -439,7 +441,7 @@ class _LitterTrackingDialogState extends State<LitterTrackingDialog> {
                     ],
                     onChanged: (v) => data['status'] = v,
                   ),
-                  const SizedBox(height: 12),
+                  const AdaptiveGap(height: 12),
                   TextFormField(
                     initialValue: data['notes'],
                     maxLength: 4000,
@@ -631,7 +633,7 @@ class _LitterOffspringDialogState extends State<LitterOffspringDialog> {
                     Text(
                       'Create ${young.length} ${cavy ? 'pups' : 'kits'} in your active herd. Birth date and both parents are filled from this litter. Review breed and enter each variety; leave unknown details blank.',
                     ),
-                    const SizedBox(height: 16),
+                    const AdaptiveGap(height: 16),
                     OutlinedButton.icon(
                       onPressed: busy ? null : generate,
                       icon: const Icon(Icons.auto_awesome),
@@ -644,13 +646,13 @@ class _LitterOffspringDialogState extends State<LitterOffspringDialog> {
                     ),
                     for (var i = 0; i < young.length; i++)
                       Card(
-                        child: Padding(
+                        child: AdaptivePadding(
                           padding: const EdgeInsets.all(12),
                           child: Column(
                             children: [
                               Text('Offspring ${i + 1}'),
                               for (final key in ['name', 'tattoo'])
-                                Padding(
+                                AdaptivePadding(
                                   padding: const EdgeInsets.only(top: 16),
                                   child: TextFormField(
                                     key: ValueKey(
@@ -673,7 +675,7 @@ class _LitterOffspringDialogState extends State<LitterOffspringDialog> {
                                         : null,
                                   ),
                                 ),
-                              const SizedBox(height: 16),
+                              const AdaptiveGap(height: 16),
                               CatalogField(
                                 species: widget.record['dam']['species'],
                                 value: young[i]['breed'] ?? '',
@@ -682,7 +684,7 @@ class _LitterOffspringDialogState extends State<LitterOffspringDialog> {
                                   young[i]['variety'] = '';
                                 }),
                               ),
-                              const SizedBox(height: 16),
+                              const AdaptiveGap(height: 16),
                               CatalogField(
                                 key: ValueKey(
                                   'variety-$i-${young[i]['breed']}',
@@ -692,7 +694,7 @@ class _LitterOffspringDialogState extends State<LitterOffspringDialog> {
                                 value: young[i]['variety'] ?? '',
                                 onChanged: (v) => young[i]['variety'] = v,
                               ),
-                              const SizedBox(height: 16),
+                              const AdaptiveGap(height: 16),
                               DropdownButtonFormField<String>(
                                 initialValue: young[i]['sex'],
                                 validator: (v) =>

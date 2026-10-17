@@ -275,3 +275,29 @@ Before calling a phone/version qualified, test on that hardware:
 Start with the owner's current iPhone and an Android device/emulator. Older iOS
 15.6/17 and Android 10 hardware remain a separate qualification step. Background
 Sync opportunism and iOS storage eviction require real-device observation.
+
+## Responsive screen acceptance
+
+The shared application shell applies compact spacing, headings, cards and inputs
+below 600 logical pixels wide or 500 pixels of usable height. Native keyboard
+insets and browser viewport resizing both trigger compact layouts. System text
+scaling remains enabled, and resize does not replace the navigation/form tree.
+Add/Edit Animal forms stop growing at 720 pixels on larger screens.
+
+Animal Details puts its primary edit action beside the essential information on
+phones, with a smaller photo, a two-column field layout, and expandable registration
+and parent sections. Enlarged text falls back to one column. Sales totals are
+expandable on phones, calendar category filters use one picker, and breeding/report
+summaries use less space. Weight History uses one lazy scroll view; its chart is
+expandable on phones and scrolls with the records when open. Account, import,
+pedigree entry, legal and other forms share the compact spacing rules.
+
+`test/adaptive_screens_test.dart` covers detail actions, expandable show notes,
+weight history scrolling and permissions, sales search preservation on resize,
+and calendar filtering at phone, landscape and desktop sizes, including 150% text.
+The existing responsive form cases exercise native keyboard insets and unsaved
+field/focus preservation. With a packaged offline build and Playwright available,
+run `FULL_WORKSPACE=true FRESH_LOGIN=true RESPONSIVE_SITE=true node tool/offline_browser_test.cjs build/web`
+for offline page navigation and screenshots. Use `RESPONSIVE_FORM=true` instead
+for browser keyboard-sized viewports, lower fields, Save access and draft retention.
+Repeat with `BROWSER=webkit`; browser engines complement simulator/device testing.

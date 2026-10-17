@@ -159,6 +159,12 @@ async function main() {
       connected_show_reports:[],show_connections:[],global_pedigree_animals:[],global_pedigree_history:[],global_pedigree_import_drafts:[],breeder_offline_jobs:[],
       account_deletions:[],breeder_legal_acceptances:[{user_id:userId,accepted_at:'2026-01-01T00:00:00Z',terms_version:termsVersion,privacy_version:privacyVersion}],
     };
+    if (process.env.RESPONSIVE_SITE === 'true') {
+      animal.registration_number = 'REG-123';
+      animal.leg_details = 'Best of breed at the county show';
+      for (let i = 0; i < 20; i++) weights.push({ id: 'layout-weight-' + i, animal_id: animalId,
+        weight: 5 - i / 100, recorded_at: new Date(Date.UTC(2026, 9, 17 - i)).toISOString() });
+    }
     const receipts=new Map();
     if (process.env.COMPACT_HERD_SCREEN === 'true') {
       animal.sale_status = 'for_sale';
@@ -435,15 +441,94 @@ async function main() {
       await page.waitForFunction(()=>!!navigator.serviceWorker.controller);
       await page.evaluate(async()=>JSON.parse(await breederWorkspace.download(false)));
       assert.equal(await page.evaluate(()=>breederWorkspace.isReady()),true);
-      // Match the actual configured legal versions without guessing future ones.
-      await page.evaluate(async()=>{
-        const key='v1:00000000-0000-4000-8000-000000000001:';
-        const accepted=JSON.parse(await breederOffline.scan(key+'cache:legal:'));
-        const rows=accepted.map(d=>{const versions=d.key.slice((key+'cache:legal:').length).split(':');return{user_id:'00000000-0000-4000-8000-000000000001',terms_version:versions[0],privacy_version:versions[1],accepted_at:'2026-01-01T00:00:00Z'};});
-        await breederOffline.commit(JSON.stringify({expected:{},puts:{[key+'cache:table:breeder_legal_acceptances']:{rows}},deletes:[]}));
-      });
-      fixtureTables.breeder_legal_acceptances=await page.evaluate(async()=>JSON.parse(await breederOffline.read('v1:00000000-0000-4000-8000-000000000001:cache:table:breeder_legal_acceptances')).value.rows);
+      // Verify the actual snapshot. Rebuilding this table from the pilot cache
+      // races a fresh login and can replace a valid agreement with an empty list.
+      const legalRows = await page.evaluate(async () =>
+        JSON.parse(await breederOffline.read('v1:00000000-0000-4000-8000-000000000001:cache:table:breeder_legal_acceptances')).value.rows);
+      assert.ok(legalRows.some(row => row.user_id === userId && row.terms_version === termsVersion && row.privacy_version === privacyVersion),
+        'The complete download must retain the current legal agreement');
       console.log('PASS: complete authorized table download and full local repository activation');
+    }
+    if (process.env.RESPONSIVE_SITE === 'true') {
+      const engine = useWebKit ? 'webkit' : 'chrome';
+      const waitUiText = value => page.waitForFunction(value => {
+        const text = document.body.innerText + ' ' + Array.from(document.querySelectorAll('[aria-label]'))
+          .map(node => node.getAttribute('aria-label')).join(' ');
+        return text.includes(value);
+      }, value, { timeout: 10000 });
+      const settle = async () => {
+        await page.evaluate(() => new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve))));
+        await page.waitForTimeout(500);
+      };
+      const reach = async (label, role = 'button') => {
+        const target = page.getByRole(role, { name: label, exact: true }).first();
+        for (let n = 0; n < 35; n++) {
+          const box = await target.count() ? await target.boundingBox() : null;
+          const viewport = page.viewportSize();
+          if (box && box.y >= 48 && box.y + box.height <= viewport.height - 30) return target;
+          await page.mouse.move(viewport.width - 15, viewport.height - 90);
+          await page.mouse.wheel(0, 120);
+          await settle();
+        }
+        throw new Error('Could not reach ' + label);
+      };
+      const navigate = async label => {
+        await click('Page menu');
+        await page.getByRole('menuitem', { name: label, exact: true }).click();
+        await settle();
+      };
+      await page.setViewportSize({ width: 360, height: 520 });
+      await setConnectivity(false);
+      await page.getByText('Willow', { exact: false }).first().click();
+      await settle();
+      const edit = await page.getByRole('button', { name: 'Edit Animal', exact: true }).boundingBox();
+      assert.ok(edit && edit.y < 180, 'The primary edit action must appear near the top of phone details');
+      await page.waitForFunction(() => document.body.innerText.includes('Current Weight: 5.00 lb'));
+      await page.screenshot({ path: `/tmp/breeder-adaptive-details-${engine}.png` });
+      await (await reach('Registration & show details')).click();
+      await settle();
+      await page.getByRole('group', { name: /Registration #:[\s\S]*REG-123/ }).waitFor();
+      await page.setViewportSize({ width: 1280, height: 900 });
+      await settle();
+      await page.mouse.move(1100, 500);
+      await page.mouse.wheel(0, -4000);
+      await settle();
+      await page.screenshot({ path: `/tmp/breeder-adaptive-details-desktop-${engine}.png` });
+      await page.setViewportSize({ width: 360, height: 520 });
+      await settle();
+      await (await reach('View Weight History')).click();
+      await settle();
+      await page.getByText('5.00 lb', { exact: false }).first().waitFor();
+      await page.screenshot({ path: `/tmp/breeder-adaptive-weights-${engine}.png` });
+      await click('Growth chart');
+      await settle();
+      await (await reach(/5\.00 lb/, 'button')).click();
+      await click('Cancel');
+      await click('Back');
+      await (await reach('Health & Vaccine Records')).click();
+      await page.getByText('No records yet.', { exact: true }).waitFor();
+      await page.screenshot({ path: `/tmp/breeder-adaptive-health-${engine}.png` });
+      await click('Back');
+      await (await reach('Show history & reports')).click();
+      await waitUiText('From the show table');
+      await settle();
+      await page.screenshot({ path: `/tmp/breeder-adaptive-reports-${engine}.png` });
+      await navigate('Sales dashboard');
+      await waitUiText('Sales overview');
+      await settle();
+      await page.screenshot({ path: `/tmp/breeder-adaptive-sales-${engine}.png` });
+      await navigate('Herd calendar');
+      await waitUiText('Event type');
+      await settle();
+      await page.screenshot({ path: `/tmp/breeder-adaptive-calendar-${engine}.png` });
+      await navigate('Account');
+      await waitUiText('Your account, all in one place');
+      await settle();
+      await page.screenshot({ path: `/tmp/breeder-adaptive-account-${engine}.png` });
+      assert.deepEqual(failures, []);
+      assert.equal(consoleErrors.some(error => /overflowed|Another exception/i.test(error)), false, consoleErrors.join('\n'));
+      console.log('PASS: compact animal details, registration expansion, desktop resize, scrollable weight chart, health, reports, sales, calendar and account while offline (' + engine + ')');
+      return;
     }
     await setConnectivity(false);
     await page.getByText('Willow', { exact: false }).first().click();

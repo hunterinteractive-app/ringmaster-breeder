@@ -1,3 +1,4 @@
+import '../widgets/adaptive_layout.dart';
 import '../offline/offline_runtime.dart';
 import 'package:flutter/material.dart';
 import '../widgets/ringmaster_page_shell.dart';
@@ -78,12 +79,12 @@ class _GlobalPedigreeHistoryScreenState
             .where((r) => _filter == 'All' || r['kind'] == _filter)
             .toList();
         return ListView(
-          padding: const EdgeInsets.all(16),
+          padding: BreederLayout.pagePadding(context, normal: 16),
           children: [
             const Text(
               'Imported source history. Dates and totals are preserved as recorded in Global Pedigree.',
             ),
-            const SizedBox(height: 12),
+            const AdaptiveGap(height: 12),
             Wrap(
               spacing: 8,
               children: [
@@ -101,7 +102,7 @@ class _GlobalPedigreeHistoryScreenState
               ],
             ),
             if (rows.isEmpty)
-              const Padding(
+              const AdaptivePadding(
                 padding: EdgeInsets.all(24),
                 child: Text('No imported records in this category.'),
               ),
@@ -128,7 +129,7 @@ class _GlobalPedigreeHistoryScreenState
               : 'Source record ${r['source_id']}',
         ),
         children: [
-          Padding(
+          AdaptivePadding(
             padding: const EdgeInsets.all(16),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,

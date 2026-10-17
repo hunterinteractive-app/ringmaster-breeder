@@ -1,3 +1,4 @@
+import '../widgets/adaptive_layout.dart';
 import '../widgets/ringmaster_page_shell.dart';
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -221,13 +222,13 @@ class _RingDashboardState extends State<RingDashboard> {
             _license!.hasActiveLicense &&
             _license!.currentRings < _license!.maxRings;
         return ListView(
-          padding: const EdgeInsets.all(24),
+          padding: BreederLayout.pagePadding(context, normal: 24),
           children: [
             Text(
               'Your rabbitry, together',
               style: Theme.of(context).textTheme.headlineSmall,
             ),
-            const SizedBox(height: 16),
+            const AdaptiveGap(height: 16),
             if (FamilyService.households.length > 1)
               DropdownButtonFormField<String>(
                 initialValue: FamilyService.ownerId,
@@ -247,10 +248,10 @@ class _RingDashboardState extends State<RingDashboard> {
                   }
                 },
               ),
-            const SizedBox(height: 16),
+            const AdaptiveGap(height: 16),
             if (!_license!.hasActiveLicense)
               const Card(
-                child: Padding(
+                child: AdaptivePadding(
                   padding: EdgeInsets.all(16),
                   child: Text(
                     'This family has no active Breeder license. Existing records remain available.',
@@ -269,7 +270,7 @@ class _RingDashboardState extends State<RingDashboard> {
               ),
             ),
             if (rings.isEmpty)
-              const Padding(
+              const AdaptivePadding(
                 padding: EdgeInsets.all(24),
                 child: Text('No Herds yet.'),
               ),
@@ -325,7 +326,7 @@ class _RingDashboardState extends State<RingDashboard> {
               ),
             ),
             if (canCreate)
-              Padding(
+              AdaptivePadding(
                 padding: const EdgeInsets.only(top: 16),
                 child: ElevatedButton.icon(
                   onPressed: _createRing,

@@ -27,6 +27,7 @@ class RingMasterPageShell extends StatelessWidget {
 
   final bool useScrollView;
   final EdgeInsetsGeometry bodyPadding;
+  final double bodyMaxWidth;
   final Color? backgroundColor;
   final Color? headerColor;
   final Widget? floatingActionButton;
@@ -51,6 +52,7 @@ class RingMasterPageShell extends StatelessWidget {
     this.logo,
     this.useScrollView = false,
     this.bodyPadding = EdgeInsets.zero,
+    this.bodyMaxWidth = 1200,
     this.backgroundColor,
     this.headerColor,
     this.floatingActionButton,
@@ -175,7 +177,7 @@ class RingMasterPageShell extends StatelessWidget {
 
     final resolvedBody = Center(
       child: ConstrainedBox(
-        constraints: const BoxConstraints(maxWidth: 1200),
+        constraints: BoxConstraints(maxWidth: bodyMaxWidth),
         child: SizedBox(width: double.infinity, child: paddedBody),
       ),
     );
@@ -359,6 +361,7 @@ class _CompactHeader extends StatelessWidget {
               padding: const EdgeInsets.symmetric(horizontal: 8),
               child: Tooltip(
                 message: title,
+                excludeFromSemantics: true,
                 child: Text(
                   title,
                   maxLines: 1,

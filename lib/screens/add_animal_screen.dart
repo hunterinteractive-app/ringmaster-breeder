@@ -1,3 +1,4 @@
+import '../widgets/adaptive_layout.dart';
 import '../offline/offline_runtime.dart';
 import '../widgets/parent_picker.dart';
 import '../widgets/ringmaster_page_shell.dart';
@@ -190,12 +191,13 @@ class _AddAnimalScreenState extends State<AddAnimalScreen> {
   Widget build(BuildContext context) {
     return RingMasterPageShell(
       title: 'Add Animal',
-      body: Padding(
+      bodyMaxWidth: 720,
+      body: AdaptivePadding(
         padding: const EdgeInsets.all(16),
         child: ListView(
           children: [
             Card(
-              child: Padding(
+              child: AdaptivePadding(
                 padding: const EdgeInsets.all(16),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -210,7 +212,7 @@ class _AddAnimalScreenState extends State<AddAnimalScreen> {
                     const Text(
                       'Enter three generations, reuse ancestors, or resume a saved draft.',
                     ),
-                    const SizedBox(height: 8),
+                    const AdaptiveGap(height: 8),
                     FilledButton.icon(
                       onPressed: () async {
                         final saved = await Navigator.push<bool>(
@@ -231,7 +233,7 @@ class _AddAnimalScreenState extends State<AddAnimalScreen> {
                 ),
               ),
             ),
-            const SizedBox(height: 16),
+            const AdaptiveGap(height: 16),
 
             /// NAME
             TextField(
@@ -245,7 +247,7 @@ class _AddAnimalScreenState extends State<AddAnimalScreen> {
               decoration: const InputDecoration(labelText: 'Ear / Tattoo #'),
             ),
 
-            const SizedBox(height: 12),
+            const AdaptiveGap(height: 12),
 
             /// SPECIES
             DropdownButtonFormField<String>(
@@ -271,7 +273,7 @@ class _AddAnimalScreenState extends State<AddAnimalScreen> {
               decoration: const InputDecoration(labelText: 'Species'),
             ),
 
-            const SizedBox(height: 12),
+            const AdaptiveGap(height: 12),
 
             CatalogField(
               key: ValueKey('breed:$species'),
@@ -283,7 +285,7 @@ class _AddAnimalScreenState extends State<AddAnimalScreen> {
                 details = {};
               }),
             ),
-            const SizedBox(height: 12),
+            const AdaptiveGap(height: 12),
             CatalogField(
               key: ValueKey('variety:$species:${breedController.text}'),
               species: species,
@@ -294,7 +296,7 @@ class _AddAnimalScreenState extends State<AddAnimalScreen> {
                 details = {};
               }),
             ),
-            const SizedBox(height: 12),
+            const AdaptiveGap(height: 12),
 
             ColorDetailsFields(
               key: ValueKey(
@@ -312,7 +314,7 @@ class _AddAnimalScreenState extends State<AddAnimalScreen> {
               value: sex,
               onChanged: (v) => setState(() => sex = v),
             ),
-            const SizedBox(height: 12),
+            const AdaptiveGap(height: 12),
             DobField(value: dob, onChanged: (v) => dob = v),
 
             const Divider(),
@@ -336,7 +338,7 @@ class _AddAnimalScreenState extends State<AddAnimalScreen> {
               onChanged: (v) => setState(() => dam = v),
             ),
 
-            const SizedBox(height: 12),
+            const AdaptiveGap(height: 12),
 
             TextField(
               controller: registrationController,
@@ -360,7 +362,7 @@ class _AddAnimalScreenState extends State<AddAnimalScreen> {
               decoration: const InputDecoration(labelText: 'Current Weight'),
             ),
 
-            const SizedBox(height: 24),
+            const AdaptiveGap(height: 24),
 
             ElevatedButton(
               onPressed: isSaving ? null : saveAnimal,

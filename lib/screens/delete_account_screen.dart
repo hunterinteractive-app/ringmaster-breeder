@@ -1,3 +1,4 @@
+import '../widgets/adaptive_layout.dart';
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../services/family_service.dart';
@@ -79,12 +80,12 @@ class _DeleteAccountScreenState extends State<DeleteAccountScreen> {
     showAccountButton: false,
     title: 'Delete account',
     body: SingleChildScrollView(
-      padding: const EdgeInsets.all(24),
+      padding: BreederLayout.pagePadding(context, normal: 24),
       child: Center(
         child: ConstrainedBox(
           constraints: const BoxConstraints(maxWidth: 640),
           child: Card(
-            child: Padding(
+            child: AdaptivePadding(
               padding: const EdgeInsets.all(24),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -95,22 +96,22 @@ class _DeleteAccountScreenState extends State<DeleteAccountScreen> {
                         : 'Permanently delete your Breeder account',
                     style: Theme.of(context).textTheme.headlineSmall,
                   ),
-                  const SizedBox(height: 16),
+                  const AdaptiveGap(height: 16),
                   Text(
                     pending
                         ? 'Your deletion request is saved and account access is locked. Resume to finish removing your data.'
                         : 'This removes all herds you own, animals, pedigrees, weights, health records, breedings, uploaded files, and your contact details. Family members will lose access to your herds. This cannot be undone.',
                   ),
-                  const SizedBox(height: 12),
+                  const AdaptiveGap(height: 12),
                   const Text(
                     'Your separate RingMaster Show account and its show records remain. Breeder syncing stops. Herds owned by other family members are not deleted.',
                   ),
                   if (!pending) ...[
-                    const SizedBox(height: 12),
+                    const AdaptiveGap(height: 12),
                     const Text(
                       'Export anything you want to keep before continuing. The animal CSV is not a complete backup of your account.',
                     ),
-                    const SizedBox(height: 20),
+                    const AdaptiveGap(height: 20),
                     Text(
                       'Confirm using a code sent to ${OfflineRuntime.client.auth.currentUser?.email ?? 'your email'}.',
                     ),
@@ -124,7 +125,7 @@ class _DeleteAccountScreenState extends State<DeleteAccountScreen> {
                       const Text(
                         'Check your email for the sign-in code, then enter it below.',
                       ),
-                    const SizedBox(height: 16),
+                    const AdaptiveGap(height: 16),
                     TextField(
                       controller: code,
                       enabled: !busy,
@@ -134,7 +135,7 @@ class _DeleteAccountScreenState extends State<DeleteAccountScreen> {
                       ),
                       onChanged: (_) => setState(() {}),
                     ),
-                    const SizedBox(height: 20),
+                    const AdaptiveGap(height: 20),
                     TextField(
                       controller: confirmation,
                       enabled: !busy,
@@ -145,7 +146,7 @@ class _DeleteAccountScreenState extends State<DeleteAccountScreen> {
                     ),
                   ],
                   if (error != null)
-                    Padding(
+                    AdaptivePadding(
                       padding: const EdgeInsets.symmetric(vertical: 16),
                       child: Text(
                         error!,
@@ -154,7 +155,7 @@ class _DeleteAccountScreenState extends State<DeleteAccountScreen> {
                         ),
                       ),
                     ),
-                  const SizedBox(height: 24),
+                  const AdaptiveGap(height: 24),
                   FilledButton(
                     onPressed:
                         busy ||

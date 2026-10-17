@@ -1,3 +1,4 @@
+import '../widgets/adaptive_layout.dart';
 import '../widgets/ringmaster_page_shell.dart';
 import 'package:flutter/material.dart';
 import '../services/family_service.dart';
@@ -64,40 +65,40 @@ class _FamilyAccessScreenState extends State<FamilyAccessScreen> {
     onRefresh: _busy ? null : () => _update(),
     title: 'Family Access',
     body: ListView(
-      padding: const EdgeInsets.all(24),
+      padding: BreederLayout.pagePadding(context, normal: 24),
       children: [
         const Text(
           'Invite family members to access all Herds, animals, weights, health records, and pedigrees in your family. Each member signs in with their own email.',
         ),
-        const SizedBox(height: 12),
+        const AdaptiveGap(height: 12),
         const Text(
           'The family owner manages invitations and the license. Members can leave, and owners can revoke access at any time.',
         ),
-        const SizedBox(height: 24),
+        const AdaptiveGap(height: 24),
         TextField(
           controller: _email,
           enabled: !_busy,
           keyboardType: TextInputType.emailAddress,
           decoration: const InputDecoration(labelText: 'Family member’s email'),
         ),
-        const SizedBox(height: 12),
+        const AdaptiveGap(height: 12),
         ElevatedButton(
           onPressed: _busy ? null : () => _update(action: 'invite'),
           child: const Text('Create invitation'),
         ),
         if (_busy) const LinearProgressIndicator(),
         if (_error != null)
-          Padding(
+          AdaptivePadding(
             padding: const EdgeInsets.all(12),
             child: Semantics(liveRegion: true, child: Text(_error!)),
           ),
-        const SizedBox(height: 24),
+        const AdaptiveGap(height: 24),
         Text(
           'Invitations and members',
           style: Theme.of(context).textTheme.titleLarge,
         ),
         if (!_busy && FamilyService.invitations.isEmpty)
-          const Padding(
+          const AdaptivePadding(
             padding: EdgeInsets.all(16),
             child: Text('No invitations yet.'),
           ),

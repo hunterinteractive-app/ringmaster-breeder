@@ -1,3 +1,4 @@
+import '../widgets/adaptive_layout.dart';
 import '../offline/offline_runtime.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
@@ -171,16 +172,16 @@ class _ShowReportsScreenState extends State<ShowReportsScreen> {
     title: widget.animalId == null ? 'Show reports' : 'Animal show history',
     onRefresh: busy ? null : load,
     body: ListView(
-      padding: const EdgeInsets.all(24),
+      padding: BreederLayout.pagePadding(context, normal: 24),
       children: [
         if (busy) const LinearProgressIndicator(),
         if (message != null)
-          Padding(
+          AdaptivePadding(
             padding: const EdgeInsets.only(bottom: 16),
             child: Text(message!),
           ),
         Container(
-          padding: const EdgeInsets.all(24),
+          padding: BreederLayout.pagePadding(context, normal: 24),
           decoration: BoxDecoration(
             color: const Color(0xFF42101A),
             borderRadius: BorderRadius.circular(22),
@@ -188,7 +189,7 @@ class _ShowReportsScreenState extends State<ShowReportsScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Row(
+              Row(
                 children: [
                   Icon(Icons.emoji_events_outlined, color: Color(0xFFE8CB8E)),
                   SizedBox(width: 12),
@@ -197,21 +198,21 @@ class _ShowReportsScreenState extends State<ShowReportsScreen> {
                       'From the show table',
                       style: TextStyle(
                         color: Colors.white,
-                        fontSize: 24,
+                        fontSize: BreederLayout.compact(context) ? 20 : 24,
                         fontWeight: FontWeight.bold,
                       ),
                     ),
                   ),
                 ],
               ),
-              const SizedBox(height: 8),
+              const AdaptiveGap(height: 8),
               const Text(
                 'Placings, awards and the reports behind them.',
                 style: TextStyle(color: Colors.white70),
               ),
-              const SizedBox(height: 22),
+              const AdaptiveGap(height: 22),
               Wrap(
-                spacing: 28,
+                spacing: BreederLayout.compact(context) ? 16 : 28,
                 runSpacing: 12,
                 children: [
                   _summary('${results.length}', 'Entries'),
@@ -228,12 +229,12 @@ class _ShowReportsScreenState extends State<ShowReportsScreen> {
             ],
           ),
         ),
-        const SizedBox(height: 24),
+        const AdaptiveGap(height: 24),
         Text('Show results', style: Theme.of(context).textTheme.headlineSmall),
-        const SizedBox(height: 8),
+        const AdaptiveGap(height: 8),
         if (!busy && results.isEmpty)
           const Card(
-            child: Padding(
+            child: AdaptivePadding(
               padding: EdgeInsets.all(24),
               child: Text(
                 'Your show results will appear here once reports are available.',
@@ -253,7 +254,7 @@ class _ShowReportsScreenState extends State<ShowReportsScreen> {
                     ),
                   ),
           ),
-        const SizedBox(height: 24),
+        const AdaptiveGap(height: 24),
         Card(
           child: ExpansionTile(
             initiallyExpanded: results.isEmpty,
@@ -264,7 +265,7 @@ class _ShowReportsScreenState extends State<ShowReportsScreen> {
             ),
             children: [
               if (!busy && reports.isEmpty)
-                const Padding(
+                const AdaptivePadding(
                   padding: EdgeInsets.all(20),
                   child: Text('No report files received yet.'),
                 ),
@@ -317,13 +318,13 @@ class _ShowReportsScreenState extends State<ShowReportsScreen> {
     children: [
       Text(
         value,
-        style: const TextStyle(
+        style: TextStyle(
           color: Colors.white,
-          fontSize: 28,
+          fontSize: BreederLayout.compact(context) ? 20 : 28,
           fontWeight: FontWeight.bold,
         ),
       ),
-      Text(label, style: const TextStyle(color: Colors.white70)),
+      Text(label, style: TextStyle(color: Colors.white70)),
     ],
   );
 }
@@ -353,7 +354,7 @@ class ShowResultCard extends StatelessWidget {
             height: 5,
             color: hasWins ? const Color(0xFFB48A42) : const Color(0xFF42101A),
           ),
-          Padding(
+          AdaptivePadding(
             padding: const EdgeInsets.all(22),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -380,7 +381,7 @@ class ShowResultCard extends StatelessWidget {
                     ),
                   ],
                 ),
-                const SizedBox(height: 12),
+                const AdaptiveGap(height: 12),
                 Text(
                   name.isEmpty ? 'Animal not named' : name,
                   style: const TextStyle(
@@ -394,14 +395,14 @@ class ShowResultCard extends StatelessWidget {
                       .where((v) => v != null && v.toString().isNotEmpty)
                       .join(' • '),
                 ),
-                const SizedBox(height: 20),
+                const AdaptiveGap(height: 20),
                 Wrap(
                   spacing: 24,
                   runSpacing: 16,
                   children: [
                     Container(
                       width: 170,
-                      padding: const EdgeInsets.all(16),
+                      padding: BreederLayout.pagePadding(context, normal: 16),
                       decoration: BoxDecoration(
                         color: const Color(0xFFF6E8E9),
                         borderRadius: BorderRadius.circular(14),
@@ -419,7 +420,7 @@ class ShowResultCard extends StatelessWidget {
                               letterSpacing: 1,
                             ),
                           ),
-                          const SizedBox(height: 8),
+                          const AdaptiveGap(height: 8),
                           Text(
                             placingLabel(placement),
                             style: const TextStyle(
@@ -442,12 +443,12 @@ class ShowResultCard extends StatelessWidget {
                             letterSpacing: 1,
                           ),
                         ),
-                        const SizedBox(height: 8),
+                        const AdaptiveGap(height: 8),
                         if (awards.isEmpty)
                           const Text('No awards recorded')
                         else
                           ...awards.map(
-                            (a) => Padding(
+                            (a) => AdaptivePadding(
                               padding: const EdgeInsets.only(bottom: 6),
                               child: Chip(
                                 avatar: const Icon(
@@ -470,7 +471,7 @@ class ShowResultCard extends StatelessWidget {
                     ),
                   ],
                 ),
-                const SizedBox(height: 16),
+                const AdaptiveGap(height: 16),
                 if (placement == null && awards.isEmpty)
                   const Text(
                     'Show has not supplied a placing or award for this entry.',
@@ -488,7 +489,7 @@ class ShowResultCard extends StatelessWidget {
                     'Previous result — no current report available in Show.',
                   ),
                 if (hasWins && row['animal_id'] != null)
-                  const Padding(
+                  const AdaptivePadding(
                     padding: EdgeInsets.only(top: 8),
                     child: Text(
                       'Major wins included on pedigree',

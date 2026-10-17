@@ -1,3 +1,4 @@
+import '../widgets/adaptive_layout.dart';
 import 'legal/legal_screen.dart';
 import 'dart:async';
 import 'package:flutter/material.dart';
@@ -106,7 +107,7 @@ class _LoginScreenState extends State<LoginScreen> {
       child: SafeArea(
         child: Center(
           child: SingleChildScrollView(
-            padding: const EdgeInsets.all(24),
+            padding: BreederLayout.pagePadding(context, normal: 24),
             child: ConstrainedBox(
               constraints: const BoxConstraints(maxWidth: 560),
               child: Column(
@@ -114,11 +115,12 @@ class _LoginScreenState extends State<LoginScreen> {
                 children: [
                   Image.asset(
                     'assets/images/ringmaster_breeder_logo_transparent.png',
-                    width: 560,
+                    width: BreederLayout.compact(context) ? 180 : 560,
+                    height: BreederLayout.compact(context) ? 80 : null,
                     fit: BoxFit.contain,
                     semanticLabel: 'RingMaster Breeder logo',
                   ),
-                  const SizedBox(height: 20),
+                  const AdaptiveGap(height: 20),
                   const Text(
                     'RingMaster Breeder',
                     textAlign: TextAlign.center,
@@ -129,7 +131,7 @@ class _LoginScreenState extends State<LoginScreen> {
                       letterSpacing: 0.2,
                     ),
                   ),
-                  const SizedBox(height: 8),
+                  const AdaptiveGap(height: 8),
                   const Text(
                     'Herd records, pedigrees, and family access in one place.',
                     textAlign: TextAlign.center,
@@ -139,7 +141,7 @@ class _LoginScreenState extends State<LoginScreen> {
                       height: 1.4,
                     ),
                   ),
-                  const SizedBox(height: 24),
+                  const AdaptiveGap(height: 24),
                   Theme(
                     data: Theme.of(context).copyWith(
                       colorScheme: Theme.of(context).colorScheme.copyWith(
@@ -180,7 +182,7 @@ class _LoginScreenState extends State<LoginScreen> {
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(20),
                       ),
-                      child: Padding(
+                      child: AdaptivePadding(
                         padding: const EdgeInsets.all(24),
                         child: Form(
                           key: _form,
@@ -199,7 +201,7 @@ class _LoginScreenState extends State<LoginScreen> {
                                   fontWeight: FontWeight.w800,
                                 ),
                               ),
-                              const SizedBox(height: 12),
+                              const AdaptiveGap(height: 12),
                               Text(
                                 _pendingEmail == null
                                     ? 'Enter your email to receive a secure code for herd records, pedigrees, and family access.'
@@ -210,7 +212,7 @@ class _LoginScreenState extends State<LoginScreen> {
                                   height: 1.4,
                                 ),
                               ),
-                              const SizedBox(height: 24),
+                              const AdaptiveGap(height: 24),
                               TextFormField(
                                 controller: _email,
                                 enabled: _pendingEmail == null && !_busy,
@@ -228,7 +230,7 @@ class _LoginScreenState extends State<LoginScreen> {
                                     : 'Enter a valid email address',
                               ),
                               if (_pendingEmail != null) ...[
-                                const SizedBox(height: 16),
+                                const AdaptiveGap(height: 16),
                                 TextFormField(
                                   controller: _code,
                                   autofillHints: const [
@@ -254,7 +256,7 @@ class _LoginScreenState extends State<LoginScreen> {
                                       : 'Enter the code from your email',
                                 ),
                               ],
-                              const SizedBox(height: 20),
+                              const AdaptiveGap(height: 20),
                               ElevatedButton.icon(
                                 style: ElevatedButton.styleFrom(
                                   backgroundColor: BreederColors.primary,
@@ -291,7 +293,7 @@ class _LoginScreenState extends State<LoginScreen> {
                                             : 'Sign in'),
                                 ),
                               ),
-                              const SizedBox(height: 12),
+                              const AdaptiveGap(height: 12),
                               const Text(
                                 'The code can only be used once and expires soon.',
                                 textAlign: TextAlign.center,
@@ -301,7 +303,7 @@ class _LoginScreenState extends State<LoginScreen> {
                                   height: 1.5,
                                 ),
                               ),
-                              const SizedBox(height: 12),
+                              const AdaptiveGap(height: 12),
                               const Text(
                                 'By continuing, you agree to the RingMaster Breeder Terms of Service and Privacy Policy.',
                                 textAlign: TextAlign.center,
@@ -358,7 +360,7 @@ class _LoginScreenState extends State<LoginScreen> {
                                 ),
                               ],
                               if (_message != null)
-                                Padding(
+                                AdaptivePadding(
                                   padding: const EdgeInsets.only(top: 16),
                                   child: Semantics(
                                     liveRegion: true,
@@ -376,7 +378,7 @@ class _LoginScreenState extends State<LoginScreen> {
                       ),
                     ),
                   ),
-                  const SizedBox(height: 24),
+                  const AdaptiveGap(height: 24),
                   const Text(
                     'Version ${AppConfig.version}',
                     textAlign: TextAlign.center,

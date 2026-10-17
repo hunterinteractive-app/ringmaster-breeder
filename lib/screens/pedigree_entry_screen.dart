@@ -1,3 +1,4 @@
+import '../widgets/adaptive_layout.dart';
 import '../offline/offline_runtime.dart';
 import 'dart:async';
 import '../widgets/pedigree_preview.dart';
@@ -267,13 +268,13 @@ class _PedigreeEntryScreenState extends State<PedigreeEntryScreen> {
           : AbsorbPointer(
               absorbing: busy,
               child: ListView(
-                padding: const EdgeInsets.all(20),
+                padding: BreederLayout.pagePadding(context, normal: 20),
                 children: [
                   const Text(
                     'Enter your animal, then its parents, grandparents, and great-grandparents. Tab moves between fields. Unknown ancestors can stay blank.',
                   ),
                   if (drafts.isNotEmpty && draftId == null) ...[
-                    const SizedBox(height: 12),
+                    const AdaptiveGap(height: 12),
                     DropdownButtonFormField<String>(
                       decoration: const InputDecoration(
                         labelText: 'Resume a saved draft',
@@ -298,7 +299,7 @@ class _PedigreeEntryScreenState extends State<PedigreeEntryScreen> {
                       }),
                     ),
                   ],
-                  const SizedBox(height: 16),
+                  const AdaptiveGap(height: 16),
                   Wrap(
                     spacing: 8,
                     runSpacing: 8,
@@ -313,7 +314,7 @@ class _PedigreeEntryScreenState extends State<PedigreeEntryScreen> {
                         ),
                     ],
                   ),
-                  const SizedBox(height: 16),
+                  const AdaptiveGap(height: 16),
                   Text(
                     PedigreeEntry.slots[slot],
                     style: Theme.of(context).textTheme.headlineSmall,
@@ -323,7 +324,7 @@ class _PedigreeEntryScreenState extends State<PedigreeEntryScreen> {
                       'Repeated ancestor — changes here apply everywhere this animal appears in this pedigree.',
                     ),
                   if (slot == 0)
-                    Padding(
+                    AdaptivePadding(
                       padding: const EdgeInsets.symmetric(vertical: 12),
                       child: DropdownButtonFormField<String>(
                         initialValue: entry.species,
@@ -357,7 +358,7 @@ class _PedigreeEntryScreenState extends State<PedigreeEntryScreen> {
                       ),
                     ),
                   if (slot > 0 && editable)
-                    Padding(
+                    AdaptivePadding(
                       padding: const EdgeInsets.symmetric(vertical: 12),
                       child: Autocomplete<String>(
                         key: ValueKey('lookup:$slot:$key'),
@@ -395,7 +396,7 @@ class _PedigreeEntryScreenState extends State<PedigreeEntryScreen> {
                       ),
                     ),
                   if (slot > 0 && !editable && node == null)
-                    const Padding(
+                    const AdaptivePadding(
                       padding: EdgeInsets.all(20),
                       child: Text(
                         'Enter this position’s parent first. An existing animal’s ancestry is managed from its own record.',
@@ -403,7 +404,7 @@ class _PedigreeEntryScreenState extends State<PedigreeEntryScreen> {
                     ),
                   if (slot == 0 || node != null || editable) ...[
                     if (readOnly)
-                      const Padding(
+                      const AdaptivePadding(
                         padding: EdgeInsets.symmetric(vertical: 12),
                         child: Text(
                           'Using an existing animal and its saved ancestry. Its record will not be overwritten.',
@@ -467,7 +468,7 @@ class _PedigreeEntryScreenState extends State<PedigreeEntryScreen> {
                       ),
                   ],
                   if (error != null)
-                    Padding(
+                    AdaptivePadding(
                       padding: const EdgeInsets.all(12),
                       child: Text(
                         error!,
@@ -476,7 +477,7 @@ class _PedigreeEntryScreenState extends State<PedigreeEntryScreen> {
                         ),
                       ),
                     ),
-                  const SizedBox(height: 20),
+                  const AdaptiveGap(height: 20),
                   Wrap(
                     spacing: 12,
                     runSpacing: 12,
@@ -520,7 +521,7 @@ class _PedigreeEntryScreenState extends State<PedigreeEntryScreen> {
                     ],
                   ),
                   if (dirty)
-                    const Padding(
+                    const AdaptivePadding(
                       padding: EdgeInsets.only(top: 12),
                       child: Text(
                         'Unsaved changes — save a draft before leaving.',

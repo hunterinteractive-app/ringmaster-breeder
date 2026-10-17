@@ -1,3 +1,4 @@
+import '../../widgets/adaptive_layout.dart';
 import '../../config/legal_config.dart';
 import 'package:flutter/material.dart';
 import '../../widgets/ringmaster_page_shell.dart';
@@ -15,7 +16,7 @@ class LegalScreen extends StatelessWidget {
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(24),
         child: Card(
-          child: Padding(
+          child: AdaptivePadding(
             padding: const EdgeInsets.all(24),
             child: SelectionArea(
               child: Column(

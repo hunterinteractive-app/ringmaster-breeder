@@ -6,8 +6,9 @@ import '../theme/app_theme.dart';
 
 class WeightGraph extends StatelessWidget {
   final List weights;
+  final double height;
 
-  const WeightGraph({super.key, required this.weights});
+  const WeightGraph({super.key, required this.weights, this.height = 260});
 
   @override
   Widget build(BuildContext context) {
@@ -45,7 +46,7 @@ class WeightGraph extends StatelessWidget {
     return Padding(
       padding: const EdgeInsets.fromLTRB(8, 24, 8, 12),
       child: SizedBox(
-        height: 260,
+        height: height,
         child: LineChart(
           LineChartData(
             lineTouchData: LineTouchData(

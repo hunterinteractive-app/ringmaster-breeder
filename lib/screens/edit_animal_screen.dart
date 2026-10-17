@@ -1,3 +1,4 @@
+import '../widgets/adaptive_layout.dart';
 import '../widgets/pedigree_email_dialog.dart';
 import '../widgets/ringmaster_page_shell.dart';
 import 'package:flutter/material.dart';
@@ -196,13 +197,14 @@ class _EditAnimalScreenState extends State<EditAnimalScreen> {
 
     return RingMasterPageShell(
       title: 'Edit Animal',
-      body: Padding(
+      bodyMaxWidth: 720,
+      body: AdaptivePadding(
         padding: const EdgeInsets.all(16),
         child: ListView(
           children: [
             if (conflicted)
               Card(
-                child: Padding(
+                child: AdaptivePadding(
                   padding: const EdgeInsets.all(16),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -243,7 +245,7 @@ class _EditAnimalScreenState extends State<EditAnimalScreen> {
               decoration: const InputDecoration(labelText: 'Name'),
             ),
 
-            const SizedBox(height: 12),
+            const AdaptiveGap(height: 12),
 
             // STATUS
             DropdownButtonFormField<String>(
@@ -259,7 +261,7 @@ class _EditAnimalScreenState extends State<EditAnimalScreen> {
               decoration: const InputDecoration(labelText: 'Status'),
             ),
 
-            const SizedBox(height: 12),
+            const AdaptiveGap(height: 12),
 
             // SPECIES (LOCKED)
             TextField(
@@ -270,7 +272,7 @@ class _EditAnimalScreenState extends State<EditAnimalScreen> {
               ),
             ),
 
-            const SizedBox(height: 12),
+            const AdaptiveGap(height: 12),
 
             // BREED (LOCKED)
             TextField(
@@ -286,7 +288,7 @@ class _EditAnimalScreenState extends State<EditAnimalScreen> {
               decoration: const InputDecoration(labelText: 'Variety'),
             ),
 
-            const SizedBox(height: 12),
+            const AdaptiveGap(height: 12),
 
             ColorDetailsFields(
               breed: breedController.text,
@@ -300,9 +302,9 @@ class _EditAnimalScreenState extends State<EditAnimalScreen> {
               value: sex,
               onChanged: (v) => setState(() => sex = v),
             ),
-            const SizedBox(height: 12),
+            const AdaptiveGap(height: 12),
             DobField(value: dob, onChanged: (v) => dob = v),
-            const SizedBox(height: 12),
+            const AdaptiveGap(height: 12),
 
             // TATTOO
             TextField(
@@ -336,7 +338,7 @@ class _EditAnimalScreenState extends State<EditAnimalScreen> {
               ),
             ),
 
-            const SizedBox(height: 24),
+            const AdaptiveGap(height: 24),
 
             ElevatedButton(
               onPressed: isSaving || conflicted ? null : saveChanges,

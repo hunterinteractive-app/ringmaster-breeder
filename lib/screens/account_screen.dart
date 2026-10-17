@@ -1,3 +1,4 @@
+import '../widgets/adaptive_layout.dart';
 import '../offline/offline_runtime.dart';
 import 'global_pedigree_history_screen.dart';
 import '../widgets/sync_dialog.dart';
@@ -210,8 +211,14 @@ class _AccountScreenState extends State<AccountScreen> {
       maintainState: true,
       leading: Icon(icon),
       title: Text(title, style: Theme.of(context).textTheme.titleLarge),
-      tilePadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
-      childrenPadding: const EdgeInsets.fromLTRB(24, 8, 24, 24),
+      tilePadding: BreederLayout.padding(
+        context,
+        const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
+      ),
+      childrenPadding: BreederLayout.padding(
+        context,
+        const EdgeInsets.fromLTRB(24, 8, 24, 24),
+      ),
       children: [
         Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -245,7 +252,7 @@ class _AccountScreenState extends State<AccountScreen> {
             ),
           )
         : SingleChildScrollView(
-            padding: const EdgeInsets.all(24),
+            padding: BreederLayout.pagePadding(context, normal: 24),
             child: Center(
               child: ConstrainedBox(
                 constraints: const BoxConstraints(maxWidth: 960),
@@ -256,14 +263,14 @@ class _AccountScreenState extends State<AccountScreen> {
                       'Your account, all in one place',
                       style: Theme.of(context).textTheme.headlineSmall,
                     ),
-                    const SizedBox(height: 8),
+                    const AdaptiveGap(height: 8),
                     Text(email ?? ''),
-                    const SizedBox(height: 24),
+                    const AdaptiveGap(height: 24),
                     section('Contact & address', Icons.contact_mail_outlined, [
                       const Text(
                         'These details belong to your account and are used for your pedigree contact information.',
                       ),
-                      const SizedBox(height: 20),
+                      const AdaptiveGap(height: 20),
                       Form(
                         key: form,
                         child: Column(
@@ -276,7 +283,7 @@ class _AccountScreenState extends State<AccountScreen> {
                               'state': 'State / province',
                               'zip': 'ZIP / postal code',
                             }.entries)
-                              Padding(
+                              AdaptivePadding(
                                 padding: const EdgeInsets.only(bottom: 18),
                                 child: TextFormField(
                                   controller: fields[e.key],
@@ -343,7 +350,7 @@ class _AccountScreenState extends State<AccountScreen> {
                       const Text(
                         'Download an animal list for all herds you own, including pedigree-only animals and parent IDs. Includes the latest recorded weight in pounds and its recorded date/time. Animals without a weight have blank weight fields. Photos, health records, full weight history, and breeding history are not included.',
                       ),
-                      const SizedBox(height: 12),
+                      const AdaptiveGap(height: 12),
                       OutlinedButton.icon(
                         onPressed: exporting ? null : exportAnimals,
                         icon: const Icon(Icons.download_outlined),
@@ -361,7 +368,7 @@ class _AccountScreenState extends State<AccountScreen> {
                             ? 'Active • ${license!.currentRings} of ${license!.maxRings} herds used'
                             : 'No active subscription',
                       ),
-                      const SizedBox(height: 12),
+                      const AdaptiveGap(height: 12),
                       const Text(
                         'Billing will be managed through Stripe. Plan changes and cancellation will be available once Stripe is connected.',
                       ),
@@ -399,12 +406,12 @@ class _AccountScreenState extends State<AccountScreen> {
                         const Text(
                           'Permanently delete your Breeder account and all herds you own. Export any records you want to keep first.',
                         ),
-                        const SizedBox(height: 12),
+                        const AdaptiveGap(height: 12),
                         OutlinedButton(
                           onPressed: () => open(const DeleteAccountScreen()),
                           child: const Text('Delete account'),
                         ),
-                        const SizedBox(height: 12),
+                        const AdaptiveGap(height: 12),
                         OutlinedButton.icon(
                           onPressed: () async {
                             try {

@@ -1,3 +1,4 @@
+import '../widgets/adaptive_layout.dart';
 import '../offline/offline_runtime.dart';
 import '../widgets/ringmaster_page_shell.dart';
 import 'package:flutter/material.dart';
@@ -117,17 +118,17 @@ class _RecordImportScreenState extends State<RecordImportScreen> {
     body: _loading
         ? const Center(child: CircularProgressIndicator())
         : ListView(
-            padding: const EdgeInsets.all(24),
+            padding: BreederLayout.pagePadding(context, normal: 24),
             children: [
               const Text(
                 'Bring your existing records into Breeder',
                 style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
               ),
-              const SizedBox(height: 12),
+              const AdaptiveGap(height: 12),
               const Text(
                 'Choose the profiles that belong to you. Matching uses your verified login email. Imports copy records and leave Show and Club unchanged.',
               ),
-              const SizedBox(height: 20),
+              const AdaptiveGap(height: 20),
               if (_matches.isNotEmpty) ...[
                 SegmentedButton<String>(
                   segments: const [
@@ -173,7 +174,7 @@ class _RecordImportScreenState extends State<RecordImportScreen> {
                 if (_source == 'show') ...[
                   const Divider(),
                   if (!_animals && _entries)
-                    const Padding(
+                    const AdaptivePadding(
                       padding: EdgeInsets.all(12),
                       child: Text(
                         'Results only — no animal records will be created or changed.',
@@ -222,13 +223,13 @@ class _RecordImportScreenState extends State<RecordImportScreen> {
                         : (v) => setState(() => _entries = v!),
                   ),
                 ] else
-                  const Padding(
+                  const AdaptivePadding(
                     padding: EdgeInsets.all(12),
                     child: Text(
                       'Club supplies exhibitor profiles. Animal and individual show-entry records come from Show.',
                     ),
                   ),
-                const SizedBox(height: 16),
+                const AdaptiveGap(height: 16),
                 ElevatedButton.icon(
                   onPressed: _busy || _selected.isEmpty ? null : _import,
                   icon: const Icon(Icons.download),
@@ -236,7 +237,7 @@ class _RecordImportScreenState extends State<RecordImportScreen> {
                 ),
               ],
               if (_message != null)
-                Padding(
+                AdaptivePadding(
                   padding: const EdgeInsets.symmetric(vertical: 20),
                   child: Semantics(liveRegion: true, child: Text(_message!)),
                 ),
@@ -279,7 +280,7 @@ class ImportedRecordsScreen extends StatelessWidget {
           return const Center(child: Text('No imported records yet.'));
         }
         return ListView(
-          padding: const EdgeInsets.all(24),
+          padding: BreederLayout.pagePadding(context, normal: 24),
           children: s.data!.map((r) {
             final profile = r['kind'] == 'profile';
             final data = Map<String, dynamic>.from(

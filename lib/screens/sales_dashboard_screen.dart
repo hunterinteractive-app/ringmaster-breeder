@@ -1,3 +1,4 @@
+import '../widgets/adaptive_layout.dart';
 import '../widgets/pedigree_email_dialog.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
@@ -184,15 +185,15 @@ class _SalesDashboardScreenState extends State<SalesDashboardScreen> {
             .where((s) => s.status != 'cancelled')
             .fold<int>(0, (n, s) => n + (s.balance ?? 0));
         return ListView(
-          padding: const EdgeInsets.all(20),
+          padding: BreederLayout.pagePadding(context, normal: 20),
           children: [
-            Row(
+            Wrap(
+              spacing: 12,
+              crossAxisAlignment: WrapCrossAlignment.center,
               children: [
-                Expanded(
-                  child: Text(
-                    widget.ringId == null ? 'Family sales' : 'Herd sales',
-                    style: Theme.of(context).textTheme.headlineSmall,
-                  ),
+                Text(
+                  widget.ringId == null ? 'Family sales' : 'Herd sales',
+                  style: Theme.of(context).textTheme.headlineSmall,
                 ),
                 FilledButton.icon(
                   onPressed: () => add(all),
@@ -201,32 +202,35 @@ class _SalesDashboardScreenState extends State<SalesDashboardScreen> {
                 ),
               ],
             ),
-            const SizedBox(height: 16),
-            Wrap(
-              spacing: 12,
-              runSpacing: 12,
-              children: [
-                summary(
-                  'For Sale',
-                  '${all.where((s) => s.status == 'for_sale').length}',
-                ),
-                summary(
-                  'Reserved',
-                  '${all.where((s) => s.status == 'reserved').length}',
-                ),
-                summary(
-                  'Sold',
-                  '${all.where((s) => s.status == 'sold').length}',
-                ),
-                summary('Net received', saleMoney(net)),
-                summary('Balance due', saleMoney(due)),
-              ],
+            const AdaptiveGap(height: 16),
+            AdaptiveOverview(
+              title: 'Sales overview',
+              child: Wrap(
+                spacing: 12,
+                runSpacing: 12,
+                children: [
+                  summary(
+                    'For Sale',
+                    '${all.where((s) => s.status == 'for_sale').length}',
+                  ),
+                  summary(
+                    'Reserved',
+                    '${all.where((s) => s.status == 'reserved').length}',
+                  ),
+                  summary(
+                    'Sold',
+                    '${all.where((s) => s.status == 'sold').length}',
+                  ),
+                  summary('Net received', saleMoney(net)),
+                  summary('Balance due', saleMoney(due)),
+                ],
+              ),
             ),
             if (all.any((s) => !s.paymentHistoryComplete))
               Text(
                 '${all.where((s) => !s.paymentHistoryComplete).length} historical sales have unrecorded payment history; their balances are excluded.',
               ),
-            const SizedBox(height: 20),
+            const AdaptiveGap(height: 20),
             Wrap(
               spacing: 12,
               runSpacing: 12,
@@ -253,7 +257,9 @@ class _SalesDashboardScreenState extends State<SalesDashboardScreen> {
                   ),
                 ),
                 SizedBox(
-                  width: 300,
+                  width: BreederLayout.compact(context)
+                      ? MediaQuery.sizeOf(context).width - 24
+                      : 300,
                   child: TextField(
                     onChanged: (v) => setState(() => query = v),
                     decoration: const InputDecoration(
@@ -264,9 +270,9 @@ class _SalesDashboardScreenState extends State<SalesDashboardScreen> {
                 ),
               ],
             ),
-            const SizedBox(height: 16),
+            const AdaptiveGap(height: 16),
             if (filter == 'Open')
-              Padding(
+              AdaptivePadding(
                 padding: const EdgeInsets.only(bottom: 12),
                 child: TextButton.icon(
                   onPressed: () => setState(() => filter = 'Sold'),
@@ -275,7 +281,7 @@ class _SalesDashboardScreenState extends State<SalesDashboardScreen> {
                 ),
               ),
             if (visible.isEmpty)
-              const Padding(
+              const AdaptivePadding(
                 padding: EdgeInsets.all(28),
                 child: Text(
                   'No sales in this view. Use Add animals to start a listing.',
@@ -283,8 +289,8 @@ class _SalesDashboardScreenState extends State<SalesDashboardScreen> {
               ),
             for (final sale in visible)
               Card(
-                child: Padding(
-                  padding: const EdgeInsets.all(16),
+                child: AdaptivePadding(
+                  padding: BreederLayout.pagePadding(context, normal: 16),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
@@ -307,7 +313,7 @@ class _SalesDashboardScreenState extends State<SalesDashboardScreen> {
                         Text('Buyer: ${sale.data['buyer_name']}'),
                       if (sale.data['sale_date'] != null)
                         Text('Sold: ${sale.data['sale_date']}'),
-                      const SizedBox(height: 8),
+                      const AdaptiveGap(height: 8),
                       Wrap(
                         spacing: 20,
                         runSpacing: 8,
@@ -328,7 +334,7 @@ class _SalesDashboardScreenState extends State<SalesDashboardScreen> {
                           Text(sale.paymentStatus),
                         ],
                       ),
-                      const SizedBox(height: 8),
+                      const AdaptiveGap(height: 8),
                       Wrap(
                         spacing: 8,
                         children: [
@@ -371,8 +377,8 @@ class _SalesDashboardScreenState extends State<SalesDashboardScreen> {
         ? (MediaQuery.sizeOf(context).width - 52) / 2
         : 190,
     child: Card(
-      child: Padding(
-        padding: const EdgeInsets.all(16),
+      child: AdaptivePadding(
+        padding: BreederLayout.pagePadding(context, normal: 16),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -616,7 +622,7 @@ class _SaleEditDialogState extends State<SaleEditDialog> {
     String label, {
     bool money = false,
     int lines = 1,
-  }) => Padding(
+  }) => AdaptivePadding(
     padding: const EdgeInsets.only(top: 12),
     child: TextField(
       controller: c,
@@ -744,7 +750,7 @@ class _SalePaymentDialogState extends State<SalePaymentDialog> {
                   (reference, 'Reference / receipt number'),
                   (notes, 'Notes'),
                 ])
-                  Padding(
+                  AdaptivePadding(
                     padding: const EdgeInsets.only(top: 12),
                     child: TextField(
                       controller: f.$1,
@@ -833,7 +839,7 @@ class _SaleHistoryDialogState extends State<SaleHistoryDialog> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 for (final e in events)
-                  Padding(
+                  AdaptivePadding(
                     padding: const EdgeInsets.only(bottom: 16),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,

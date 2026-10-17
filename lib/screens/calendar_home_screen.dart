@@ -1,3 +1,4 @@
+import '../widgets/adaptive_layout.dart';
 import '../offline/offline_runtime.dart';
 import 'package:flutter/material.dart';
 import '../services/family_service.dart';
@@ -47,7 +48,7 @@ class _CalendarHomeScreenState extends State<CalendarHomeScreen> {
     }
   }
 
-  Widget picker() => Padding(
+  Widget picker() => AdaptivePadding(
     padding: const EdgeInsets.only(bottom: 20),
     child: DropdownButtonFormField<String>(
       initialValue: selected,
@@ -76,7 +77,7 @@ class _CalendarHomeScreenState extends State<CalendarHomeScreen> {
       title: 'Herd calendar',
       isCalendarPage: true,
       onRefresh: load,
-      body: Padding(
+      body: AdaptivePadding(
         padding: const EdgeInsets.all(24),
         child: error != null
             ? Column(
@@ -96,7 +97,7 @@ class _CalendarHomeScreenState extends State<CalendarHomeScreen> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   const Text('Choose a herd to view its calendar.'),
-                  const SizedBox(height: 20),
+                  const AdaptiveGap(height: 20),
                   picker(),
                 ],
               ),

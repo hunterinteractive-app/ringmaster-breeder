@@ -1,3 +1,4 @@
+import '../widgets/adaptive_layout.dart';
 import '../offline/offline_runtime.dart';
 import '../services/herd_calendar_service.dart';
 import '../widgets/calendar_subscription_dialog.dart';
@@ -133,7 +134,7 @@ class _HerdCalendarScreenState extends State<HerdCalendarScreen> {
                     Text(show['location_name']),
                   if (show['location_address'] != null)
                     Text(show['location_address']),
-                  const SizedBox(height: 16),
+                  const AdaptiveGap(height: 16),
                   Text(
                     '${show['entry_count']} active entries',
                     style: Theme.of(context).textTheme.titleMedium,
@@ -231,7 +232,7 @@ class _HerdCalendarScreenState extends State<HerdCalendarScreen> {
       isCalendarPage: true,
       onRefresh: load,
       body: ListView(
-        padding: const EdgeInsets.all(20),
+        padding: BreederLayout.pagePadding(context, normal: 20),
         children: [
           if (widget.herdPicker != null) widget.herdPicker!,
           Align(
@@ -255,35 +256,55 @@ class _HerdCalendarScreenState extends State<HerdCalendarScreen> {
             'Breeding, health, shows and favorite entry deadlines. Expected dates follow your breeding settings.',
           ),
           if (showNotice != null)
-            Padding(
+            AdaptivePadding(
               padding: const EdgeInsets.only(top: 8),
               child: Text(showNotice!),
             ),
-          const SizedBox(height: 18),
-          Wrap(
-            spacing: 8,
-            runSpacing: 8,
-            children: [
-              for (final category in [
-                'All',
-                'Breeding',
-                'Palpation',
-                'Nesting',
-                'Birth',
-                'Weaning',
-                'Health',
-                'Shows',
-              ])
-                ChoiceChip(
-                  label: Text(category),
-                  selected: filter == category,
-                  onSelected: (_) => setState(() => filter = category),
-                ),
-            ],
-          ),
-          const SizedBox(height: 12),
+          const AdaptiveGap(height: 18),
+          if (BreederLayout.compact(context))
+            DropdownButtonFormField<String>(
+              initialValue: filter,
+              decoration: const InputDecoration(labelText: 'Event type'),
+              items: [
+                for (final category in [
+                  'All',
+                  'Breeding',
+                  'Palpation',
+                  'Nesting',
+                  'Birth',
+                  'Weaning',
+                  'Health',
+                  'Shows',
+                ])
+                  DropdownMenuItem(value: category, child: Text(category)),
+              ],
+              onChanged: (value) => setState(() => filter = value!),
+            )
+          else
+            Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: [
+                for (final category in [
+                  'All',
+                  'Breeding',
+                  'Palpation',
+                  'Nesting',
+                  'Birth',
+                  'Weaning',
+                  'Health',
+                  'Shows',
+                ])
+                  ChoiceChip(
+                    label: Text(category),
+                    selected: filter == category,
+                    onSelected: (_) => setState(() => filter = category),
+                  ),
+              ],
+            ),
+          const AdaptiveGap(height: 12),
           Card(
-            child: Padding(
+            child: AdaptivePadding(
               padding: const EdgeInsets.all(12),
               child: Column(
                 children: [
@@ -347,7 +368,7 @@ class _HerdCalendarScreenState extends State<HerdCalendarScreen> {
                           'Sat',
                         ])
                           Expanded(
-                            child: Padding(
+                            child: AdaptivePadding(
                               padding: const EdgeInsets.symmetric(vertical: 12),
                               child: Text(
                                 day,
@@ -446,15 +467,15 @@ class _HerdCalendarScreenState extends State<HerdCalendarScreen> {
                 ),
               ),
             ),
-          const SizedBox(height: 16),
+          const AdaptiveGap(height: 16),
           Text(
             agenda ? 'This month' : DateFormat('EEEE, MMMM d').format(selected),
             style: Theme.of(context).textTheme.titleLarge,
           ),
-          const SizedBox(height: 8),
+          const AdaptiveGap(height: 8),
           if (!loading && error == null && list.isEmpty)
             const Card(
-              child: Padding(
+              child: AdaptivePadding(
                 padding: EdgeInsets.all(24),
                 child: Text('No events for this selection.'),
               ),

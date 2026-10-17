@@ -1,3 +1,4 @@
+import '../widgets/adaptive_layout.dart';
 import '../services/sales_service.dart';
 import '../utils/weight_date.dart';
 import '../widgets/ringmaster_page_shell.dart';
@@ -168,112 +169,108 @@ class _WeightHistoryScreenState extends State<WeightHistoryScreen> {
               onPressed: () => addWeight(),
               child: const Icon(Icons.add),
             ),
-      body: Column(
-        children: [
-          if (isLocked)
-            Container(
+      body: FutureBuilder<List<Map<String, dynamic>>>(
+        future: _weights,
+        builder: (context, snapshot) {
+          if (snapshot.hasError) {
+            return const Center(
+              child: Text(
+                'Unable to load records. Please go back and try again.',
+              ),
+            );
+          }
+          if (!snapshot.hasData) {
+            return const Center(child: CircularProgressIndicator());
+          }
+          return WeightHistoryView(
+            weights: snapshot.data!,
+            locked: isLocked,
+            onEdit: addWeight,
+          );
+        },
+      ),
+    );
+  }
+}
+
+class WeightHistoryView extends StatelessWidget {
+  final List<Map<String, dynamic>> weights;
+  final bool locked;
+  final ValueChanged<Map<String, dynamic>> onEdit;
+  const WeightHistoryView({
+    super.key,
+    required this.weights,
+    required this.locked,
+    required this.onEdit,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final compact = BreederLayout.compact(context);
+    return CustomScrollView(
+      slivers: [
+        if (locked)
+          SliverToBoxAdapter(
+            child: Container(
               padding: const EdgeInsets.all(12),
               margin: const EdgeInsets.all(12),
               decoration: BoxDecoration(
                 color: Colors.orange.shade100,
                 borderRadius: BorderRadius.circular(8),
               ),
-              child: const Row(
-                children: [
-                  Icon(Icons.lock, color: Colors.orange),
-                  SizedBox(width: 8),
-                  Expanded(
-                    child: Text(
-                      'Weights cannot be added or edited for sold or deceased animals.',
-                      style: TextStyle(fontWeight: FontWeight.w500),
-                    ),
-                  ),
-                ],
+              child: const Text(
+                'Weights cannot be added or edited for sold or deceased animals.',
               ),
             ),
-
-          // 📈 GRAPH ALWAYS VISIBLE
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 12),
-            child: FutureBuilder(
-              future: _weights,
-              builder: (context, snapshot) {
-                if (snapshot.hasError) {
-                  return const Center(
-                    child: Text(
-                      "Unable to load records. Please go back and try again.",
-                    ),
-                  );
-                }
-                if (!snapshot.hasData) {
-                  return const SizedBox(
-                    height: 220,
-                    child: Center(child: CircularProgressIndicator()),
-                  );
-                }
-
-                final weights = snapshot.data as List;
-
-                return WeightGraph(weights: weights.reversed.toList());
-              },
-            ),
           ),
-
-          const Divider(),
-
-          // 📋 WEIGHT LIST (SCROLLABLE)
-          Expanded(
-            child: FutureBuilder(
-              future: _weights,
-              builder: (context, snapshot) {
-                if (snapshot.hasError) {
-                  return const Center(
-                    child: Text(
-                      "Unable to load records. Please go back and try again.",
+        SliverToBoxAdapter(
+          child: compact
+              ? ExpansionTile(
+                  key: const PageStorageKey('weight-chart'),
+                  title: const Text('Growth chart'),
+                  children: [
+                    WeightGraph(
+                      weights: weights.reversed.toList(),
+                      height: 180,
                     ),
-                  );
-                }
-                if (!snapshot.hasData) {
-                  return const Center(child: CircularProgressIndicator());
-                }
-
-                final weights = snapshot.data as List;
-
-                if (weights.isEmpty) {
-                  return const Center(child: Text('No weight records yet'));
-                }
-
-                return ListView.builder(
-                  itemCount: weights.length,
-                  itemBuilder: (context, index) {
-                    final w = weights[index];
-
-                    final weightValue = (w['weight'] as num).toStringAsFixed(2);
-
-                    final recordedAt = weightDate(w['recorded_at']);
-
-                    return ListTile(
-                      leading: const Icon(Icons.monitor_weight),
-                      title: Text('$weightValue lb'),
-                      subtitle: Text(
-                        index == 0 && !isLocked
-                            ? '$recordedAt • Tap to edit latest weight'
-                            : recordedAt,
-                      ),
-                      trailing: index == 0 && !isLocked
-                          ? const Icon(Icons.edit_outlined)
-                          : null,
-                      onTap: index == 0 && !isLocked
-                          ? () => addWeight(Map<String, dynamic>.from(w))
-                          : null,
-                    );
-                  },
+                  ],
+                )
+              : WeightGraph(weights: weights.reversed.toList()),
+        ),
+        if (weights.isEmpty)
+          const SliverToBoxAdapter(
+            child: Padding(
+              padding: EdgeInsets.all(16),
+              child: Text('No weight records yet'),
+            ),
+          )
+        else
+          SliverPadding(
+            // Leave the final row clear of the add button and phone safe area.
+            padding: EdgeInsets.only(
+              bottom: 88 + MediaQuery.paddingOf(context).bottom,
+            ),
+            sliver: SliverList.builder(
+              itemCount: weights.length,
+              itemBuilder: (context, index) {
+                final w = weights[index];
+                final recordedAt = weightDate(w['recorded_at']);
+                final editable = index == 0 && !locked;
+                return ListTile(
+                  leading: const Icon(Icons.monitor_weight),
+                  title: Text('${(w['weight'] as num).toStringAsFixed(2)} lb'),
+                  subtitle: Text(
+                    editable
+                        ? '$recordedAt • Tap to edit latest weight'
+                        : recordedAt,
+                  ),
+                  trailing: editable ? const Icon(Icons.edit_outlined) : null,
+                  onTap: editable ? () => onEdit(w) : null,
                 );
               },
             ),
           ),
-        ],
-      ),
+      ],
     );
   }
 }

@@ -1,3 +1,4 @@
+import '../widgets/adaptive_layout.dart';
 import '../offline/offline_runtime.dart';
 import 'package:flutter/material.dart';
 import '../widgets/ringmaster_page_shell.dart';
@@ -83,13 +84,13 @@ class _SuperAdminScreenState extends State<SuperAdminScreen> {
     title: 'Super Admin',
     onRefresh: busy ? null : () => load(),
     body: ListView(
-      padding: const EdgeInsets.all(24),
+      padding: BreederLayout.pagePadding(context, normal: 24),
       children: [
         Text('View As User', style: Theme.of(context).textTheme.headlineSmall),
         const Text(
           'Find an account to inspect its herds and records. Support access is read-only and logged.',
         ),
-        const SizedBox(height: 20),
+        const AdaptiveGap(height: 20),
         TextField(
           controller: query,
           enabled: !busy,
@@ -106,7 +107,7 @@ class _SuperAdminScreenState extends State<SuperAdminScreen> {
         if (busy) const LinearProgressIndicator(),
         if (error != null) Text(error!),
         if (!busy && error == null && users.isEmpty)
-          const Padding(
+          const AdaptivePadding(
             padding: EdgeInsets.all(24),
             child: Text('No matching accounts.'),
           ),
@@ -221,7 +222,7 @@ class _SupportAccountScreenState extends State<SupportAccountScreen> {
     children: [
       for (final entry in values.entries)
         if (entry.value != null && entry.value.toString().isNotEmpty)
-          Padding(
+          AdaptivePadding(
             padding: const EdgeInsets.symmetric(vertical: 5),
             child: Text(
               '${fieldLabel(entry.key.toString())}: ${entry.value is bool ? (entry.value ? 'Yes' : 'No') : entry.value}',
@@ -230,13 +231,13 @@ class _SupportAccountScreenState extends State<SupportAccountScreen> {
     ],
   );
   Widget section(String title, Widget child) => Card(
-    child: Padding(
+    child: AdaptivePadding(
       padding: const EdgeInsets.all(20),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           Text(title, style: Theme.of(context).textTheme.titleLarge),
-          const SizedBox(height: 12),
+          const AdaptiveGap(height: 12),
           child,
         ],
       ),
@@ -258,7 +259,7 @@ class _SupportAccountScreenState extends State<SupportAccountScreen> {
     title: 'View As User',
     onRefresh: busy ? null : () => load(),
     body: ListView(
-      padding: const EdgeInsets.all(24),
+      padding: BreederLayout.pagePadding(context, normal: 24),
       children: [
         Card(
           color: const Color(0xFFFFF1D6),
