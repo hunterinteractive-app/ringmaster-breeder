@@ -55,9 +55,9 @@ void main() {
         1000,
         maxScrolls: 60,
         scrollable: find.descendant(
-          of: find.byType(ListView),
+          of: find.byType(CustomScrollView),
           matching: find.byType(Scrollable),
-        ),
+        ).first,
       );
       await tester.pumpAndSettle();
       final details = find.descendant(

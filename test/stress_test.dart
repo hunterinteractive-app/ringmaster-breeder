@@ -74,12 +74,18 @@ void main() {
       '${find.byType(AnimalRecordCard).evaluate().length} mounted cards',
     );
     for (var i = 0; i < 20; i++) {
-      await tester.drag(find.byType(ListView), const Offset(0, -800));
+      await tester.drag(find.byType(CustomScrollView), const Offset(0, -800));
       await tester.pumpAndSettle();
       expect(find.byType(AnimalRecordCard).evaluate().length, lessThan(40));
       expect(tester.takeException(), isNull);
     }
     // Narrow the search before comparing the list search-reset timing.
+    await tester.scrollUntilVisible(
+      find.byType(TextField),
+      -1400,
+      scrollable: find.byType(Scrollable).first,
+      maxScrolls: 100,
+    );
     await tester.enterText(find.byType(TextField), 'TAG9999');
     await tester.pumpAndSettle();
     await tester.tap(find.byTooltip('List view'));
@@ -94,10 +100,16 @@ void main() {
       'STRESS 10000 records: list search reset ${clock.elapsedMilliseconds}ms',
     );
     for (var i = 0; i < 20; i++) {
-      await tester.drag(find.byType(ListView), const Offset(0, -800));
+      await tester.drag(find.byType(CustomScrollView), const Offset(0, -800));
       await tester.pumpAndSettle();
       expect(tester.takeException(), isNull);
     }
+    await tester.scrollUntilVisible(
+      find.byType(TextField),
+      -1400,
+      scrollable: find.byType(Scrollable).first,
+      maxScrolls: 100,
+    );
     await tester.enterText(find.byType(TextField), 'TAG9999');
     await tester.pumpAndSettle();
     expect(find.text('Animal 9999 • TAG9999'), findsOneWidget);

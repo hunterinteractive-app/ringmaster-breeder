@@ -277,6 +277,50 @@ async function main() {
     }
     await herd().click({ timeout: 30000 });
     await page.getByText('Willow', { exact: false }).first().waitFor({ timeout: 30000 });
+    if (process.env.SMALL_HERD_SCREEN === 'true') {
+      await page.setViewportSize({ width: 360, height: 520 });
+      const settle = async () => {
+        await page.evaluate(() => new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve))));
+        await new Promise(resolve => setTimeout(resolve, 200));
+      };
+      const animalVisible = async () => {
+        const title = page.getByText('Willow', { exact: false }).first();
+        const box = await title.count() ? await title.boundingBox() : null;
+        return box && box.y >= 180 && box.y + box.height <= 490;
+      };
+      await settle();
+      await page.mouse.move(180, 410);
+      for (let i = 0; i < 8 && !await animalVisible(); i++) {
+        await page.mouse.wheel(0, 180);
+        await settle();
+      }
+      assert.ok(await animalVisible(), 'Animal cards must be reachable below the wrapped filters on a short phone');
+      if (!useWebKit) {
+        const cdp = await context.newCDPSession(page);
+        for (let swipe = 0; swipe < 5; swipe++) {
+          await cdp.send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: [{ x: 180, y: 260 }] });
+          for (let y = 280; y <= 470; y += 20) {
+            await cdp.send('Input.dispatchTouchEvent', { type: 'touchMove', touchPoints: [{ x: 180, y }] });
+          }
+          await cdp.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] });
+          await settle();
+        }
+        await cdp.detach();
+      } else {
+        await page.mouse.wheel(0, -2000);
+        await settle();
+      }
+      const search = await page.getByRole('textbox', { name: 'Search animals', exact: true }).boundingBox();
+      assert.ok(search && search.y >= 180 && search.y + search.height <= 520, 'The search control must be reachable again after scrolling back');
+      await page.mouse.wheel(0, 1600);
+      await settle();
+      await page.screenshot({ path: `/tmp/breeder-herd-scroll-${useWebKit ? 'webkit' : 'chrome'}.png` });
+      await page.getByText('Willow', { exact: false }).first().click({ timeout: 10000 });
+      await page.getByText('Animal Details', { exact: true }).waitFor({ timeout: 10000 });
+      assert.deepEqual(failures, []);
+      console.log(`PASS: short-phone herd scrolling reaches animals, returns to filters, and opens details (${useWebKit ? 'WebKit wheel' : 'Chrome wheel and touch'})`);
+      return;
+    }
     assert.ok(await page.evaluate(async () =>
       JSON.parse(await breederOffline.read('v1:00000000-0000-4000-8000-000000000001:cache:deletion'))),
       'A fresh sign-in must save its account check after delayed storage attachment');

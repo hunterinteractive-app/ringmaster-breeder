@@ -283,288 +283,304 @@ class _AnimalBrowserState extends State<AnimalBrowser> {
     final selectedBreed = breeds.contains(_breed) ? _breed : null;
     if (_breed != selectedBreed) _breed = selectedBreed;
     final animals = widget.animals.where(_matches).toList();
-    return Column(
-      children: [
-        Container(
-          width: double.infinity,
-          color: Colors.white,
-          padding: const EdgeInsets.all(16),
-          child: LayoutBuilder(
-            builder: (context, size) => Wrap(
-              spacing: 12,
-              runSpacing: 16,
-              crossAxisAlignment: WrapCrossAlignment.center,
-              children: [
-                _dropdown(
-                  'Search by',
-                  _searchBy,
-                  ['All', 'Breed', 'DOB', 'Ear number'],
-                  (v) => setState(() => _searchBy = v!),
-                  150,
-                ),
-                SizedBox(
-                  width: size.maxWidth < 500 ? size.maxWidth : 240,
-                  child: TextField(
-                    controller: _search,
-                    onChanged: (v) => setState(() => _query = v),
-                    decoration: InputDecoration(
-                      labelText: 'Search animals',
-                      hintText: _searchBy == 'DOB'
-                          ? 'MM/DD/YYYY or YYYY-MM-DD'
-                          : 'Breed, DOB or ear number',
-                      prefixIcon: const Icon(Icons.search),
-                      suffixIcon: _query.isEmpty
-                          ? null
-                          : IconButton(
-                              tooltip: 'Clear search',
-                              icon: const Icon(Icons.close),
-                              onPressed: () => setState(() {
-                                _search.clear();
-                                _query = '';
-                              }),
-                            ),
+    // The wrapped filters can fill a small phone's available height. Keep them
+    // in the same viewport as the lazy animal rows so neither becomes trapped.
+    return CustomScrollView(
+      slivers: [
+        SliverToBoxAdapter(
+          child: Container(
+            width: double.infinity,
+            color: Colors.white,
+            padding: const EdgeInsets.all(16),
+            child: LayoutBuilder(
+              builder: (context, size) => Wrap(
+                spacing: 12,
+                runSpacing: 16,
+                crossAxisAlignment: WrapCrossAlignment.center,
+                children: [
+                  _dropdown(
+                    'Search by',
+                    _searchBy,
+                    ['All', 'Breed', 'DOB', 'Ear number'],
+                    (v) => setState(() => _searchBy = v!),
+                    150,
+                  ),
+                  SizedBox(
+                    width: size.maxWidth < 500 ? size.maxWidth : 240,
+                    child: TextField(
+                      controller: _search,
+                      onChanged: (v) => setState(() => _query = v),
+                      decoration: InputDecoration(
+                        labelText: 'Search animals',
+                        hintText: _searchBy == 'DOB'
+                            ? 'MM/DD/YYYY or YYYY-MM-DD'
+                            : 'Breed, DOB or ear number',
+                        prefixIcon: const Icon(Icons.search),
+                        suffixIcon: _query.isEmpty
+                            ? null
+                            : IconButton(
+                                tooltip: 'Clear search',
+                                icon: const Icon(Icons.close),
+                                onPressed: () => setState(() {
+                                  _search.clear();
+                                  _query = '';
+                                }),
+                              ),
+                      ),
                     ),
                   ),
-                ),
-                _dropdown(
-                  'Status',
-                  _status,
-                  ['Active', 'For Sale', 'Sold', 'Archived', 'All'],
-                  (v) => setState(() => _status = v!),
-                  150,
-                ),
-                SizedBox(
-                  width: 190,
-                  child: DropdownButtonFormField<String>(
-                    key: ValueKey(selectedBreed),
-                    initialValue: selectedBreed,
-                    isExpanded: true,
-                    decoration: const InputDecoration(labelText: 'Breed'),
-                    items: [
-                      const DropdownMenuItem<String>(
-                        value: null,
-                        child: Text('All breeds'),
+                  _dropdown(
+                    'Status',
+                    _status,
+                    ['Active', 'For Sale', 'Sold', 'Archived', 'All'],
+                    (v) => setState(() => _status = v!),
+                    150,
+                  ),
+                  SizedBox(
+                    width: 190,
+                    child: DropdownButtonFormField<String>(
+                      key: ValueKey(selectedBreed),
+                      initialValue: selectedBreed,
+                      isExpanded: true,
+                      decoration: const InputDecoration(labelText: 'Breed'),
+                      items: [
+                        const DropdownMenuItem<String>(
+                          value: null,
+                          child: Text('All breeds'),
+                        ),
+                        ...breeds.map(
+                          (b) => DropdownMenuItem(
+                            value: b,
+                            child: Text(b, overflow: TextOverflow.ellipsis),
+                          ),
+                        ),
+                      ],
+                      onChanged: (v) => setState(() => _breed = v),
+                    ),
+                  ),
+                  PopupMenuButton<String>(
+                    tooltip: 'Actions',
+                    onSelected: (v) {
+                      if (v == 'sales') _sales();
+                      if (v == 'for_sale') _forSale();
+                      if (v == 'add') widget.onAdd();
+                      if (v == 'refresh') widget.onRefresh();
+                      if (v == 'breeding') _recordBreeding();
+                      if (v == 'tracking') _tracking();
+                      if (v == 'calendar') _calendar();
+                      if (v == 'weights' || v == 'health') {
+                        _bulk(v == 'weights');
+                      }
+                    },
+                    itemBuilder: (_) => const [
+                      PopupMenuItem(
+                        value: 'sales',
+                        child: ListTile(
+                          leading: Icon(Icons.sell_outlined),
+                          title: Text('Sales dashboard'),
+                        ),
                       ),
-                      ...breeds.map(
-                        (b) => DropdownMenuItem(
-                          value: b,
-                          child: Text(b, overflow: TextOverflow.ellipsis),
+                      PopupMenuItem(
+                        value: 'for_sale',
+                        child: ListTile(
+                          leading: Icon(Icons.checklist),
+                          title: Text('Bulk mark For Sale'),
+                        ),
+                      ),
+                      PopupMenuItem(
+                        value: 'calendar',
+                        child: ListTile(
+                          leading: Icon(Icons.calendar_month),
+                          title: Text('Herd calendar'),
+                        ),
+                      ),
+                      PopupMenuItem(
+                        value: 'tracking',
+                        child: ListTile(
+                          leading: Icon(Icons.child_care),
+                          title: Text('Breedings & litters'),
+                        ),
+                      ),
+                      PopupMenuItem(
+                        value: 'breeding',
+                        child: ListTile(
+                          leading: Icon(Icons.favorite_outline),
+                          title: Text('Record breeding'),
+                        ),
+                      ),
+                      PopupMenuItem(
+                        value: 'add',
+                        child: ListTile(
+                          leading: Icon(Icons.add),
+                          title: Text('Add animal'),
+                        ),
+                      ),
+                      PopupMenuItem(
+                        value: 'weights',
+                        child: ListTile(
+                          leading: Icon(Icons.monitor_weight_outlined),
+                          title: Text('Bulk add weights'),
+                        ),
+                      ),
+                      PopupMenuItem(
+                        value: 'health',
+                        child: ListTile(
+                          leading: Icon(Icons.medical_services_outlined),
+                          title: Text('Bulk add health / vaccine records'),
+                        ),
+                      ),
+                      PopupMenuItem(
+                        value: 'refresh',
+                        child: ListTile(
+                          leading: Icon(Icons.refresh),
+                          title: Text('Refresh records'),
                         ),
                       ),
                     ],
-                    onChanged: (v) => setState(() => _breed = v),
-                  ),
-                ),
-                PopupMenuButton<String>(
-                  tooltip: 'Actions',
-                  onSelected: (v) {
-                    if (v == 'sales') _sales();
-                    if (v == 'for_sale') _forSale();
-                    if (v == 'add') widget.onAdd();
-                    if (v == 'refresh') widget.onRefresh();
-                    if (v == 'breeding') _recordBreeding();
-                    if (v == 'tracking') _tracking();
-                    if (v == 'calendar') _calendar();
-                    if (v == 'weights' || v == 'health') _bulk(v == 'weights');
-                  },
-                  itemBuilder: (_) => const [
-                    PopupMenuItem(
-                      value: 'sales',
-                      child: ListTile(
-                        leading: Icon(Icons.sell_outlined),
-                        title: Text('Sales dashboard'),
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 18,
+                        vertical: 16,
                       ),
-                    ),
-                    PopupMenuItem(
-                      value: 'for_sale',
-                      child: ListTile(
-                        leading: Icon(Icons.checklist),
-                        title: Text('Bulk mark For Sale'),
+                      decoration: BoxDecoration(
+                        color: BreederColors.primary,
+                        borderRadius: BorderRadius.circular(10),
                       ),
-                    ),
-                    PopupMenuItem(
-                      value: 'calendar',
-                      child: ListTile(
-                        leading: Icon(Icons.calendar_month),
-                        title: Text('Herd calendar'),
-                      ),
-                    ),
-                    PopupMenuItem(
-                      value: 'tracking',
-                      child: ListTile(
-                        leading: Icon(Icons.child_care),
-                        title: Text('Breedings & litters'),
-                      ),
-                    ),
-                    PopupMenuItem(
-                      value: 'breeding',
-                      child: ListTile(
-                        leading: Icon(Icons.favorite_outline),
-                        title: Text('Record breeding'),
-                      ),
-                    ),
-                    PopupMenuItem(
-                      value: 'add',
-                      child: ListTile(
-                        leading: Icon(Icons.add),
-                        title: Text('Add animal'),
-                      ),
-                    ),
-                    PopupMenuItem(
-                      value: 'weights',
-                      child: ListTile(
-                        leading: Icon(Icons.monitor_weight_outlined),
-                        title: Text('Bulk add weights'),
-                      ),
-                    ),
-                    PopupMenuItem(
-                      value: 'health',
-                      child: ListTile(
-                        leading: Icon(Icons.medical_services_outlined),
-                        title: Text('Bulk add health / vaccine records'),
-                      ),
-                    ),
-                    PopupMenuItem(
-                      value: 'refresh',
-                      child: ListTile(
-                        leading: Icon(Icons.refresh),
-                        title: Text('Refresh records'),
-                      ),
-                    ),
-                  ],
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 18,
-                      vertical: 16,
-                    ),
-                    decoration: BoxDecoration(
-                      color: BreederColors.primary,
-                      borderRadius: BorderRadius.circular(10),
-                    ),
-                    child: const Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Text(
-                          'Actions',
-                          style: TextStyle(
-                            color: Colors.white,
-                            fontWeight: FontWeight.w600,
+                      child: const Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Text(
+                            'Actions',
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontWeight: FontWeight.w600,
+                            ),
                           ),
+                          SizedBox(width: 8),
+                          Icon(Icons.expand_more, color: Colors.white),
+                        ],
+                      ),
+                    ),
+                  ),
+                  SegmentedButton<bool>(
+                    showSelectedIcon: false,
+                    segments: const [
+                      ButtonSegment(
+                        value: false,
+                        icon: Icon(Icons.view_list_outlined),
+                        tooltip: 'List view',
+                      ),
+                      ButtonSegment(
+                        value: true,
+                        icon: Icon(Icons.grid_view_outlined),
+                        tooltip: 'Card view',
+                      ),
+                    ],
+                    selected: {_cards},
+                    onSelectionChanged: (v) =>
+                        setState(() => _cards = v.single),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+        SliverToBoxAdapter(
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+            child: Align(
+              alignment: Alignment.centerLeft,
+              child: Text(
+                '${animals.length} of ${widget.animals.length} animals',
+                style: const TextStyle(color: BreederColors.text),
+              ),
+            ),
+          ),
+        ),
+        if (animals.isEmpty)
+          SliverFillRemaining(
+            hasScrollBody: false,
+            child: Center(
+              child: Text(
+                widget.animals.isEmpty
+                    ? 'No animals yet. Use Actions to add an animal.'
+                    : 'No animals match your filters.',
+              ),
+            ),
+          )
+        else
+          SliverLayoutBuilder(
+            builder: (context, constraints) {
+              if (!_cards) {
+                return SliverPadding(
+                  padding: const EdgeInsets.fromLTRB(20, 0, 20, 24),
+                  sliver: SliverList.separated(
+                    itemCount: animals.length,
+                    separatorBuilder: (_, _) => const Divider(height: 1),
+                    itemBuilder: (context, i) {
+                      final a = animals[i];
+                      return ListTile(
+                        title: Text(animalTitle(a['name'], a['tattoo'])),
+                        subtitle: Text(
+                          [
+                            if (a['sale_status'] != null)
+                              a['sale_status'] == 'reserved'
+                                  ? 'Reserved'
+                                  : 'For Sale',
+                            a['species'] == 'cavy' ? 'Cavy' : 'Rabbit',
+                            '${a['breed'] ?? 'Breed not recorded'}${a['breed_unrecognized'] == true ? ' (Unrecognized)' : ''}',
+                            '${varietyLabel(a).isEmpty ? 'Variety not recorded' : varietyLabel(a)}${a['variety_unrecognized'] == true ? ' (Unrecognized)' : ''}',
+                            sexLabel(a['species'], a['sex']),
+                            'DOB: ${_displayDob(a['dob'])}',
+                          ].join(' • '),
                         ),
-                        SizedBox(width: 8),
-                        Icon(Icons.expand_more, color: Colors.white),
+                        trailing: const Icon(Icons.chevron_right),
+                        onTap: () => widget.onOpen(a),
+                      );
+                    },
+                  ),
+                );
+              }
+              final columns = constraints.crossAxisExtent >= 1000
+                  ? 4
+                  : constraints.crossAxisExtent >= 750
+                  ? 3
+                  : constraints.crossAxisExtent >= 500
+                  ? 2
+                  : 1;
+              final width =
+                  (constraints.crossAxisExtent - 40 - (columns - 1) * 16) /
+                  columns;
+              // Build a viewport of rows while letting each card keep its
+              // natural height for wrapped details and larger text sizes.
+              return SliverPadding(
+                padding: const EdgeInsets.fromLTRB(20, 0, 20, 24),
+                sliver: SliverList.builder(
+                  key: ValueKey('animal-cards-$columns'),
+                  itemCount: (animals.length / columns).ceil(),
+                  itemBuilder: (context, row) => Padding(
+                    padding: const EdgeInsets.only(bottom: 16),
+                    child: Wrap(
+                      spacing: 16,
+                      children: [
+                        for (var column = 0; column < columns; column++)
+                          if (row * columns + column < animals.length)
+                            SizedBox(
+                              width: width,
+                              child: AnimalRecordCard(
+                                animal: animals[row * columns + column],
+                                onTap: () => widget.onOpen(
+                                  animals[row * columns + column],
+                                ),
+                              ),
+                            ),
                       ],
                     ),
                   ),
                 ),
-                SegmentedButton<bool>(
-                  showSelectedIcon: false,
-                  segments: const [
-                    ButtonSegment(
-                      value: false,
-                      icon: Icon(Icons.view_list_outlined),
-                      tooltip: 'List view',
-                    ),
-                    ButtonSegment(
-                      value: true,
-                      icon: Icon(Icons.grid_view_outlined),
-                      tooltip: 'Card view',
-                    ),
-                  ],
-                  selected: {_cards},
-                  onSelectionChanged: (v) => setState(() => _cards = v.single),
-                ),
-              ],
-            ),
+              );
+            },
           ),
-        ),
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-          child: Align(
-            alignment: Alignment.centerLeft,
-            child: Text(
-              '${animals.length} of ${widget.animals.length} animals',
-              style: const TextStyle(color: BreederColors.text),
-            ),
-          ),
-        ),
-        Expanded(
-          child: animals.isEmpty
-              ? Center(
-                  child: Text(
-                    widget.animals.isEmpty
-                        ? 'No animals yet. Use Actions to add an animal.'
-                        : 'No animals match your filters.',
-                  ),
-                )
-              : LayoutBuilder(
-                  builder: (context, size) {
-                    if (!_cards) {
-                      return ListView.separated(
-                        padding: const EdgeInsets.fromLTRB(20, 0, 20, 24),
-                        itemCount: animals.length,
-                        separatorBuilder: (_, _) => const Divider(height: 1),
-                        itemBuilder: (context, i) {
-                          final a = animals[i];
-                          return ListTile(
-                            title: Text(animalTitle(a['name'], a['tattoo'])),
-                            subtitle: Text(
-                              [
-                                if (a['sale_status'] != null)
-                                  a['sale_status'] == 'reserved'
-                                      ? 'Reserved'
-                                      : 'For Sale',
-                                a['species'] == 'cavy' ? 'Cavy' : 'Rabbit',
-                                '${a['breed'] ?? 'Breed not recorded'}${a['breed_unrecognized'] == true ? ' (Unrecognized)' : ''}',
-                                '${varietyLabel(a).isEmpty ? 'Variety not recorded' : varietyLabel(a)}${a['variety_unrecognized'] == true ? ' (Unrecognized)' : ''}',
-                                sexLabel(a['species'], a['sex']),
-                                'DOB: ${_displayDob(a['dob'])}',
-                              ].join(' • '),
-                            ),
-                            trailing: const Icon(Icons.chevron_right),
-                            onTap: () => widget.onOpen(a),
-                          );
-                        },
-                      );
-                    }
-                    final columns = size.maxWidth >= 1000
-                        ? 4
-                        : size.maxWidth >= 750
-                        ? 3
-                        : size.maxWidth >= 500
-                        ? 2
-                        : 1;
-                    final width =
-                        (size.maxWidth - 40 - (columns - 1) * 16) / columns;
-                    // Build a viewport of rows while letting each card keep its
-                    // natural height for wrapped details and larger text sizes.
-                    return ListView.builder(
-                      key: ValueKey('animal-cards-$columns'),
-                      padding: const EdgeInsets.fromLTRB(20, 0, 20, 24),
-                      itemCount: (animals.length / columns).ceil(),
-                      itemBuilder: (context, row) => Padding(
-                        padding: const EdgeInsets.only(bottom: 16),
-                        child: Wrap(
-                          spacing: 16,
-                          children: [
-                            for (var column = 0; column < columns; column++)
-                              if (row * columns + column < animals.length)
-                                SizedBox(
-                                  width: width,
-                                  child: AnimalRecordCard(
-                                    animal: animals[row * columns + column],
-                                    onTap: () => widget.onOpen(
-                                      animals[row * columns + column],
-                                    ),
-                                  ),
-                                ),
-                          ],
-                        ),
-                      ),
-                    );
-                  },
-                ),
-        ),
       ],
     );
   }
