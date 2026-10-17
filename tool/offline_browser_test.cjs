@@ -160,6 +160,14 @@ async function main() {
       account_deletions:[],breeder_legal_acceptances:[{user_id:userId,accepted_at:'2026-01-01T00:00:00Z',terms_version:termsVersion,privacy_version:privacyVersion}],
     };
     const receipts=new Map();
+    if (process.env.COMPACT_HERD_SCREEN === 'true') {
+      animal.sale_status = 'for_sale';
+      animal.dob = '2025-02-19';
+      fixtureTables.animals.push(
+        { ...animal, id: '00000000-0000-4000-8000-000000000004', name: 'Yarrow', tattoo: 'Y2', sale_status: null },
+        { ...animal, id: '00000000-0000-4000-8000-000000000005', name: 'Zinnia', tattoo: 'Z3', sale_status: null },
+      );
+    }
     fixtureHandler = async (request, response) => {
       const url = new URL(request.url.replace('/__supabase', ''), origin);
       response.setHeader('Content-Type', 'application/json');
@@ -220,7 +228,7 @@ async function main() {
       else if (url.pathname.endsWith('/animals')) {
         if (request.method === 'PATCH') { Object.assign(animal, body); animal.revision++; }
         data = request.headers.accept?.includes('object') ? { ...animal }
-          : Number(url.searchParams.get('offset') || 0) > 0 ? [] : [{ ...animal }];
+          : Number(url.searchParams.get('offset') || 0) > 0 ? [] : fixtureTables.animals.map(value => ({ ...value }));
       } else if (url.pathname.endsWith('/animal_weights')) {
         if (request.method === 'POST') weights.push(...body);
         data = weights.slice(Number(url.searchParams.get('offset') || 0));
@@ -277,6 +285,41 @@ async function main() {
     }
     await herd().click({ timeout: 30000 });
     await page.getByText('Willow', { exact: false }).first().waitFor({ timeout: 30000 });
+    if (process.env.COMPACT_HERD_SCREEN === 'true') {
+      const settle = async () => {
+        await page.evaluate(() => new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve))));
+        await page.waitForTimeout(200);
+      };
+      await page.setViewportSize({ width: 360, height: 520 });
+      await settle();
+      const card = name => page.getByRole('button', { name: new RegExp(name) }).first();
+      const boxes = await Promise.all(['Willow', 'Yarrow', 'Zinnia'].map(name => card(name).boundingBox()));
+      boxes.sort((a, b) => a.y - b.y);
+      const [first, second] = boxes;
+      assert.ok(first && first.y < 220 && first.height < 180, 'The first phone card must be compact and immediately visible');
+      assert.ok(second && second.y + second.height <= 490, 'Two whole animals should fit without scrolling on the small phone');
+      await page.screenshot({ path: `/tmp/breeder-compact-herd-${useWebKit ? 'webkit' : 'chrome'}.png` });
+      await click('Filters');
+      await page.getByText('All breeds', { exact: false }).first().waitFor();
+      await click('Hide filters');
+      await page.getByRole('radio', { name: 'List view', exact: true }).click();
+      await page.getByRole('radio', { name: 'Card view', exact: true }).click();
+      await page.setViewportSize({ width: 1280, height: 900 });
+      await settle();
+      const wide = await card('Yarrow').boundingBox();
+      assert.ok(wide.height > first.height * 1.7, 'Wide screens retain the full card details');
+      await page.screenshot({ path: `/tmp/breeder-compact-herd-desktop-${useWebKit ? 'webkit' : 'chrome'}.png` });
+      await page.setViewportSize({ width: 360, height: 520 });
+      await settle();
+      await page.mouse.move(180, 420);
+      await page.mouse.wheel(0, 200);
+      await settle();
+      await card('Willow').click();
+      await page.getByText('Animal Details', { exact: false }).first().waitFor();
+      assert.deepEqual(failures, []);
+      console.log(`PASS: two complete phone cards, collapsible filters, view switching, full desktop cards, and opening details (${useWebKit ? 'WebKit' : 'Chrome'})`);
+      return;
+    }
     if (process.env.RESPONSIVE_FORM === 'true') {
       await page.getByText('Willow', { exact: false }).first().click();
       await click('Edit Animal');
@@ -377,7 +420,7 @@ async function main() {
       await settle();
       await page.screenshot({ path: `/tmp/breeder-herd-scroll-${useWebKit ? 'webkit' : 'chrome'}.png` });
       await page.getByText('Willow', { exact: false }).first().click({ timeout: 10000 });
-      await page.getByText('Animal Details', { exact: true }).waitFor({ timeout: 10000 });
+      await page.getByText('Animal Details', { exact: false }).first().waitFor({ timeout: 10000 });
       assert.deepEqual(failures, []);
       console.log(`PASS: short-phone herd scrolling reaches animals, returns to filters, and opens details (${useWebKit ? 'WebKit wheel' : 'Chrome wheel and touch'})`);
       return;

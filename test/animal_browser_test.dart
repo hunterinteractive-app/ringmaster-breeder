@@ -54,15 +54,19 @@ void main() {
         last,
         1000,
         maxScrolls: 60,
-        scrollable: find.descendant(
-          of: find.byType(CustomScrollView),
-          matching: find.byType(Scrollable),
-        ).first,
+        scrollable: find
+            .descendant(
+              of: find.byType(CustomScrollView),
+              matching: find.byType(Scrollable),
+            )
+            .first,
       );
       await tester.pumpAndSettle();
       final details = find.descendant(
         of: last,
-        matching: find.text('View details'),
+        matching: width < 600
+            ? find.byType(InkWell)
+            : find.text('View details'),
       );
       await tester.ensureVisible(details);
       await tester.pumpAndSettle();
@@ -131,7 +135,7 @@ void main() {
       await tester.pumpAndSettle();
       expect(find.byType(AnimalRecordCard), findsNothing);
       expect(find.text('Cookie • ZC2'), findsOneWidget);
-      await tester.tap(find.text('Actions'));
+      await tester.tap(find.byTooltip('Actions'));
       await tester.pumpAndSettle();
       await tester.tap(find.text('Add animal'));
       await tester.pumpAndSettle();
