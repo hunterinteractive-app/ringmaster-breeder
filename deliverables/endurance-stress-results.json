@@ -1,0 +1,494 @@
+{
+  "completed": true,
+  "overall_passed": false,
+  "production_changes": false,
+  "phone": {
+    "physical_device": "iPhone",
+    "subscription_added": true,
+    "expected_herd_dates_visible": true,
+    "evidence": "User confirmed: Subscribed and dates appear",
+    "specific_recent_and_distant_future_device_check": "Not verified on the physical phone: the user did not have suitable dates to compare; automated feed boundary checks passed.",
+    "android_physical_device_tested": false
+  },
+  "calendar_functional_checks": [
+    {
+      "test": "actual_http_subscription_lifecycle",
+      "passed": true,
+      "milliseconds": 5698,
+      "detail": {
+        "event_count": 6434,
+        "feed_bytes": 2523388,
+        "first_allowed_date": "2026-09-01",
+        "cold_feed_ms": 2196.46,
+        "repeat_poll_preserves_all_uids": true,
+        "head_returns_no_body": true
+      }
+    },
+    {
+      "test": "date_boundaries_and_refresh",
+      "passed": true,
+      "milliseconds": 10576,
+      "detail": {
+        "history_1999_excluded": true,
+        "previous_month_boundary_included": true,
+        "future_2035_retained": true,
+        "updated_event_keeps_uid": true,
+        "deleted_events_disappear_on_poll": true,
+        "unicode_and_injection_parsed": true
+      }
+    },
+    {
+      "test": "rotate_and_revoke",
+      "passed": true,
+      "milliseconds": 2846,
+      "detail": {
+        "old_link_rejected_after_rotation": true,
+        "revoked_link_rejected": true
+      }
+    },
+    {
+      "test": "actual_http_access_denials",
+      "passed": true,
+      "milliseconds": 444,
+      "detail": {
+        "authenticated_resolver_denied": true,
+        "anonymous_resolver_denied": true,
+        "outsider_cannot_subscribe": true,
+        "invalid_tokens_rejected": true,
+        "disabled_subscriber_rejected": true
+      }
+    },
+    {
+      "test": "family_membership_revocation",
+      "passed": true,
+      "milliseconds": 5591,
+      "detail": {
+        "member_feed_works": true,
+        "revoked_member_link_stops": true,
+        "owner_feed_remains_available": true
+      }
+    }
+  ],
+  "calendar_capacity": {
+    "future_fixture_rows": 14000,
+    "experiments": [
+      {
+        "implementation": "committed_function",
+        "worker_policy": "oneshot",
+        "cpu_hard_limit_ms": 2000,
+        "status": 546,
+        "milliseconds": 4034.03,
+        "response_bytes": 107,
+        "error": {
+          "code": "WORKER_LIMIT",
+          "message": "Worker failed to respond due to a resource limit (please check logs)"
+        }
+      },
+      {
+        "implementation": "temporary_utf8_folding_experiment",
+        "worker_policy": "oneshot",
+        "cpu_hard_limit_ms": 2000,
+        "status": 200,
+        "milliseconds": 2572.87,
+        "response_bytes": 8196282,
+        "error": null,
+        "events": 20434,
+        "future_fixture_events": 14000,
+        "old_history_excluded": true,
+        "future_2035_retained": true,
+        "max_line_bytes": 75
+      }
+    ],
+    "production_source_sha256": "2213cf5b6fd0275f9f58f32be3bd9b2a05c75f548623bacf186427c9295b1b5b",
+    "experimental_change_published": false
+  },
+  "browser": {
+    "completed": true,
+    "duration_seconds": 1803,
+    "cycles": 34,
+    "steps": 558,
+    "counters": {
+      "complete_herd_loads": 34,
+      "searches": 35,
+      "Clear search": 35,
+      "scrolls": 35,
+      "List view": 35,
+      "Card view": 35,
+      "Next month": 70,
+      "Previous month": 35,
+      "calendar_windows_loaded": 98,
+      "visible_calendar_errors": 32,
+      "calendar_retries": 32,
+      "history_views": 35,
+      "visible_save_errors": 70,
+      "bulk_saves": 103,
+      "recovered_lose-next-write-ack": 35,
+      "recovered_offline": 33,
+      "concurrent_retry_checks": 35,
+      "recovered_slow": 35,
+      "edit_conflict_checks": 34
+    },
+    "max_mounted_animal_cards": 16,
+    "js_heap_bytes": {
+      "minimum": 47393154,
+      "maximum": 257514001,
+      "final": 58711492,
+      "first_three_cycle_end_median": 86335808,
+      "last_three_cycle_end_median": 69583948
+    },
+    "unexpected_checkpoints": [
+      "step 0: PostgrestException(message: Timed out acquiring connection from connection pool., code: PGRST003, details: Gateway Timeout, hint: null)",
+      "step 8: Bad state: Calendar outage did not surface",
+      "step 11: TimeoutException after 0:01:20.000000: Future not completed",
+      "step 8: Bad state: Calendar outage did not surface",
+      "step 8: Bad state: Calendar outage did not surface",
+      "step 11: TimeoutException after 0:01:20.000000: Future not completed"
+    ],
+    "unexpected_checkpoint_count": 6,
+    "checkpoint_interpretation": {
+      "pool_timeout": "Actual API capacity failure",
+      "calendar_outage_did_not_surface": "The harness required a rendered error after 500 ms during overload; not an independent product defect finding",
+      "save_confirmation_timeout": "The harness waited 80 seconds after one retry during overload; the dialog remained unconfirmed and no logical duplicate was found in the separate audit"
+    },
+    "heap_scope": "JavaScript heap only; excludes GPU/Wasm. No sustained upward trend was observed in cycle-end samples.",
+    "faults": "Synthetic HTTP 503 outages, 350ms added delay, and committed inserts with lost acknowledgement; no packet-loss emulation",
+    "timeline": [
+      {
+        "elapsed_seconds": 53,
+        "ticks": 20,
+        "cycles": 1,
+        "phase": "Reload 1,000 animals",
+        "js_heap_bytes": 236770957,
+        "mounted_elements": 1522,
+        "max_mounted_cards": 16
+      },
+      {
+        "elapsed_seconds": 105,
+        "ticks": 40,
+        "cycles": 2,
+        "phase": "Three-month calendar",
+        "js_heap_bytes": 89336439,
+        "mounted_elements": 2298,
+        "max_mounted_cards": 16
+      },
+      {
+        "elapsed_seconds": 163,
+        "ticks": 56,
+        "cycles": 3,
+        "phase": "Three-month calendar",
+        "js_heap_bytes": 75650244,
+        "mounted_elements": 2298,
+        "max_mounted_cards": 16
+      },
+      {
+        "elapsed_seconds": 238,
+        "ticks": 68,
+        "cycles": 4,
+        "phase": "Reload 1,000 animals",
+        "js_heap_bytes": 203103789,
+        "mounted_elements": 1522,
+        "max_mounted_cards": 16
+      },
+      {
+        "elapsed_seconds": 247,
+        "ticks": 72,
+        "cycles": 4,
+        "phase": "Three-month calendar",
+        "js_heap_bytes": 73629313,
+        "mounted_elements": 2298,
+        "max_mounted_cards": 16
+      },
+      {
+        "elapsed_seconds": 350,
+        "ticks": 76,
+        "cycles": 4,
+        "phase": "Bulk save: offline",
+        "js_heap_bytes": 72910164,
+        "mounted_elements": 2313,
+        "max_mounted_cards": 16
+      },
+      {
+        "elapsed_seconds": 415,
+        "ticks": 100,
+        "cycles": 6,
+        "phase": "Reload 1,000 animals",
+        "js_heap_bytes": 202801195,
+        "mounted_elements": 1522,
+        "max_mounted_cards": 16
+      },
+      {
+        "elapsed_seconds": 469,
+        "ticks": 120,
+        "cycles": 7,
+        "phase": "Three-month calendar",
+        "js_heap_bytes": 69341994,
+        "mounted_elements": 2298,
+        "max_mounted_cards": 16
+      },
+      {
+        "elapsed_seconds": 528,
+        "ticks": 136,
+        "cycles": 8,
+        "phase": "Three-month calendar",
+        "js_heap_bytes": 77409943,
+        "mounted_elements": 2298,
+        "max_mounted_cards": 16
+      },
+      {
+        "elapsed_seconds": 593,
+        "ticks": 144,
+        "cycles": 9,
+        "phase": "Cycle 9 complete",
+        "js_heap_bytes": 55729842,
+        "mounted_elements": 1668,
+        "max_mounted_cards": 16
+      },
+      {
+        "elapsed_seconds": 613,
+        "ticks": 152,
+        "cycles": 9,
+        "phase": "Three-month calendar",
+        "js_heap_bytes": 58734052,
+        "mounted_elements": 2298,
+        "max_mounted_cards": 16
+      },
+      {
+        "elapsed_seconds": 710,
+        "ticks": 156,
+        "cycles": 9,
+        "phase": "Bulk save: offline",
+        "js_heap_bytes": 48598873,
+        "mounted_elements": 2313,
+        "max_mounted_cards": 16
+      },
+      {
+        "elapsed_seconds": 776,
+        "ticks": 180,
+        "cycles": 11,
+        "phase": "Reload 1,000 animals",
+        "js_heap_bytes": 206148497,
+        "mounted_elements": 1522,
+        "max_mounted_cards": 16
+      },
+      {
+        "elapsed_seconds": 828,
+        "ticks": 200,
+        "cycles": 12,
+        "phase": "Three-month calendar",
+        "js_heap_bytes": 91155325,
+        "mounted_elements": 2298,
+        "max_mounted_cards": 16
+      },
+      {
+        "elapsed_seconds": 896,
+        "ticks": 224,
+        "cycles": 14,
+        "phase": "Cycle 14 complete",
+        "js_heap_bytes": 51866777,
+        "mounted_elements": 1668,
+        "max_mounted_cards": 16
+      },
+      {
+        "elapsed_seconds": 958,
+        "ticks": 248,
+        "cycles": 15,
+        "phase": "Three-month calendar",
+        "js_heap_bytes": 198071722,
+        "mounted_elements": 2298,
+        "max_mounted_cards": 16
+      },
+      {
+        "elapsed_seconds": 1015,
+        "ticks": 268,
+        "cycles": 16,
+        "phase": "Bulk save: offline",
+        "js_heap_bytes": 105959647,
+        "mounted_elements": 1668,
+        "max_mounted_cards": 16
+      },
+      {
+        "elapsed_seconds": 1078,
+        "ticks": 292,
+        "cycles": 18,
+        "phase": "Reload 1,000 animals",
+        "js_heap_bytes": 207216445,
+        "mounted_elements": 1522,
+        "max_mounted_cards": 16
+      },
+      {
+        "elapsed_seconds": 1133,
+        "ticks": 312,
+        "cycles": 19,
+        "phase": "Three-month calendar",
+        "js_heap_bytes": 71950017,
+        "mounted_elements": 2298,
+        "max_mounted_cards": 16
+      },
+      {
+        "elapsed_seconds": 1198,
+        "ticks": 336,
+        "cycles": 21,
+        "phase": "Cycle 21 complete",
+        "js_heap_bytes": 72907590,
+        "mounted_elements": 1668,
+        "max_mounted_cards": 16
+      },
+      {
+        "elapsed_seconds": 1253,
+        "ticks": 356,
+        "cycles": 22,
+        "phase": "Reload 1,000 animals",
+        "js_heap_bytes": 215691296,
+        "mounted_elements": 1522,
+        "max_mounted_cards": 16
+      },
+      {
+        "elapsed_seconds": 1317,
+        "ticks": 380,
+        "cycles": 23,
+        "phase": "Bulk save: offline",
+        "js_heap_bytes": 110569449,
+        "mounted_elements": 1668,
+        "max_mounted_cards": 16
+      },
+      {
+        "elapsed_seconds": 1370,
+        "ticks": 400,
+        "cycles": 25,
+        "phase": "Cycle 25 complete",
+        "js_heap_bytes": 71842538,
+        "mounted_elements": 1668,
+        "max_mounted_cards": 16
+      },
+      {
+        "elapsed_seconds": 1436,
+        "ticks": 424,
+        "cycles": 26,
+        "phase": "Three-month calendar",
+        "js_heap_bytes": 79535999,
+        "mounted_elements": 2298,
+        "max_mounted_cards": 16
+      },
+      {
+        "elapsed_seconds": 1490,
+        "ticks": 444,
+        "cycles": 27,
+        "phase": "Bulk save: offline",
+        "js_heap_bytes": 67634713,
+        "mounted_elements": 1668,
+        "max_mounted_cards": 16
+      },
+      {
+        "elapsed_seconds": 1556,
+        "ticks": 468,
+        "cycles": 29,
+        "phase": "Reload 1,000 animals",
+        "js_heap_bytes": 218262312,
+        "mounted_elements": 1522,
+        "max_mounted_cards": 16
+      },
+      {
+        "elapsed_seconds": 1608,
+        "ticks": 488,
+        "cycles": 30,
+        "phase": "Three-month calendar",
+        "js_heap_bytes": 91913151,
+        "mounted_elements": 2298,
+        "max_mounted_cards": 16
+      },
+      {
+        "elapsed_seconds": 1676,
+        "ticks": 512,
+        "cycles": 32,
+        "phase": "Cycle 32 complete",
+        "js_heap_bytes": 52673070,
+        "mounted_elements": 1668,
+        "max_mounted_cards": 16
+      },
+      {
+        "elapsed_seconds": 1738,
+        "ticks": 536,
+        "cycles": 33,
+        "phase": "Three-month calendar",
+        "js_heap_bytes": 92317472,
+        "mounted_elements": 2298,
+        "max_mounted_cards": 16
+      },
+      {
+        "elapsed_seconds": 1795,
+        "ticks": 556,
+        "cycles": 34,
+        "phase": "Bulk save: offline",
+        "js_heap_bytes": 96628792,
+        "mounted_elements": 1668,
+        "max_mounted_cards": 16
+      },
+      {
+        "elapsed_seconds": 1803,
+        "ticks": 558,
+        "cycles": 34,
+        "phase": "Bulk save: slow",
+        "js_heap_bytes": 58711492,
+        "mounted_elements": 1668,
+        "max_mounted_cards": 16
+      }
+    ],
+    "proxy_final": {
+      "requests": 2404,
+      "injected_offline": 121,
+      "lost_acknowledgements": 35,
+      "slow_requests": 263
+    },
+    "proxy_scope": "Proxy totals include initial harness calibration; use the measured Dart counters for run totals.",
+    "start_utc": "2026-10-16T22:47:14.377378+00:00",
+    "end_utc": "2026-10-16T23:17:17.193658+00:00"
+  },
+  "load_stages": [
+    {
+      "concurrent_breeders": 1,
+      "rounds": 3,
+      "sessions": 3,
+      "failed_sessions": 0,
+      "requests": 63,
+      "p95_ms": 1992,
+      "max_ms": 2099,
+      "unexpected_http_errors": 0
+    },
+    {
+      "concurrent_breeders": 10,
+      "rounds": 3,
+      "sessions": 30,
+      "failed_sessions": 1,
+      "requests": 492,
+      "p95_ms": 6594,
+      "max_ms": 12544,
+      "unexpected_http_errors": 1
+    },
+    {
+      "concurrent_breeders": 25,
+      "rounds": 3,
+      "sessions": 75,
+      "failed_sessions": 58,
+      "requests": 938,
+      "p95_ms": 10044,
+      "max_ms": 13393,
+      "unexpected_http_errors": 101
+    },
+    {
+      "concurrent_breeders": 50,
+      "rounds": 3,
+      "sessions": 150,
+      "failed_sessions": 137,
+      "requests": 1366,
+      "p95_ms": 10018,
+      "max_ms": 13298,
+      "unexpected_http_errors": 260
+    }
+  ],
+  "isolation_passed": true,
+  "data_audit": {
+    "logical_duplicate_weight_groups": 0,
+    "remaining_temporary_future_rows": 0,
+    "invalid_animal_revisions": 0
+  }
+}

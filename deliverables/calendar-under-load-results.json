@@ -1,0 +1,34 @@
+[
+  {
+    "test": "actual_http_subscription_lifecycle",
+    "passed": false,
+    "error": "(546, {'code': 'WORKER_LIMIT', 'message': 'Worker failed to respond due to a resource limit (please check logs)'})"
+  },
+  {
+    "test": "date_boundaries_and_refresh",
+    "passed": false,
+    "error": "(503, 'Calendar temporarily unavailable. Please retry.')"
+  },
+  {
+    "test": "rotate_and_revoke",
+    "passed": false,
+    "error": "(546, {'code': 'WORKER_LIMIT', 'message': 'Worker failed to respond due to a resource limit (please check logs)'})"
+  },
+  {
+    "test": "actual_http_access_denials",
+    "passed": true,
+    "milliseconds": 14935,
+    "detail": {
+      "authenticated_resolver_denied": true,
+      "anonymous_resolver_denied": true,
+      "outsider_cannot_subscribe": true,
+      "invalid_tokens_rejected": true,
+      "disabled_subscriber_rejected": true
+    }
+  },
+  {
+    "test": "family_membership_revocation",
+    "passed": false,
+    "error": "(503, 'Calendar temporarily unavailable. Please retry.')"
+  }
+]

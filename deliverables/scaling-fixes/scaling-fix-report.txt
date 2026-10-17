@@ -1,0 +1,58 @@
+RingMaster Breeder — scaling fixes and repeated stress tests
+Result: PASS. Completed 2026-10-17T00:34:02.477276+00:00.
+These stress tests ran before publication using isolated local data. Original pre-fix evidence remains in deliverables/.
+
+Fixes
+Resolve accessible family rings once per statement, then hash accessible animal IDs for history and breeding reads.
+Preserve active-owner, accepted/nonrevoked-member, non-demo-herd checks and both parents on breeding reads.
+Preserve USING and WITH CHECK for animal and health writes. Existing weight/breeding insert checks remain.
+Measure UTF-8 code-point widths without allocating a TextEncoder and byte array for every character.
+No API pool, acquisition timeout, row limit, feed date range or worker CPU limit was increased.
+
+Environment
+Isolated full local Supabase stack; API pool 10, max_rows 1000, worker CPU hard limit 2000ms. Synthetic data only. Not a production capacity SLA.
+50 independent breeders, 50,000 animals, 990,000 initial history records; largest herd has 500,000 history records.
+Flutter 3.38.5/Dart 3.10.4 release browser build; production CI uses Flutter 3.41.4.
+
+Concurrent mixed workloads — three synchronized rounds at each stage
+Breeders | before failed sessions | after failed sessions | before HTTP errors | after HTTP errors | before p95 ms | after p95 ms
+       1 |                      0 |                     0 |                  0 |                 0 |          1992 |          172
+      10 |                      1 |                     0 |                  1 |                 0 |          6594 |          408
+      25 |                     58 |                     0 |                101 |                 0 |         10044 |         1072
+      50 |                    137 |                     0 |                260 |                 0 |         10018 |         2184
+
+Large private calendar feed
+The pre-fix fresh-worker request returned 546 WORKER_LIMIT at 20,434 events.
+Three fixed-code requests returned 200 with all 20,434 events (8,196,282 bytes), valid UTF-8 folds <=75 bytes and unique UIDs.
+All 14,000 extra follow-up events in 2035 were retained. Source dates in 1999 were excluded.
+Feeds still begin on the first day of last month and have no future cutoff.
+All five HTTP lifecycle groups passed, including refresh/update/delete, token rotation/revocation, inactive subscriber and revoked membership.
+CPU-only profiles compare byte-identical output with the pre-fix implementation in memory; see calendar-render-profile.json.
+
+Browser endurance
+Completed 1801 seconds, 42 cycles, 673 steps and 0 unexpected checkpoints.
+The production-widget component harness was retained. The calendar-error check now scrolls below the month grid and waits up to 10s; it previously searched unmounted lazy children after 500ms. The original 80s save confirmation check is unchanged.
+Includes 1000-animal reloads/search/scroll/view changes, month navigation and retries, histories/graphs, bulk saves, concurrent retries and conflicting edits.
+Final viewport: 644 x 785 CSS pixels. Max mounted cards: 6. Heap min/max/final: 50.4/249.7/54.7 MB.
+Cycle-end median for first/last three cycles: 70.2/67.9 MB. GPU/Wasm memory was not measured.
+Synthetic HTTP 503 outages, 350ms added delay, and committed inserts with lost acknowledgement; no packet-loss emulation.
+
+Security and data integrity
+All 50 independent families passed foreign-read and atomic mixed-family write checks.
+Original and optimized animal access predicates agree for 2,650,000 animal/identity pairs, including unauthenticated access.
+Additional HTTP checks cover accepted, pending and revoked membership, inactive owners, demo herds, allowed member health edits/deletes, and rejected family reassignment.
+The helper is private, stable, fixed-search-path, and unavailable to anonymous users; RLS remains enabled.
+See endurance-data-audit.json for duplicate, fixture-cleanup and revision audits.
+
+Regression checks
+Flutter: 137 passed. Node calendar: 11 passed. Flutter analyze clean.
+Database function lint has no errors; pre-existing warnings are retained separately.
+Local advisors report no security errors. Two existing draft-policy performance warnings remain outside this change:
+https://supabase.com/docs/guides/database/database-linter?lint=0003_auth_rls_initplan
+
+Physical device scope
+The user previously confirmed successful iPhone subscription and expected herd dates.
+No new phone interaction was required. Recent/distant-future boundaries were verified automatically, not on a physical phone.
+Android and provider-controlled refresh timing/alerts remain unverified.
+
+Reproduction: tool/endurance_stress/README.txt. Machine-readable summary: scaling-fix-results.json.

@@ -1,0 +1,265 @@
+Using workdir /private/tmp/rmb-next-stress
+Connecting to local database...
+Linting schema: public
+Linting schema: breeder_private
+[
+  {
+    "function": "public.import_global_pedigree",
+    "issues": [
+      {
+        "level": "warning",
+        "message": "target type is different type than source type",
+        "statement": {
+          "lineNumber": "10",
+          "text": "statement block"
+        },
+        "hint": "The input expression type does not have an assignment cast to the target type.",
+        "detail": "cast \"text\" value to \"jsonb\" type",
+        "context": "during statement block local variable \"nodes\" initialization on line 4",
+        "sqlState": "42804"
+      },
+      {
+        "level": "warning",
+        "message": "target type is different type than source type",
+        "statement": {
+          "lineNumber": "10",
+          "text": "statement block"
+        },
+        "hint": "The input expression type does not have an assignment cast to the target type.",
+        "detail": "cast \"text\" value to \"jsonb\" type",
+        "context": "during statement block local variable \"ids\" initialization on line 4",
+        "sqlState": "42804"
+      },
+      {
+        "level": "warning",
+        "message": "target type is different type than source type",
+        "statement": {
+          "lineNumber": "10",
+          "text": "statement block"
+        },
+        "hint": "The input expression type does not have an assignment cast to the target type.",
+        "detail": "cast \"text\" value to \"jsonb\" type",
+        "context": "during statement block local variable \"actions\" initialization on line 4",
+        "sqlState": "42804"
+      },
+      {
+        "level": "warning",
+        "message": "target type is different type than source type",
+        "statement": {
+          "lineNumber": "10",
+          "text": "statement block"
+        },
+        "hint": "The input expression type does not have an assignment cast to the target type.",
+        "detail": "cast \"text\" value to \"jsonb\" type",
+        "context": "during statement block local variable \"issues\" initialization on line 5",
+        "sqlState": "42804"
+      },
+      {
+        "level": "warning",
+        "message": "target type is different type than source type",
+        "statement": {
+          "lineNumber": "10",
+          "text": "statement block"
+        },
+        "hint": "The input expression type does not have an assignment cast to the target type.",
+        "detail": "cast \"text\" value to \"jsonb\" type",
+        "context": "during statement block local variable \"rows\" initialization on line 5",
+        "sqlState": "42804"
+      },
+      {
+        "level": "warning",
+        "message": "target type is different type than source type",
+        "statement": {
+          "lineNumber": "10",
+          "text": "statement block"
+        },
+        "hint": "The input expression type does not have an assignment cast to the target type.",
+        "detail": "cast \"text\" value to \"text[]\" type",
+        "context": "during statement block local variable \"seen\" initialization on line 7",
+        "sqlState": "42804"
+      },
+      {
+        "level": "warning",
+        "message": "target type is different type than source type",
+        "statement": {
+          "lineNumber": "10",
+          "text": "statement block"
+        },
+        "hint": "The input expression type does not have an assignment cast to the target type.",
+        "detail": "cast \"text\" value to \"jsonb\" type",
+        "context": "during statement block local variable \"aliases\" initialization on line 8",
+        "sqlState": "42804"
+      },
+      {
+        "level": "warning",
+        "message": "target type is different type than source type",
+        "statement": {
+          "lineNumber": "10",
+          "text": "statement block"
+        },
+        "hint": "The input expression type does not have an assignment cast to the target type.",
+        "detail": "cast \"text\" value to \"jsonb\" type",
+        "context": "during statement block local variable \"groups\" initialization on line 8",
+        "sqlState": "42804"
+      },
+      {
+        "level": "warning",
+        "message": "target type is different type than source type",
+        "statement": {
+          "lineNumber": "10",
+          "text": "statement block"
+        },
+        "hint": "The input expression type does not have an assignment cast to the target type.",
+        "detail": "cast \"text\" value to \"text[]\" type",
+        "context": "during statement block local variable \"done\" initialization on line 9",
+        "sqlState": "42804"
+      },
+      {
+        "level": "warning",
+        "message": "target type is different type than source type",
+        "statement": {
+          "lineNumber": "10",
+          "text": "statement block"
+        },
+        "hint": "The input expression type does not have an assignment cast to the target type.",
+        "detail": "cast \"text\" value to \"text[]\" type",
+        "context": "during statement block local variable \"visiting\" initialization on line 9",
+        "sqlState": "42804"
+      },
+      {
+        "level": "warning",
+        "message": "unused variable \"stack\"",
+        "sqlState": "00000"
+      },
+      {
+        "level": "warning extra",
+        "message": "never read variable \"seen\"",
+        "sqlState": "00000"
+      }
+    ]
+  },
+  {
+    "function": "public.breeder_support_view",
+    "issues": [
+      {
+        "level": "warning",
+        "message": "unused variable \"herd\"",
+        "sqlState": "00000"
+      }
+    ]
+  },
+  {
+    "function": "public.import_global_pedigree_with_history",
+    "issues": [
+      {
+        "level": "warning",
+        "message": "target type is different type than source type",
+        "statement": {
+          "lineNumber": "3",
+          "text": "statement block"
+        },
+        "hint": "The input expression type does not have an assignment cast to the target type.",
+        "detail": "cast \"text\" value to \"jsonb\" type",
+        "context": "during statement block local variable \"warnings\" initialization on line 2",
+        "sqlState": "42804"
+      },
+      {
+        "level": "warning",
+        "message": "target type is different type than source type",
+        "statement": {
+          "lineNumber": "3",
+          "text": "statement block"
+        },
+        "hint": "The input expression type does not have an assignment cast to the target type.",
+        "detail": "cast \"text\" value to \"text[]\" type",
+        "context": "during statement block local variable \"keys\" initialization on line 2",
+        "sqlState": "42804"
+      },
+      {
+        "level": "warning extra",
+        "message": "never read variable \"wid\"",
+        "sqlState": "00000"
+      }
+    ]
+  },
+  {
+    "function": "public.import_global_pedigree_with_sales",
+    "issues": [
+      {
+        "level": "warning",
+        "message": "target type is different type than source type",
+        "statement": {
+          "lineNumber": "3",
+          "text": "statement block"
+        },
+        "hint": "The input expression type does not have an assignment cast to the target type.",
+        "detail": "cast \"text\" value to \"text[]\" type",
+        "context": "during statement block local variable \"ids\" initialization on line 2",
+        "sqlState": "42804"
+      },
+      {
+        "level": "warning",
+        "message": "target type is different type than source type",
+        "statement": {
+          "lineNumber": "3",
+          "text": "statement block"
+        },
+        "hint": "The input expression type does not have an assignment cast to the target type.",
+        "detail": "cast \"text\" value to \"jsonb\" type",
+        "context": "during statement block local variable \"issues\" initialization on line 2",
+        "sqlState": "42804"
+      },
+      {
+        "level": "warning",
+        "message": "target type is different type than source type",
+        "statement": {
+          "lineNumber": "3",
+          "text": "statement block"
+        },
+        "hint": "The input expression type does not have an assignment cast to the target type.",
+        "detail": "cast \"text\" value to \"jsonb\" type",
+        "context": "during statement block local variable \"warnings\" initialization on line 2",
+        "sqlState": "42804"
+      },
+      {
+        "level": "warning extra",
+        "message": "never read variable \"existing_sale\"",
+        "sqlState": "00000"
+      }
+    ]
+  },
+  {
+    "function": "public.record_breeding_with_parents",
+    "issues": [
+      {
+        "level": "warning",
+        "message": "target type is different type than source type",
+        "statement": {
+          "lineNumber": "3",
+          "text": "statement block"
+        },
+        "hint": "The input expression type does not have an assignment cast to the target type.",
+        "detail": "cast \"text\" value to \"jsonb\" type",
+        "context": "during statement block local variable \"ids\" initialization on line 2",
+        "sqlState": "42804"
+      }
+    ]
+  },
+  {
+    "function": "public.save_pedigree_draft",
+    "issues": [
+      {
+        "level": "warning",
+        "message": "target type is different type than source type",
+        "statement": {
+          "lineNumber": "3",
+          "text": "statement block"
+        },
+        "hint": "The input expression type does not have an assignment cast to the target type.",
+        "detail": "cast \"text\" value to \"jsonb\" type",
+        "context": "during statement block local variable \"ids\" initialization on line 2",
+        "sqlState": "42804"
+      }
+    ]
+  }
+]

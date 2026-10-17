@@ -1,0 +1,59 @@
+[
+  {
+    "test": "actual_http_subscription_lifecycle",
+    "passed": true,
+    "milliseconds": 5698,
+    "detail": {
+      "event_count": 6434,
+      "feed_bytes": 2523388,
+      "first_allowed_date": "2026-09-01",
+      "cold_feed_ms": 2196.46,
+      "repeat_poll_preserves_all_uids": true,
+      "head_returns_no_body": true
+    }
+  },
+  {
+    "test": "date_boundaries_and_refresh",
+    "passed": true,
+    "milliseconds": 10576,
+    "detail": {
+      "history_1999_excluded": true,
+      "previous_month_boundary_included": true,
+      "future_2035_retained": true,
+      "updated_event_keeps_uid": true,
+      "deleted_events_disappear_on_poll": true,
+      "unicode_and_injection_parsed": true
+    }
+  },
+  {
+    "test": "rotate_and_revoke",
+    "passed": true,
+    "milliseconds": 2846,
+    "detail": {
+      "old_link_rejected_after_rotation": true,
+      "revoked_link_rejected": true
+    }
+  },
+  {
+    "test": "actual_http_access_denials",
+    "passed": true,
+    "milliseconds": 444,
+    "detail": {
+      "authenticated_resolver_denied": true,
+      "anonymous_resolver_denied": true,
+      "outsider_cannot_subscribe": true,
+      "invalid_tokens_rejected": true,
+      "disabled_subscriber_rejected": true
+    }
+  },
+  {
+    "test": "family_membership_revocation",
+    "passed": true,
+    "milliseconds": 5591,
+    "detail": {
+      "member_feed_works": true,
+      "revoked_member_link_stops": true,
+      "owner_feed_remains_available": true
+    }
+  }
+]

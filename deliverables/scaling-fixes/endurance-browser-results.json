@@ -1,0 +1,334 @@
+{
+  "completed": true,
+  "viewport_css_pixels": {
+    "height": 785,
+    "width": 644
+  },
+  "duration_seconds": 1801,
+  "cycles": 42,
+  "steps": 673,
+  "counters": {
+    "complete_herd_loads": 43,
+    "searches": 42,
+    "Clear search": 42,
+    "scrolls": 42,
+    "List view": 42,
+    "Card view": 42,
+    "calendar_windows_loaded": 168,
+    "Next month": 84,
+    "Previous month": 42,
+    "calendar_error_max_wait_ms": 108,
+    "visible_calendar_errors": 42,
+    "calendar_retries": 42,
+    "history_views": 42,
+    "visible_save_errors": 84,
+    "bulk_saves": 126,
+    "recovered_lose-next-write-ack": 42,
+    "recovered_offline": 42,
+    "concurrent_retry_checks": 42,
+    "recovered_slow": 42,
+    "edit_conflict_checks": 42
+  },
+  "max_mounted_animal_cards": 6,
+  "js_heap_bytes": {
+    "minimum": 50386571,
+    "maximum": 249717125,
+    "final": 54662474,
+    "first_three_cycle_end_median": 70220518,
+    "last_three_cycle_end_median": 67850670
+  },
+  "unexpected_checkpoints": [],
+  "unexpected_checkpoint_count": 0,
+  "heap_scope": "JavaScript heap only; excludes GPU/Wasm.",
+  "faults": "Synthetic HTTP 503 outages, 350ms added delay, and committed inserts with lost acknowledgement; no packet-loss emulation",
+  "timeline": [
+    {
+      "elapsed_seconds": 52,
+      "ticks": 20,
+      "cycles": 1,
+      "phase": "Reload 1,000 animals",
+      "js_heap_bytes": 217652544,
+      "mounted_elements": 1522,
+      "max_mounted_cards": 6
+    },
+    {
+      "elapsed_seconds": 115,
+      "ticks": 44,
+      "cycles": 2,
+      "phase": "Bulk save: offline",
+      "js_heap_bytes": 64637309,
+      "mounted_elements": 1216,
+      "max_mounted_cards": 6
+    },
+    {
+      "elapsed_seconds": 168,
+      "ticks": 64,
+      "cycles": 4,
+      "phase": "Cycle 4 complete",
+      "js_heap_bytes": 67518123,
+      "mounted_elements": 1216,
+      "max_mounted_cards": 6
+    },
+    {
+      "elapsed_seconds": 232,
+      "ticks": 88,
+      "cycles": 5,
+      "phase": "Three-month calendar",
+      "js_heap_bytes": 246641827,
+      "mounted_elements": 2280,
+      "max_mounted_cards": 6
+    },
+    {
+      "elapsed_seconds": 296,
+      "ticks": 112,
+      "cycles": 7,
+      "phase": "Cycle 7 complete",
+      "js_heap_bytes": 65057636,
+      "mounted_elements": 1216,
+      "max_mounted_cards": 6
+    },
+    {
+      "elapsed_seconds": 351,
+      "ticks": 132,
+      "cycles": 8,
+      "phase": "Reload 1,000 animals",
+      "js_heap_bytes": 211100930,
+      "mounted_elements": 1522,
+      "max_mounted_cards": 6
+    },
+    {
+      "elapsed_seconds": 414,
+      "ticks": 156,
+      "cycles": 9,
+      "phase": "Bulk save: offline",
+      "js_heap_bytes": 69669235,
+      "mounted_elements": 1216,
+      "max_mounted_cards": 6
+    },
+    {
+      "elapsed_seconds": 479,
+      "ticks": 180,
+      "cycles": 11,
+      "phase": "Reload 1,000 animals",
+      "js_heap_bytes": 211046902,
+      "mounted_elements": 1522,
+      "max_mounted_cards": 6
+    },
+    {
+      "elapsed_seconds": 531,
+      "ticks": 200,
+      "cycles": 12,
+      "phase": "Three-month calendar",
+      "js_heap_bytes": 235130998,
+      "mounted_elements": 2280,
+      "max_mounted_cards": 6
+    },
+    {
+      "elapsed_seconds": 597,
+      "ticks": 224,
+      "cycles": 14,
+      "phase": "Cycle 14 complete",
+      "js_heap_bytes": 67374562,
+      "mounted_elements": 1216,
+      "max_mounted_cards": 6
+    },
+    {
+      "elapsed_seconds": 659,
+      "ticks": 248,
+      "cycles": 15,
+      "phase": "Three-month calendar",
+      "js_heap_bytes": 59400621,
+      "mounted_elements": 2280,
+      "max_mounted_cards": 6
+    },
+    {
+      "elapsed_seconds": 715,
+      "ticks": 268,
+      "cycles": 16,
+      "phase": "Bulk save: offline",
+      "js_heap_bytes": 90308214,
+      "mounted_elements": 1216,
+      "max_mounted_cards": 6
+    },
+    {
+      "elapsed_seconds": 778,
+      "ticks": 292,
+      "cycles": 18,
+      "phase": "Reload 1,000 animals",
+      "js_heap_bytes": 212475625,
+      "mounted_elements": 1522,
+      "max_mounted_cards": 6
+    },
+    {
+      "elapsed_seconds": 833,
+      "ticks": 312,
+      "cycles": 19,
+      "phase": "Three-month calendar",
+      "js_heap_bytes": 59004142,
+      "mounted_elements": 2280,
+      "max_mounted_cards": 6
+    },
+    {
+      "elapsed_seconds": 897,
+      "ticks": 336,
+      "cycles": 21,
+      "phase": "Cycle 21 complete",
+      "js_heap_bytes": 54849388,
+      "mounted_elements": 1216,
+      "max_mounted_cards": 6
+    },
+    {
+      "elapsed_seconds": 952,
+      "ticks": 356,
+      "cycles": 22,
+      "phase": "Reload 1,000 animals",
+      "js_heap_bytes": 205517404,
+      "mounted_elements": 1522,
+      "max_mounted_cards": 6
+    },
+    {
+      "elapsed_seconds": 1014,
+      "ticks": 380,
+      "cycles": 23,
+      "phase": "Bulk save: offline",
+      "js_heap_bytes": 73002728,
+      "mounted_elements": 1216,
+      "max_mounted_cards": 6
+    },
+    {
+      "elapsed_seconds": 1067,
+      "ticks": 400,
+      "cycles": 25,
+      "phase": "Cycle 25 complete",
+      "js_heap_bytes": 70489923,
+      "mounted_elements": 1216,
+      "max_mounted_cards": 6
+    },
+    {
+      "elapsed_seconds": 1132,
+      "ticks": 424,
+      "cycles": 26,
+      "phase": "Three-month calendar",
+      "js_heap_bytes": 59490576,
+      "mounted_elements": 2280,
+      "max_mounted_cards": 6
+    },
+    {
+      "elapsed_seconds": 1196,
+      "ticks": 448,
+      "cycles": 28,
+      "phase": "Cycle 28 complete",
+      "js_heap_bytes": 51202076,
+      "mounted_elements": 1216,
+      "max_mounted_cards": 6
+    },
+    {
+      "elapsed_seconds": 1251,
+      "ticks": 468,
+      "cycles": 29,
+      "phase": "Reload 1,000 animals",
+      "js_heap_bytes": 208105512,
+      "mounted_elements": 1522,
+      "max_mounted_cards": 6
+    },
+    {
+      "elapsed_seconds": 1314,
+      "ticks": 492,
+      "cycles": 30,
+      "phase": "Bulk save: offline",
+      "js_heap_bytes": 93395922,
+      "mounted_elements": 1216,
+      "max_mounted_cards": 6
+    },
+    {
+      "elapsed_seconds": 1379,
+      "ticks": 516,
+      "cycles": 32,
+      "phase": "Reload 1,000 animals",
+      "js_heap_bytes": 206685549,
+      "mounted_elements": 1522,
+      "max_mounted_cards": 6
+    },
+    {
+      "elapsed_seconds": 1431,
+      "ticks": 536,
+      "cycles": 33,
+      "phase": "Three-month calendar",
+      "js_heap_bytes": 59993534,
+      "mounted_elements": 2280,
+      "max_mounted_cards": 6
+    },
+    {
+      "elapsed_seconds": 1497,
+      "ticks": 560,
+      "cycles": 35,
+      "phase": "Cycle 35 complete",
+      "js_heap_bytes": 71115750,
+      "mounted_elements": 1216,
+      "max_mounted_cards": 6
+    },
+    {
+      "elapsed_seconds": 1559,
+      "ticks": 584,
+      "cycles": 36,
+      "phase": "Three-month calendar",
+      "js_heap_bytes": 61032863,
+      "mounted_elements": 2280,
+      "max_mounted_cards": 6
+    },
+    {
+      "elapsed_seconds": 1615,
+      "ticks": 604,
+      "cycles": 37,
+      "phase": "Bulk save: offline",
+      "js_heap_bytes": 75277146,
+      "mounted_elements": 1216,
+      "max_mounted_cards": 6
+    },
+    {
+      "elapsed_seconds": 1678,
+      "ticks": 628,
+      "cycles": 39,
+      "phase": "Reload 1,000 animals",
+      "js_heap_bytes": 202157179,
+      "mounted_elements": 1522,
+      "max_mounted_cards": 6
+    },
+    {
+      "elapsed_seconds": 1732,
+      "ticks": 648,
+      "cycles": 40,
+      "phase": "Three-month calendar",
+      "js_heap_bytes": 238367694,
+      "mounted_elements": 2280,
+      "max_mounted_cards": 6
+    },
+    {
+      "elapsed_seconds": 1796,
+      "ticks": 672,
+      "cycles": 42,
+      "phase": "Cycle 42 complete",
+      "js_heap_bytes": 71229843,
+      "mounted_elements": 1216,
+      "max_mounted_cards": 6
+    },
+    {
+      "elapsed_seconds": 1801,
+      "ticks": 673,
+      "cycles": 42,
+      "phase": "Reload 1,000 animals",
+      "js_heap_bytes": 54662474,
+      "mounted_elements": 1216,
+      "max_mounted_cards": 6
+    }
+  ],
+  "proxy_final": {
+    "requests": 4006,
+    "injected_offline": 119,
+    "lost_acknowledgements": 58,
+    "slow_requests": 430
+  },
+  "calibration_notes": "Two incomplete runs are preserved separately. A widget regression confirmed the error/retry card must be scrolled into view below the month grid.",
+  "start_utc": "2026-10-17T00:04:01.725436+00:00",
+  "end_utc": "2026-10-17T00:34:02.477276+00:00"
+}

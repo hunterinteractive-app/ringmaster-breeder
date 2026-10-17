@@ -1,0 +1,11 @@
+{
+  "complete": false,
+  "stopped_for": "The calendar error card is below the month grid in a lazy ListView. The harness must scroll it into view before looking for mounted elements.",
+  "duration_seconds": 293,
+  "cycles": 6,
+  "errors": [
+    "step 8: Bad state: Calendar outage did not surface within 10s",
+    "step 8: Bad state: Calendar outage did not surface within 10s",
+    "step 8: Bad state: Calendar outage did not surface within 10s"
+  ]
+}

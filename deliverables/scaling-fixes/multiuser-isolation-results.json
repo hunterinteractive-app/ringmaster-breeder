@@ -1,0 +1,459 @@
+{
+  "passed": true,
+  "families": 50,
+  "foreign_rows_exposed": 0,
+  "partial_or_unauthorized_writes": 0,
+  "rejected_weight_rows": 100,
+  "results": [
+    {
+      "breeder": "large-history-owner",
+      "foreign_reads": 0,
+      "mixed_family_insert_status": 403,
+      "ids": [
+        "8f72aa59-60fe-44ef-bfa9-808e6de2f040",
+        "9622e88e-54e9-4a92-adec-dd351097549e"
+      ]
+    },
+    {
+      "breeder": "breeder-1",
+      "foreign_reads": 0,
+      "mixed_family_insert_status": 403,
+      "ids": [
+        "c913e0f2-795e-4f8d-98e9-ac50449f8d58",
+        "42f9b478-2826-499a-9877-9eedb1149f2c"
+      ]
+    },
+    {
+      "breeder": "breeder-2",
+      "foreign_reads": 0,
+      "mixed_family_insert_status": 403,
+      "ids": [
+        "9186d576-65e4-4098-918d-7462f352abb0",
+        "fb8e9ac3-8bb6-4d3a-9321-3348793b56d6"
+      ]
+    },
+    {
+      "breeder": "breeder-3",
+      "foreign_reads": 0,
+      "mixed_family_insert_status": 403,
+      "ids": [
+        "aa7bccb0-d79e-4762-8de6-c38ea6cdf0bd",
+        "ba857736-a886-4f46-b88e-74cb1e2ea1c2"
+      ]
+    },
+    {
+      "breeder": "breeder-4",
+      "foreign_reads": 0,
+      "mixed_family_insert_status": 403,
+      "ids": [
+        "4481a500-2017-4047-9bfa-120700496a52",
+        "aee99abf-3c39-4a19-9934-18d411fc3948"
+      ]
+    },
+    {
+      "breeder": "breeder-5",
+      "foreign_reads": 0,
+      "mixed_family_insert_status": 403,
+      "ids": [
+        "2c9783e6-d41b-47a5-88e7-f65d40883b65",
+        "5e9342b5-f800-4ca4-bba1-34796bb629ef"
+      ]
+    },
+    {
+      "breeder": "breeder-6",
+      "foreign_reads": 0,
+      "mixed_family_insert_status": 403,
+      "ids": [
+        "4b9a191b-b62e-451c-9e0c-0e77649fcab3",
+        "c578cc00-bea5-4451-90c2-8f9614151129"
+      ]
+    },
+    {
+      "breeder": "breeder-7",
+      "foreign_reads": 0,
+      "mixed_family_insert_status": 403,
+      "ids": [
+        "c72a4a2f-a6d6-4d65-80df-c8f16acd34c6",
+        "3c5ad21c-2e79-4dd6-91e1-11ec6ff4e96e"
+      ]
+    },
+    {
+      "breeder": "breeder-8",
+      "foreign_reads": 0,
+      "mixed_family_insert_status": 403,
+      "ids": [
+        "119c9345-622c-4ddc-ae54-91016e606706",
+        "0e7eb761-6f33-4694-b8c8-40d51311cedb"
+      ]
+    },
+    {
+      "breeder": "breeder-9",
+      "foreign_reads": 0,
+      "mixed_family_insert_status": 403,
+      "ids": [
+        "b5d602e7-7547-4b88-b33d-99e0f14b0523",
+        "127aa5c4-7bb9-4998-bd08-9b13481c144a"
+      ]
+    },
+    {
+      "breeder": "breeder-10",
+      "foreign_reads": 0,
+      "mixed_family_insert_status": 403,
+      "ids": [
+        "982802db-ced5-4981-a379-0a91d48fa14b",
+        "a6c11a78-6bf3-4c2c-a231-b16cb82ea08c"
+      ]
+    },
+    {
+      "breeder": "breeder-11",
+      "foreign_reads": 0,
+      "mixed_family_insert_status": 403,
+      "ids": [
+        "92064e82-d1d1-479e-8193-9848b2b3000f",
+        "b419880f-a108-4912-95f3-af146f8cbee7"
+      ]
+    },
+    {
+      "breeder": "breeder-12",
+      "foreign_reads": 0,
+      "mixed_family_insert_status": 403,
+      "ids": [
+        "7e5e8f9b-aaaf-4cbc-8bce-e1e9c03a6b48",
+        "fb37c745-18a2-4fd8-adcb-2773e607b23e"
+      ]
+    },
+    {
+      "breeder": "breeder-13",
+      "foreign_reads": 0,
+      "mixed_family_insert_status": 403,
+      "ids": [
+        "74488741-1e0e-4b1a-8913-0889c1fea757",
+        "69b572ca-f3e1-4c98-ac9c-6274cac734e9"
+      ]
+    },
+    {
+      "breeder": "breeder-14",
+      "foreign_reads": 0,
+      "mixed_family_insert_status": 403,
+      "ids": [
+        "09e45d39-d031-4b4f-b2b7-594b6f8fd0fb",
+        "60e949d9-4e16-43a8-a8fb-b4ac57851b59"
+      ]
+    },
+    {
+      "breeder": "breeder-15",
+      "foreign_reads": 0,
+      "mixed_family_insert_status": 403,
+      "ids": [
+        "31ca4ad6-bd9b-49a5-9dbb-eaaa8cfd1b98",
+        "593c8baf-f5ba-455d-86e9-eea07decd6dc"
+      ]
+    },
+    {
+      "breeder": "breeder-16",
+      "foreign_reads": 0,
+      "mixed_family_insert_status": 403,
+      "ids": [
+        "50171b4f-e589-4e8f-a1d8-cabccd61cb22",
+        "8c8ccb1f-19e8-4ef6-a125-4dd722d136f5"
+      ]
+    },
+    {
+      "breeder": "breeder-17",
+      "foreign_reads": 0,
+      "mixed_family_insert_status": 403,
+      "ids": [
+        "218e9af2-f3b0-4863-a284-c6aa1ba411a8",
+        "ca098005-1a3b-4dda-b9d3-b51654de9ea7"
+      ]
+    },
+    {
+      "breeder": "breeder-18",
+      "foreign_reads": 0,
+      "mixed_family_insert_status": 403,
+      "ids": [
+        "9ad893f7-8a8f-47c8-9ea8-a84d069a9195",
+        "eb82caca-3b58-4f48-ad3a-303078101e83"
+      ]
+    },
+    {
+      "breeder": "breeder-19",
+      "foreign_reads": 0,
+      "mixed_family_insert_status": 403,
+      "ids": [
+        "558bae0c-dbc1-49b0-aaa7-2fa38909addd",
+        "b1fe51c3-87a4-452e-b742-e2bc05d6728a"
+      ]
+    },
+    {
+      "breeder": "breeder-20",
+      "foreign_reads": 0,
+      "mixed_family_insert_status": 403,
+      "ids": [
+        "533aa99b-5aee-41f7-bbe5-bef773097d82",
+        "8d9e6ce2-78bf-4b03-9297-90049066bfc2"
+      ]
+    },
+    {
+      "breeder": "breeder-21",
+      "foreign_reads": 0,
+      "mixed_family_insert_status": 403,
+      "ids": [
+        "969b05ed-0798-4604-832d-f9d8d131e0db",
+        "e258fce7-562c-44a3-9049-3ed78934669a"
+      ]
+    },
+    {
+      "breeder": "breeder-22",
+      "foreign_reads": 0,
+      "mixed_family_insert_status": 403,
+      "ids": [
+        "5ce81c39-9e0c-4b15-8fb3-a31d974002d1",
+        "5ebd3c35-92aa-40bc-9f45-122fccd82686"
+      ]
+    },
+    {
+      "breeder": "breeder-23",
+      "foreign_reads": 0,
+      "mixed_family_insert_status": 403,
+      "ids": [
+        "e185a282-5363-41f9-b861-834c394fbee0",
+        "ad8700e1-3a8b-4acb-bc2b-04f051eda4fc"
+      ]
+    },
+    {
+      "breeder": "breeder-24",
+      "foreign_reads": 0,
+      "mixed_family_insert_status": 403,
+      "ids": [
+        "58c123b9-d31e-4c7c-ae2f-b7ab10253148",
+        "2a2854d1-58be-416d-869c-9c1b4ed9f15e"
+      ]
+    },
+    {
+      "breeder": "breeder-25",
+      "foreign_reads": 0,
+      "mixed_family_insert_status": 403,
+      "ids": [
+        "05a0e6da-a394-4e85-9b55-6de52e72cd62",
+        "90926729-af4a-4b1e-a79b-477d9e3b011d"
+      ]
+    },
+    {
+      "breeder": "breeder-26",
+      "foreign_reads": 0,
+      "mixed_family_insert_status": 403,
+      "ids": [
+        "fc41b7c9-e556-428d-bb87-a13d67616037",
+        "2a3296d1-77a2-4a83-9abf-15a771a3b207"
+      ]
+    },
+    {
+      "breeder": "breeder-27",
+      "foreign_reads": 0,
+      "mixed_family_insert_status": 403,
+      "ids": [
+        "ad04f9c3-52f8-43db-9435-744a87316325",
+        "382300bf-e6c9-4706-b229-2aaaedbcc648"
+      ]
+    },
+    {
+      "breeder": "breeder-28",
+      "foreign_reads": 0,
+      "mixed_family_insert_status": 403,
+      "ids": [
+        "71fcc43a-8056-40e1-b1bc-53cc51b72ba4",
+        "0b2ffd87-a459-4d01-ade6-f72220c48310"
+      ]
+    },
+    {
+      "breeder": "breeder-29",
+      "foreign_reads": 0,
+      "mixed_family_insert_status": 403,
+      "ids": [
+        "127ddde8-aa66-4901-b18c-610dbb5e931a",
+        "76e79582-eb83-4b33-930a-a573462ee079"
+      ]
+    },
+    {
+      "breeder": "breeder-30",
+      "foreign_reads": 0,
+      "mixed_family_insert_status": 403,
+      "ids": [
+        "36f35096-7c07-4633-a13e-d7b2abc7c658",
+        "467352c2-7e0f-47ca-90be-14263ac54d8a"
+      ]
+    },
+    {
+      "breeder": "breeder-31",
+      "foreign_reads": 0,
+      "mixed_family_insert_status": 403,
+      "ids": [
+        "d699c4c6-a8a6-4a33-8335-f12b2329dcab",
+        "3089bbf9-31d2-4b4d-990b-fec7763b252b"
+      ]
+    },
+    {
+      "breeder": "breeder-32",
+      "foreign_reads": 0,
+      "mixed_family_insert_status": 403,
+      "ids": [
+        "0e4e2c1a-3009-4330-939a-1c621caaec2f",
+        "b3aab550-b4eb-47c6-8bf9-c5e1807c5ada"
+      ]
+    },
+    {
+      "breeder": "breeder-33",
+      "foreign_reads": 0,
+      "mixed_family_insert_status": 403,
+      "ids": [
+        "e0d0317a-b2e9-412d-af19-4942e30e7713",
+        "7d500759-7094-403c-9f12-16391abbce0c"
+      ]
+    },
+    {
+      "breeder": "breeder-34",
+      "foreign_reads": 0,
+      "mixed_family_insert_status": 403,
+      "ids": [
+        "7549d816-28a3-45aa-85d1-83d2e015bec0",
+        "39349c5b-4dc3-45a2-aaab-1892717be93a"
+      ]
+    },
+    {
+      "breeder": "breeder-35",
+      "foreign_reads": 0,
+      "mixed_family_insert_status": 403,
+      "ids": [
+        "c68c2290-1afd-4729-95f5-b6d50f9d7952",
+        "232230b6-f574-4b50-a93f-60ab68c942e7"
+      ]
+    },
+    {
+      "breeder": "breeder-36",
+      "foreign_reads": 0,
+      "mixed_family_insert_status": 403,
+      "ids": [
+        "488bc2c7-e3e1-463a-bb7d-b2d40c0aca40",
+        "b5834b48-c7b7-49bd-beab-09e595e4626c"
+      ]
+    },
+    {
+      "breeder": "breeder-37",
+      "foreign_reads": 0,
+      "mixed_family_insert_status": 403,
+      "ids": [
+        "1cc2f5ec-4ef9-4241-8bfe-611b5ac625e3",
+        "f013bf2f-411e-4ffa-bb38-b83a005838a6"
+      ]
+    },
+    {
+      "breeder": "breeder-38",
+      "foreign_reads": 0,
+      "mixed_family_insert_status": 403,
+      "ids": [
+        "3e69a961-fa14-44c3-a6c5-135d4ecf3eda",
+        "9489b0fa-7bb7-4da4-ad55-14c95b7c2359"
+      ]
+    },
+    {
+      "breeder": "breeder-39",
+      "foreign_reads": 0,
+      "mixed_family_insert_status": 403,
+      "ids": [
+        "dbb256f5-eeb2-4e91-868e-4d4992afa9fa",
+        "ca487ceb-d639-48c2-9273-b8d4389f43bb"
+      ]
+    },
+    {
+      "breeder": "breeder-40",
+      "foreign_reads": 0,
+      "mixed_family_insert_status": 403,
+      "ids": [
+        "b26dd21d-6ad5-4eeb-b846-a0b567466cd4",
+        "060e81d4-d072-4c43-9d1c-c26d795fe61e"
+      ]
+    },
+    {
+      "breeder": "breeder-41",
+      "foreign_reads": 0,
+      "mixed_family_insert_status": 403,
+      "ids": [
+        "8d2e4bff-ab37-4678-b8d5-10585f008626",
+        "2bb25c87-68e9-4912-839b-8edafc8fdf77"
+      ]
+    },
+    {
+      "breeder": "breeder-42",
+      "foreign_reads": 0,
+      "mixed_family_insert_status": 403,
+      "ids": [
+        "ce65bf8c-360c-48c4-a00c-d3bc06fbbbab",
+        "28ea39ed-0c33-4084-822e-bd0a24a4b1b9"
+      ]
+    },
+    {
+      "breeder": "breeder-43",
+      "foreign_reads": 0,
+      "mixed_family_insert_status": 403,
+      "ids": [
+        "0b695f10-1d0c-4d4a-bb76-20089418e354",
+        "27616168-7765-4360-8a45-9591fee55cbf"
+      ]
+    },
+    {
+      "breeder": "breeder-44",
+      "foreign_reads": 0,
+      "mixed_family_insert_status": 403,
+      "ids": [
+        "b739d21d-ac3a-4354-8e56-0a3503de8e9e",
+        "65225093-b83d-437e-ac71-bbf2b0d232bf"
+      ]
+    },
+    {
+      "breeder": "breeder-45",
+      "foreign_reads": 0,
+      "mixed_family_insert_status": 403,
+      "ids": [
+        "f404f0cb-698f-4b3e-b9c3-1dfb2ef9d2a2",
+        "f24e519d-6086-4861-b9fc-b6f252a4a1c2"
+      ]
+    },
+    {
+      "breeder": "breeder-46",
+      "foreign_reads": 0,
+      "mixed_family_insert_status": 403,
+      "ids": [
+        "bd9d94be-7483-4d5c-8897-446de05af101",
+        "a4e31167-d0db-4d53-8b40-663832473ba9"
+      ]
+    },
+    {
+      "breeder": "breeder-47",
+      "foreign_reads": 0,
+      "mixed_family_insert_status": 403,
+      "ids": [
+        "5d4bbe0e-c8b9-499e-a269-ad0805430b7c",
+        "d12de4d6-2ba8-4aff-be76-93c6a070f170"
+      ]
+    },
+    {
+      "breeder": "breeder-48",
+      "foreign_reads": 0,
+      "mixed_family_insert_status": 403,
+      "ids": [
+        "6eed7907-f1d9-44ae-a2fd-4eaef8336931",
+        "73cbc123-8828-4f23-bf58-d45207b54d69"
+      ]
+    },
+    {
+      "breeder": "breeder-49",
+      "foreign_reads": 0,
+      "mixed_family_insert_status": 403,
+      "ids": [
+        "38d8ed1c-c906-4381-a20f-3785f0127967",
+        "624bbbbe-dc35-480a-8607-7aa142cc34be"
+      ]
+    }
+  ]
+}

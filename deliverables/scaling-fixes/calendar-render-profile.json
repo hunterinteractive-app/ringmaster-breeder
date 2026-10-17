@@ -1,0 +1,134 @@
+[
+  {
+    "events": 1000,
+    "implementation": "fixed",
+    "samples": [
+      {
+        "wall_ms": 7,
+        "cpu_ms": 14,
+        "bytes": 370798
+      },
+      {
+        "wall_ms": 6,
+        "cpu_ms": 14,
+        "bytes": 370798
+      },
+      {
+        "wall_ms": 6,
+        "cpu_ms": 9,
+        "bytes": 370798
+      }
+    ],
+    "identical_output": true
+  },
+  {
+    "events": 1000,
+    "implementation": "pre_fix",
+    "samples": [
+      {
+        "wall_ms": 59,
+        "cpu_ms": 93,
+        "bytes": 370798
+      },
+      {
+        "wall_ms": 61,
+        "cpu_ms": 103,
+        "bytes": 370798
+      },
+      {
+        "wall_ms": 61,
+        "cpu_ms": 99,
+        "bytes": 370798
+      }
+    ],
+    "identical_output": true
+  },
+  {
+    "events": 6500,
+    "implementation": "fixed",
+    "samples": [
+      {
+        "wall_ms": 55,
+        "cpu_ms": 97,
+        "bytes": 2420978
+      },
+      {
+        "wall_ms": 71,
+        "cpu_ms": 129,
+        "bytes": 2420978
+      },
+      {
+        "wall_ms": 59,
+        "cpu_ms": 101,
+        "bytes": 2420978
+      }
+    ],
+    "identical_output": true
+  },
+  {
+    "events": 6500,
+    "implementation": "pre_fix",
+    "samples": [
+      {
+        "wall_ms": 470,
+        "cpu_ms": 770,
+        "bytes": 2420978
+      },
+      {
+        "wall_ms": 451,
+        "cpu_ms": 717,
+        "bytes": 2420978
+      },
+      {
+        "wall_ms": 451,
+        "cpu_ms": 720,
+        "bytes": 2420978
+      }
+    ],
+    "identical_output": true
+  },
+  {
+    "events": 20000,
+    "implementation": "fixed",
+    "samples": [
+      {
+        "wall_ms": 175,
+        "cpu_ms": 315,
+        "bytes": 7473618
+      },
+      {
+        "wall_ms": 202,
+        "cpu_ms": 397,
+        "bytes": 7473618
+      },
+      {
+        "wall_ms": 164,
+        "cpu_ms": 319,
+        "bytes": 7473618
+      }
+    ],
+    "identical_output": true
+  },
+  {
+    "events": 20000,
+    "implementation": "pre_fix",
+    "samples": [
+      {
+        "wall_ms": 1205,
+        "cpu_ms": 1944,
+        "bytes": 7473618
+      },
+      {
+        "wall_ms": 1308,
+        "cpu_ms": 2097,
+        "bytes": 7473618
+      },
+      {
+        "wall_ms": 1213,
+        "cpu_ms": 1963,
+        "bytes": 7473618
+      }
+    ],
+    "identical_output": true
+  }
+]

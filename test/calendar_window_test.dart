@@ -7,6 +7,41 @@ import 'package:ringmaster_breeder/utils/herd_calendar.dart';
 
 void main() {
   testWidgets(
+    'calendar outage can be reached and retried below the month grid',
+    (tester) async {
+      tester.view.physicalSize = const Size(1280, 720);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+      var attempts = 0;
+      await tester.pumpWidget(
+        MaterialApp(
+          home: HerdCalendarScreen(
+            ringId: 'r',
+            windowLoader: (_) async {
+              if (++attempts == 1) throw StateError('Synthetic outage');
+              return [];
+            },
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+      final error = find.text('Unable to load calendar. Please try again.');
+      await tester.scrollUntilVisible(
+        error,
+        200,
+        scrollable: find.byType(Scrollable).first,
+      );
+      expect(error.hitTestable(), findsOneWidget);
+      await tester.tap(find.text('Retry'));
+      await tester.pumpAndSettle();
+      expect(attempts, 2);
+      expect(error, findsNothing);
+      expect(tester.takeException(), isNull);
+    },
+  );
+
+  testWidgets(
     'calendar rolls across years, returns to today and ignores stale requests',
     (tester) async {
       tester.view.physicalSize = const Size(1200, 1800);

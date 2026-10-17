@@ -1,0 +1,9 @@
+{
+  "complete": false,
+  "stopped_for": "Replace a fixed 500ms rendering assumption with a bounded UI-state wait; no product timeout was captured.",
+  "duration_seconds": 456,
+  "cycles": 10,
+  "errors": [
+    "step 8: Bad state: Calendar outage did not surface"
+  ]
+}

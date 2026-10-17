@@ -1,0 +1,7 @@
+{
+  "passed": true,
+  "identities_including_unauthenticated": 53,
+  "animal_identity_comparisons": 2650000,
+  "differences": 0,
+  "method": "Compare original animal_access(uuid) with cached-ring membership over all 50000 synthetic animals for each identity; request identity changes before each statement."
+}

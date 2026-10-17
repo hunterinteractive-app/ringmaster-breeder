@@ -1,0 +1,33 @@
+{
+  "future_fixture_rows": 14000,
+  "experiments": [
+    {
+      "implementation": "committed_function",
+      "worker_policy": "oneshot",
+      "cpu_hard_limit_ms": 2000,
+      "status": 546,
+      "milliseconds": 4034.03,
+      "response_bytes": 107,
+      "error": {
+        "code": "WORKER_LIMIT",
+        "message": "Worker failed to respond due to a resource limit (please check logs)"
+      }
+    },
+    {
+      "implementation": "temporary_utf8_folding_experiment",
+      "worker_policy": "oneshot",
+      "cpu_hard_limit_ms": 2000,
+      "status": 200,
+      "milliseconds": 2572.87,
+      "response_bytes": 8196282,
+      "error": null,
+      "events": 20434,
+      "future_fixture_events": 14000,
+      "old_history_excluded": true,
+      "future_2035_retained": true,
+      "max_line_bytes": 75
+    }
+  ],
+  "production_source_sha256": "2213cf5b6fd0275f9f58f32be3bd9b2a05c75f548623bacf186427c9295b1b5b",
+  "experimental_change_published": false
+}

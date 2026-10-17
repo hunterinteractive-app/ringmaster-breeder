@@ -1,0 +1,15 @@
+{
+  "passed": true,
+  "checks": [
+    "owner and accepted member can read; outsider cannot read animals, weights, health, or breeding",
+    "revoked membership takes effect on the next request",
+    "unaccepted membership grants no access",
+    "inactive owners and demo herds grant no animal or history access",
+    "moving a health record into another family is rejected without changing it",
+    "mixed-family health writes fail atomically",
+    "moving an animal into another family is rejected",
+    "accepted members can create, update and delete their family health records",
+    "breeding reads require access to both parents; multiple-family scope refreshes after revocation",
+    "helper is private, stable, fixed-search-path; anonymous execution denied; RLS remains enabled"
+  ]
+}

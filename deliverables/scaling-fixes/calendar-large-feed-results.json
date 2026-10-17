@@ -1,0 +1,55 @@
+{
+  "future_fixture_rows": 14000,
+  "attempts": [
+    {
+      "implementation": "fixed_function",
+      "attempt": 1,
+      "worker_policy": "oneshot",
+      "cpu_hard_limit_ms": 2000,
+      "status": 200,
+      "milliseconds": 3740.88,
+      "response_bytes": 8196282,
+      "error": null,
+      "events": 20434,
+      "future_fixture_events": 14000,
+      "old_history_excluded": true,
+      "future_2035_retained": true,
+      "max_line_bytes": 75,
+      "unique_uids": true
+    },
+    {
+      "implementation": "fixed_function",
+      "attempt": 2,
+      "worker_policy": "oneshot",
+      "cpu_hard_limit_ms": 2000,
+      "status": 200,
+      "milliseconds": 9468.06,
+      "response_bytes": 8196282,
+      "error": null,
+      "events": 20434,
+      "future_fixture_events": 14000,
+      "old_history_excluded": true,
+      "future_2035_retained": true,
+      "max_line_bytes": 75,
+      "unique_uids": true
+    },
+    {
+      "implementation": "fixed_function",
+      "attempt": 3,
+      "worker_policy": "oneshot",
+      "cpu_hard_limit_ms": 2000,
+      "status": 200,
+      "milliseconds": 19123.25,
+      "response_bytes": 8196282,
+      "error": null,
+      "events": 20434,
+      "future_fixture_events": 14000,
+      "old_history_excluded": true,
+      "future_2035_retained": true,
+      "max_line_bytes": 75,
+      "unique_uids": true
+    }
+  ],
+  "source_sha256": "a77aa90e2c99d1606178a0ef42b507f0d34f132c7c22c34cc1f17e828139ae91",
+  "passed": true
+}

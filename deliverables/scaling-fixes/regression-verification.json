@@ -1,0 +1,14 @@
+{
+  "passed": true,
+  "flutter_tests": 137,
+  "node_tests": 11,
+  "flutter_analyze": "No issues found",
+  "flutter_version": "3.38.5",
+  "dart_version": "3.10.4",
+  "database_lint_errors": 0,
+  "database_lint_scope": "public,breeder_private",
+  "database_lint_notes": "Pre-existing type-cast and unused-variable warnings in unchanged functions; no errors.",
+  "production_published": false,
+  "harness_calendar_error_check": "Scroll lazy error card into view, wait up to 10s, record maximum observed wait; save confirmation remains 80s",
+  "publication_status_scope": "Status when these isolated tests ran, before publication."
+}

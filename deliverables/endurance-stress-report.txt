@@ -1,0 +1,57 @@
+RingMaster Breeder — calendar, browser endurance, and multiuser stress tests
+2026-10-16 — release c5ede03
+
+Result: all three test groups ran; heavy-load capacity checks failed.
+All automated load used isolated synthetic local data. No production code or data was changed.
+
+Environment
+Full local Supabase Auth/PostgREST/Edge stack, production application schema and animal revision trigger.
+50 independent breeders; 50,000 animals; 990,000 historical records.
+The largest herd had 1,000 animals and 500,000 history records; 49 other herds each had 1,000 animals and 10,000 history records.
+Local Postgres 17.6.1.127, API pool 10 connections, Flutter 3.38.5/Dart 3.10.4 release browser build.
+These synchronized local bursts do not establish production hosting capacity or normal human-session throughput.
+
+1. Phone calendar and feed
+Functional lifecycle: 5/5 passed using actual HTTP, database, and Edge Function calls.
+Independent icalendar parser validated 6,434 events and approximately 2.52 MB of calendar data.
+Confirmed previous-month boundary, exclusion of older source dates, dates in 2035 with no future cutoff, stable UIDs, updates/deletions on refresh, rotation/revocation, inactive-user rejection, and revoked-member rejection.
+The user confirmed a real iPhone subscribed successfully and displayed the expected herd dates.
+Physical-phone date comparison: Not verified on the physical phone: the user did not have suitable dates to compare; automated feed boundary checks passed.
+A physical Android test was not performed. Provider-controlled refresh timing and alerts were not established by this run.
+Capacity failure: 20,434 events caused HTTP 546 WORKER_LIMIT with a fresh worker and a 2,000 ms CPU limit.
+A temporary copy with efficient UTF-8 line folding returned all 20,434 events (8.20 MB), including all 14,000 dates in 2035, within the same limit. The original repository/function source was restored; the experiment was not published.
+The CPU-only profile produced byte-identical calendars. At 20,000 events the current renderer used about 2.6–2.8 CPU seconds versus 0.3–0.5 seconds for the experiment.
+
+2. Browser endurance and simulated connection faults
+Completed 1803 seconds, 34 cycles and 558 steps with real production widgets/services in an instrumented release harness.
+Covered full herd reloads, search, scrolling, card/list switching, calendar navigation/retry, weight graphs, history fetches, bulk saves, racing retries and conflicting edits.
+Maximum mounted animal cards: 16 for 1,000 animals.
+JavaScript heap: 47.4–257.5 MB; final 58.7 MB. Cycle-end samples returned after transient peaks; GPU/Wasm memory was not measured.
+Recorded 6 failed checkpoints during API overload: one herd-load pool timeout, three 500 ms calendar-error checks, and two 80-second save-confirmation waits.
+The latter timing checkpoints describe the harness limits; they are not evidence of separate product defects. Normal cycles resumed after overload, with retry and edit-conflict checks continuing.
+Fault injection used HTTP 503, added per-request latency, and discarded success acknowledgements after real commits; it did not emulate a full cellular network.
+Independent database audit found zero duplicate logical weight entries from retries.
+
+3. Simultaneous independent breeders
+Three synchronized mixed-workload rounds at each stage; queries settled before the next round. Requests used real authenticated identities and the shared calendar query helper.
+Breeders | failed sessions / total | API requests | p95 request ms | HTTP failures
+       1 |   0 /   3 |           63 |           1992 |             0
+      10 |   1 /  30 |          492 |           6594 |             1
+      25 |  58 /  75 |          938 |          10044 |           101
+      50 | 137 / 150 |         1366 |          10018 |           260
+All 362 HTTP failures in the repeated run were PGRST003 database-pool acquisition timeouts.
+Security/integrity checks passed for all 50 families: zero foreign rows exposed and all 100 mixed-family attempted inserts rejected atomically, including authorized rows in the rejected batches.
+Actual API plans show broad ordered scans and repeated row-level access checks: the first 500 health results filtered more than 83,000 rows. An authenticated breeding calendar request took approximately 1.68 seconds at normal local load.
+
+Recommended next fixes
+- Optimize calendar queries and access checks so large unrelated family histories do not monopolize API connections; then rerun the same mixed workload.
+- Apply and regression-test efficient calendar line folding while retaining every future date; rerun the large feed under the real CPU limit.
+
+Separate local database diagnostic
+The existing nested SQL permission-denial DO block reproduced a local backend segmentation fault in the full Supabase stack. Normal authenticated/anonymous HTTP denials returned 403/401 and passed. This isolated SQL/runtime issue is not a demonstrated production subscription failure.
+Repeated polls also hit CPU limits in default local per_worker mode. Functional checks passed under oneshot, while the 20,434-event feed still failed in a fresh worker; those are distinct observations.
+
+Evidence
+endurance-stress-results.json, endurance-browser-results.json, multiuser-load-results.json, multiuser-isolation-results.json, endurance-data-audit.json, calendar-lifecycle-results.json, calendar-large-feed-results.json, calendar-render-profile.json, calendar-api-query-plans.json.
+Reusable runners and precise limits: ../tool/endurance_stress/README.txt.
+Supabase CPU-limit reference: https://supabase.com/docs/guides/functions/limits

@@ -1,6 +1,6 @@
 import {test} from 'node:test';
 import assert from 'node:assert/strict';
-import {calendarEvents,renderCalendar} from '../calendar.mjs';
+import {calendarEvents,fold,renderCalendar} from '../calendar.mjs';
 const record={id:'b1',breeding_date:'2026-10-01',status:'active',dam:{name:'Doe',tattoo:'D1',species:'rabbit'}};
 test('windows use endpoints and stable identities',()=>{
  const a=calendarEvents([record],{},[],[]);
@@ -33,6 +33,17 @@ test('RFC dates, escaping, Unicode folding and stable UID',()=>{
  assert.ok(text.split('\r\n').every(l=>Buffer.byteLength(l)<=75));
  assert.match(text.replaceAll('\r\n ',''),/\\nBEGIN:VEVENT/);
  assert.match(text,/DESCRIPTION:a\\,b\\;c\\\\d/);
+});
+test('folding counts every UTF-8 width and continuation space without splitting characters',()=>{
+ for(const character of ['a','é','€','🐇','\ud800']) {
+  for(const prefix of [0,70,71,72,73,74,75,76]) {
+   const input='a'.repeat(prefix)+character.repeat(160);
+   const output=fold(input);
+   assert.equal(output.replaceAll('\r\n ',''),input);
+   assert.ok(output.split('\r\n').every(line=>Buffer.byteLength(line)<=75));
+   assert.ok(output.split('\r\n').slice(1).every(line=>line.startsWith(' ')));
+  }
+ }
 });
 test('favorites without entries have timed deadlines and both alerts',()=>{
  const s={id:'favorite',name:'Favorite Show',start_date:'2026-11-05',entry_count:0,is_favorite:true,entry_close_at:'2026-11-01T23:59:00-05:00'};

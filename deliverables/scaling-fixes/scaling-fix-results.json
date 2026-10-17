@@ -1,0 +1,1066 @@
+{
+  "completed": true,
+  "overall_passed": true,
+  "production_changes": false,
+  "environment": "Isolated full local Supabase stack; API pool 10, max_rows 1000, worker CPU hard limit 2000ms. Synthetic data only. Not a production capacity SLA.",
+  "fixture": {
+    "breeders": 50,
+    "animals": 50000,
+    "initial_history_records": 990000,
+    "largest_herd_animals": 1000,
+    "largest_herd_history_records": 500000
+  },
+  "base_commit": "c5ede03f871d1d8ef8299105cbd4ac9145f1d18c",
+  "source_sha256": {
+    "supabase/functions/calendar-feed/calendar.mjs": "a77aa90e2c99d1606178a0ef42b507f0d34f132c7c22c34cc1f17e828139ae91",
+    "supabase/migrations/20261017023049_calendar_query_scaling.sql": "f4c0071ecca027b255ddb7177df642dc7d0db8554cd0cd609d2007bb04224a6c",
+    "tool/endurance_stress/main.dart": "9c9825be130ba81705d8197bfc4652670e7f8527de9467c79349a6183d950c03",
+    "test/calendar_window_test.dart": "eae4714022bab78ae9e6017567f1619b5ac7eb0e71dacfac1f068d5db5f302f1"
+  },
+  "phone": {
+    "physical_device": "iPhone",
+    "subscription_added": true,
+    "expected_herd_dates_visible": true,
+    "evidence": "User confirmed: Subscribed and dates appear",
+    "specific_recent_and_distant_future_device_check": "Not verified on the physical phone: the user did not have suitable dates to compare; automated feed boundary checks passed.",
+    "android_physical_device_tested": false
+  },
+  "calendar_functional_checks": [
+    {
+      "test": "actual_http_subscription_lifecycle",
+      "passed": true,
+      "milliseconds": 6981,
+      "detail": {
+        "event_count": 6434,
+        "feed_bytes": 2523388,
+        "first_allowed_date": "2026-09-01",
+        "cold_feed_ms": 2798.74,
+        "repeat_poll_preserves_all_uids": true,
+        "head_returns_no_body": true
+      }
+    },
+    {
+      "test": "date_boundaries_and_refresh",
+      "passed": true,
+      "milliseconds": 19274,
+      "detail": {
+        "history_1999_excluded": true,
+        "previous_month_boundary_included": true,
+        "future_2035_retained": true,
+        "updated_event_keeps_uid": true,
+        "deleted_events_disappear_on_poll": true,
+        "unicode_and_injection_parsed": true
+      }
+    },
+    {
+      "test": "rotate_and_revoke",
+      "passed": true,
+      "milliseconds": 6603,
+      "detail": {
+        "old_link_rejected_after_rotation": true,
+        "revoked_link_rejected": true
+      }
+    },
+    {
+      "test": "actual_http_access_denials",
+      "passed": true,
+      "milliseconds": 430,
+      "detail": {
+        "authenticated_resolver_denied": true,
+        "anonymous_resolver_denied": true,
+        "outsider_cannot_subscribe": true,
+        "invalid_tokens_rejected": true,
+        "disabled_subscriber_rejected": true
+      }
+    },
+    {
+      "test": "family_membership_revocation",
+      "passed": true,
+      "milliseconds": 4086,
+      "detail": {
+        "member_feed_works": true,
+        "revoked_member_link_stops": true,
+        "owner_feed_remains_available": true
+      }
+    }
+  ],
+  "calendar_capacity": {
+    "future_fixture_rows": 14000,
+    "attempts": [
+      {
+        "implementation": "fixed_function",
+        "attempt": 1,
+        "worker_policy": "oneshot",
+        "cpu_hard_limit_ms": 2000,
+        "status": 200,
+        "milliseconds": 3740.88,
+        "response_bytes": 8196282,
+        "error": null,
+        "events": 20434,
+        "future_fixture_events": 14000,
+        "old_history_excluded": true,
+        "future_2035_retained": true,
+        "max_line_bytes": 75,
+        "unique_uids": true
+      },
+      {
+        "implementation": "fixed_function",
+        "attempt": 2,
+        "worker_policy": "oneshot",
+        "cpu_hard_limit_ms": 2000,
+        "status": 200,
+        "milliseconds": 9468.06,
+        "response_bytes": 8196282,
+        "error": null,
+        "events": 20434,
+        "future_fixture_events": 14000,
+        "old_history_excluded": true,
+        "future_2035_retained": true,
+        "max_line_bytes": 75,
+        "unique_uids": true
+      },
+      {
+        "implementation": "fixed_function",
+        "attempt": 3,
+        "worker_policy": "oneshot",
+        "cpu_hard_limit_ms": 2000,
+        "status": 200,
+        "milliseconds": 19123.25,
+        "response_bytes": 8196282,
+        "error": null,
+        "events": 20434,
+        "future_fixture_events": 14000,
+        "old_history_excluded": true,
+        "future_2035_retained": true,
+        "max_line_bytes": 75,
+        "unique_uids": true
+      }
+    ],
+    "source_sha256": "a77aa90e2c99d1606178a0ef42b507f0d34f132c7c22c34cc1f17e828139ae91",
+    "passed": true
+  },
+  "browser": {
+    "completed": true,
+    "viewport_css_pixels": {
+      "height": 785,
+      "width": 644
+    },
+    "duration_seconds": 1801,
+    "cycles": 42,
+    "steps": 673,
+    "counters": {
+      "complete_herd_loads": 43,
+      "searches": 42,
+      "Clear search": 42,
+      "scrolls": 42,
+      "List view": 42,
+      "Card view": 42,
+      "calendar_windows_loaded": 168,
+      "Next month": 84,
+      "Previous month": 42,
+      "calendar_error_max_wait_ms": 108,
+      "visible_calendar_errors": 42,
+      "calendar_retries": 42,
+      "history_views": 42,
+      "visible_save_errors": 84,
+      "bulk_saves": 126,
+      "recovered_lose-next-write-ack": 42,
+      "recovered_offline": 42,
+      "concurrent_retry_checks": 42,
+      "recovered_slow": 42,
+      "edit_conflict_checks": 42
+    },
+    "max_mounted_animal_cards": 6,
+    "js_heap_bytes": {
+      "minimum": 50386571,
+      "maximum": 249717125,
+      "final": 54662474,
+      "first_three_cycle_end_median": 70220518,
+      "last_three_cycle_end_median": 67850670
+    },
+    "unexpected_checkpoints": [],
+    "unexpected_checkpoint_count": 0,
+    "heap_scope": "JavaScript heap only; excludes GPU/Wasm.",
+    "faults": "Synthetic HTTP 503 outages, 350ms added delay, and committed inserts with lost acknowledgement; no packet-loss emulation",
+    "timeline": [
+      {
+        "elapsed_seconds": 52,
+        "ticks": 20,
+        "cycles": 1,
+        "phase": "Reload 1,000 animals",
+        "js_heap_bytes": 217652544,
+        "mounted_elements": 1522,
+        "max_mounted_cards": 6
+      },
+      {
+        "elapsed_seconds": 115,
+        "ticks": 44,
+        "cycles": 2,
+        "phase": "Bulk save: offline",
+        "js_heap_bytes": 64637309,
+        "mounted_elements": 1216,
+        "max_mounted_cards": 6
+      },
+      {
+        "elapsed_seconds": 168,
+        "ticks": 64,
+        "cycles": 4,
+        "phase": "Cycle 4 complete",
+        "js_heap_bytes": 67518123,
+        "mounted_elements": 1216,
+        "max_mounted_cards": 6
+      },
+      {
+        "elapsed_seconds": 232,
+        "ticks": 88,
+        "cycles": 5,
+        "phase": "Three-month calendar",
+        "js_heap_bytes": 246641827,
+        "mounted_elements": 2280,
+        "max_mounted_cards": 6
+      },
+      {
+        "elapsed_seconds": 296,
+        "ticks": 112,
+        "cycles": 7,
+        "phase": "Cycle 7 complete",
+        "js_heap_bytes": 65057636,
+        "mounted_elements": 1216,
+        "max_mounted_cards": 6
+      },
+      {
+        "elapsed_seconds": 351,
+        "ticks": 132,
+        "cycles": 8,
+        "phase": "Reload 1,000 animals",
+        "js_heap_bytes": 211100930,
+        "mounted_elements": 1522,
+        "max_mounted_cards": 6
+      },
+      {
+        "elapsed_seconds": 414,
+        "ticks": 156,
+        "cycles": 9,
+        "phase": "Bulk save: offline",
+        "js_heap_bytes": 69669235,
+        "mounted_elements": 1216,
+        "max_mounted_cards": 6
+      },
+      {
+        "elapsed_seconds": 479,
+        "ticks": 180,
+        "cycles": 11,
+        "phase": "Reload 1,000 animals",
+        "js_heap_bytes": 211046902,
+        "mounted_elements": 1522,
+        "max_mounted_cards": 6
+      },
+      {
+        "elapsed_seconds": 531,
+        "ticks": 200,
+        "cycles": 12,
+        "phase": "Three-month calendar",
+        "js_heap_bytes": 235130998,
+        "mounted_elements": 2280,
+        "max_mounted_cards": 6
+      },
+      {
+        "elapsed_seconds": 597,
+        "ticks": 224,
+        "cycles": 14,
+        "phase": "Cycle 14 complete",
+        "js_heap_bytes": 67374562,
+        "mounted_elements": 1216,
+        "max_mounted_cards": 6
+      },
+      {
+        "elapsed_seconds": 659,
+        "ticks": 248,
+        "cycles": 15,
+        "phase": "Three-month calendar",
+        "js_heap_bytes": 59400621,
+        "mounted_elements": 2280,
+        "max_mounted_cards": 6
+      },
+      {
+        "elapsed_seconds": 715,
+        "ticks": 268,
+        "cycles": 16,
+        "phase": "Bulk save: offline",
+        "js_heap_bytes": 90308214,
+        "mounted_elements": 1216,
+        "max_mounted_cards": 6
+      },
+      {
+        "elapsed_seconds": 778,
+        "ticks": 292,
+        "cycles": 18,
+        "phase": "Reload 1,000 animals",
+        "js_heap_bytes": 212475625,
+        "mounted_elements": 1522,
+        "max_mounted_cards": 6
+      },
+      {
+        "elapsed_seconds": 833,
+        "ticks": 312,
+        "cycles": 19,
+        "phase": "Three-month calendar",
+        "js_heap_bytes": 59004142,
+        "mounted_elements": 2280,
+        "max_mounted_cards": 6
+      },
+      {
+        "elapsed_seconds": 897,
+        "ticks": 336,
+        "cycles": 21,
+        "phase": "Cycle 21 complete",
+        "js_heap_bytes": 54849388,
+        "mounted_elements": 1216,
+        "max_mounted_cards": 6
+      },
+      {
+        "elapsed_seconds": 952,
+        "ticks": 356,
+        "cycles": 22,
+        "phase": "Reload 1,000 animals",
+        "js_heap_bytes": 205517404,
+        "mounted_elements": 1522,
+        "max_mounted_cards": 6
+      },
+      {
+        "elapsed_seconds": 1014,
+        "ticks": 380,
+        "cycles": 23,
+        "phase": "Bulk save: offline",
+        "js_heap_bytes": 73002728,
+        "mounted_elements": 1216,
+        "max_mounted_cards": 6
+      },
+      {
+        "elapsed_seconds": 1067,
+        "ticks": 400,
+        "cycles": 25,
+        "phase": "Cycle 25 complete",
+        "js_heap_bytes": 70489923,
+        "mounted_elements": 1216,
+        "max_mounted_cards": 6
+      },
+      {
+        "elapsed_seconds": 1132,
+        "ticks": 424,
+        "cycles": 26,
+        "phase": "Three-month calendar",
+        "js_heap_bytes": 59490576,
+        "mounted_elements": 2280,
+        "max_mounted_cards": 6
+      },
+      {
+        "elapsed_seconds": 1196,
+        "ticks": 448,
+        "cycles": 28,
+        "phase": "Cycle 28 complete",
+        "js_heap_bytes": 51202076,
+        "mounted_elements": 1216,
+        "max_mounted_cards": 6
+      },
+      {
+        "elapsed_seconds": 1251,
+        "ticks": 468,
+        "cycles": 29,
+        "phase": "Reload 1,000 animals",
+        "js_heap_bytes": 208105512,
+        "mounted_elements": 1522,
+        "max_mounted_cards": 6
+      },
+      {
+        "elapsed_seconds": 1314,
+        "ticks": 492,
+        "cycles": 30,
+        "phase": "Bulk save: offline",
+        "js_heap_bytes": 93395922,
+        "mounted_elements": 1216,
+        "max_mounted_cards": 6
+      },
+      {
+        "elapsed_seconds": 1379,
+        "ticks": 516,
+        "cycles": 32,
+        "phase": "Reload 1,000 animals",
+        "js_heap_bytes": 206685549,
+        "mounted_elements": 1522,
+        "max_mounted_cards": 6
+      },
+      {
+        "elapsed_seconds": 1431,
+        "ticks": 536,
+        "cycles": 33,
+        "phase": "Three-month calendar",
+        "js_heap_bytes": 59993534,
+        "mounted_elements": 2280,
+        "max_mounted_cards": 6
+      },
+      {
+        "elapsed_seconds": 1497,
+        "ticks": 560,
+        "cycles": 35,
+        "phase": "Cycle 35 complete",
+        "js_heap_bytes": 71115750,
+        "mounted_elements": 1216,
+        "max_mounted_cards": 6
+      },
+      {
+        "elapsed_seconds": 1559,
+        "ticks": 584,
+        "cycles": 36,
+        "phase": "Three-month calendar",
+        "js_heap_bytes": 61032863,
+        "mounted_elements": 2280,
+        "max_mounted_cards": 6
+      },
+      {
+        "elapsed_seconds": 1615,
+        "ticks": 604,
+        "cycles": 37,
+        "phase": "Bulk save: offline",
+        "js_heap_bytes": 75277146,
+        "mounted_elements": 1216,
+        "max_mounted_cards": 6
+      },
+      {
+        "elapsed_seconds": 1678,
+        "ticks": 628,
+        "cycles": 39,
+        "phase": "Reload 1,000 animals",
+        "js_heap_bytes": 202157179,
+        "mounted_elements": 1522,
+        "max_mounted_cards": 6
+      },
+      {
+        "elapsed_seconds": 1732,
+        "ticks": 648,
+        "cycles": 40,
+        "phase": "Three-month calendar",
+        "js_heap_bytes": 238367694,
+        "mounted_elements": 2280,
+        "max_mounted_cards": 6
+      },
+      {
+        "elapsed_seconds": 1796,
+        "ticks": 672,
+        "cycles": 42,
+        "phase": "Cycle 42 complete",
+        "js_heap_bytes": 71229843,
+        "mounted_elements": 1216,
+        "max_mounted_cards": 6
+      },
+      {
+        "elapsed_seconds": 1801,
+        "ticks": 673,
+        "cycles": 42,
+        "phase": "Reload 1,000 animals",
+        "js_heap_bytes": 54662474,
+        "mounted_elements": 1216,
+        "max_mounted_cards": 6
+      }
+    ],
+    "proxy_final": {
+      "requests": 4006,
+      "injected_offline": 119,
+      "lost_acknowledgements": 58,
+      "slow_requests": 430
+    },
+    "calibration_notes": "Two incomplete runs are preserved separately. A widget regression confirmed the error/retry card must be scrolled into view below the month grid.",
+    "start_utc": "2026-10-17T00:04:01.725436+00:00",
+    "end_utc": "2026-10-17T00:34:02.477276+00:00"
+  },
+  "load_stages_before": [
+    {
+      "concurrent_breeders": 1,
+      "rounds": 3,
+      "sessions": 3,
+      "failed_sessions": 0,
+      "requests": 63,
+      "p95_ms": 1992,
+      "max_ms": 2099,
+      "unexpected_http_errors": 0
+    },
+    {
+      "concurrent_breeders": 10,
+      "rounds": 3,
+      "sessions": 30,
+      "failed_sessions": 1,
+      "requests": 492,
+      "p95_ms": 6594,
+      "max_ms": 12544,
+      "unexpected_http_errors": 1
+    },
+    {
+      "concurrent_breeders": 25,
+      "rounds": 3,
+      "sessions": 75,
+      "failed_sessions": 58,
+      "requests": 938,
+      "p95_ms": 10044,
+      "max_ms": 13393,
+      "unexpected_http_errors": 101
+    },
+    {
+      "concurrent_breeders": 50,
+      "rounds": 3,
+      "sessions": 150,
+      "failed_sessions": 137,
+      "requests": 1366,
+      "p95_ms": 10018,
+      "max_ms": 13298,
+      "unexpected_http_errors": 260
+    }
+  ],
+  "load_stages_after": [
+    {
+      "concurrent_breeders": 1,
+      "rounds": 3,
+      "sessions": 3,
+      "failed_sessions": 0,
+      "requests": 63,
+      "p95_ms": 172,
+      "max_ms": 184,
+      "unexpected_http_errors": 0
+    },
+    {
+      "concurrent_breeders": 10,
+      "rounds": 3,
+      "sessions": 30,
+      "failed_sessions": 0,
+      "requests": 495,
+      "p95_ms": 408,
+      "max_ms": 824,
+      "unexpected_http_errors": 0
+    },
+    {
+      "concurrent_breeders": 25,
+      "rounds": 3,
+      "sessions": 75,
+      "failed_sessions": 0,
+      "requests": 1215,
+      "p95_ms": 1072,
+      "max_ms": 2148,
+      "unexpected_http_errors": 0
+    },
+    {
+      "concurrent_breeders": 50,
+      "rounds": 3,
+      "sessions": 150,
+      "failed_sessions": 0,
+      "requests": 2415,
+      "p95_ms": 2184,
+      "max_ms": 4130,
+      "unexpected_http_errors": 0
+    }
+  ],
+  "isolation": {
+    "passed": true,
+    "families": 50,
+    "foreign_rows_exposed": 0,
+    "partial_or_unauthorized_writes": 0,
+    "rejected_weight_rows": 100,
+    "results": [
+      {
+        "breeder": "large-history-owner",
+        "foreign_reads": 0,
+        "mixed_family_insert_status": 403,
+        "ids": [
+          "8f72aa59-60fe-44ef-bfa9-808e6de2f040",
+          "9622e88e-54e9-4a92-adec-dd351097549e"
+        ]
+      },
+      {
+        "breeder": "breeder-1",
+        "foreign_reads": 0,
+        "mixed_family_insert_status": 403,
+        "ids": [
+          "c913e0f2-795e-4f8d-98e9-ac50449f8d58",
+          "42f9b478-2826-499a-9877-9eedb1149f2c"
+        ]
+      },
+      {
+        "breeder": "breeder-2",
+        "foreign_reads": 0,
+        "mixed_family_insert_status": 403,
+        "ids": [
+          "9186d576-65e4-4098-918d-7462f352abb0",
+          "fb8e9ac3-8bb6-4d3a-9321-3348793b56d6"
+        ]
+      },
+      {
+        "breeder": "breeder-3",
+        "foreign_reads": 0,
+        "mixed_family_insert_status": 403,
+        "ids": [
+          "aa7bccb0-d79e-4762-8de6-c38ea6cdf0bd",
+          "ba857736-a886-4f46-b88e-74cb1e2ea1c2"
+        ]
+      },
+      {
+        "breeder": "breeder-4",
+        "foreign_reads": 0,
+        "mixed_family_insert_status": 403,
+        "ids": [
+          "4481a500-2017-4047-9bfa-120700496a52",
+          "aee99abf-3c39-4a19-9934-18d411fc3948"
+        ]
+      },
+      {
+        "breeder": "breeder-5",
+        "foreign_reads": 0,
+        "mixed_family_insert_status": 403,
+        "ids": [
+          "2c9783e6-d41b-47a5-88e7-f65d40883b65",
+          "5e9342b5-f800-4ca4-bba1-34796bb629ef"
+        ]
+      },
+      {
+        "breeder": "breeder-6",
+        "foreign_reads": 0,
+        "mixed_family_insert_status": 403,
+        "ids": [
+          "4b9a191b-b62e-451c-9e0c-0e77649fcab3",
+          "c578cc00-bea5-4451-90c2-8f9614151129"
+        ]
+      },
+      {
+        "breeder": "breeder-7",
+        "foreign_reads": 0,
+        "mixed_family_insert_status": 403,
+        "ids": [
+          "c72a4a2f-a6d6-4d65-80df-c8f16acd34c6",
+          "3c5ad21c-2e79-4dd6-91e1-11ec6ff4e96e"
+        ]
+      },
+      {
+        "breeder": "breeder-8",
+        "foreign_reads": 0,
+        "mixed_family_insert_status": 403,
+        "ids": [
+          "119c9345-622c-4ddc-ae54-91016e606706",
+          "0e7eb761-6f33-4694-b8c8-40d51311cedb"
+        ]
+      },
+      {
+        "breeder": "breeder-9",
+        "foreign_reads": 0,
+        "mixed_family_insert_status": 403,
+        "ids": [
+          "b5d602e7-7547-4b88-b33d-99e0f14b0523",
+          "127aa5c4-7bb9-4998-bd08-9b13481c144a"
+        ]
+      },
+      {
+        "breeder": "breeder-10",
+        "foreign_reads": 0,
+        "mixed_family_insert_status": 403,
+        "ids": [
+          "982802db-ced5-4981-a379-0a91d48fa14b",
+          "a6c11a78-6bf3-4c2c-a231-b16cb82ea08c"
+        ]
+      },
+      {
+        "breeder": "breeder-11",
+        "foreign_reads": 0,
+        "mixed_family_insert_status": 403,
+        "ids": [
+          "92064e82-d1d1-479e-8193-9848b2b3000f",
+          "b419880f-a108-4912-95f3-af146f8cbee7"
+        ]
+      },
+      {
+        "breeder": "breeder-12",
+        "foreign_reads": 0,
+        "mixed_family_insert_status": 403,
+        "ids": [
+          "7e5e8f9b-aaaf-4cbc-8bce-e1e9c03a6b48",
+          "fb37c745-18a2-4fd8-adcb-2773e607b23e"
+        ]
+      },
+      {
+        "breeder": "breeder-13",
+        "foreign_reads": 0,
+        "mixed_family_insert_status": 403,
+        "ids": [
+          "74488741-1e0e-4b1a-8913-0889c1fea757",
+          "69b572ca-f3e1-4c98-ac9c-6274cac734e9"
+        ]
+      },
+      {
+        "breeder": "breeder-14",
+        "foreign_reads": 0,
+        "mixed_family_insert_status": 403,
+        "ids": [
+          "09e45d39-d031-4b4f-b2b7-594b6f8fd0fb",
+          "60e949d9-4e16-43a8-a8fb-b4ac57851b59"
+        ]
+      },
+      {
+        "breeder": "breeder-15",
+        "foreign_reads": 0,
+        "mixed_family_insert_status": 403,
+        "ids": [
+          "31ca4ad6-bd9b-49a5-9dbb-eaaa8cfd1b98",
+          "593c8baf-f5ba-455d-86e9-eea07decd6dc"
+        ]
+      },
+      {
+        "breeder": "breeder-16",
+        "foreign_reads": 0,
+        "mixed_family_insert_status": 403,
+        "ids": [
+          "50171b4f-e589-4e8f-a1d8-cabccd61cb22",
+          "8c8ccb1f-19e8-4ef6-a125-4dd722d136f5"
+        ]
+      },
+      {
+        "breeder": "breeder-17",
+        "foreign_reads": 0,
+        "mixed_family_insert_status": 403,
+        "ids": [
+          "218e9af2-f3b0-4863-a284-c6aa1ba411a8",
+          "ca098005-1a3b-4dda-b9d3-b51654de9ea7"
+        ]
+      },
+      {
+        "breeder": "breeder-18",
+        "foreign_reads": 0,
+        "mixed_family_insert_status": 403,
+        "ids": [
+          "9ad893f7-8a8f-47c8-9ea8-a84d069a9195",
+          "eb82caca-3b58-4f48-ad3a-303078101e83"
+        ]
+      },
+      {
+        "breeder": "breeder-19",
+        "foreign_reads": 0,
+        "mixed_family_insert_status": 403,
+        "ids": [
+          "558bae0c-dbc1-49b0-aaa7-2fa38909addd",
+          "b1fe51c3-87a4-452e-b742-e2bc05d6728a"
+        ]
+      },
+      {
+        "breeder": "breeder-20",
+        "foreign_reads": 0,
+        "mixed_family_insert_status": 403,
+        "ids": [
+          "533aa99b-5aee-41f7-bbe5-bef773097d82",
+          "8d9e6ce2-78bf-4b03-9297-90049066bfc2"
+        ]
+      },
+      {
+        "breeder": "breeder-21",
+        "foreign_reads": 0,
+        "mixed_family_insert_status": 403,
+        "ids": [
+          "969b05ed-0798-4604-832d-f9d8d131e0db",
+          "e258fce7-562c-44a3-9049-3ed78934669a"
+        ]
+      },
+      {
+        "breeder": "breeder-22",
+        "foreign_reads": 0,
+        "mixed_family_insert_status": 403,
+        "ids": [
+          "5ce81c39-9e0c-4b15-8fb3-a31d974002d1",
+          "5ebd3c35-92aa-40bc-9f45-122fccd82686"
+        ]
+      },
+      {
+        "breeder": "breeder-23",
+        "foreign_reads": 0,
+        "mixed_family_insert_status": 403,
+        "ids": [
+          "e185a282-5363-41f9-b861-834c394fbee0",
+          "ad8700e1-3a8b-4acb-bc2b-04f051eda4fc"
+        ]
+      },
+      {
+        "breeder": "breeder-24",
+        "foreign_reads": 0,
+        "mixed_family_insert_status": 403,
+        "ids": [
+          "58c123b9-d31e-4c7c-ae2f-b7ab10253148",
+          "2a2854d1-58be-416d-869c-9c1b4ed9f15e"
+        ]
+      },
+      {
+        "breeder": "breeder-25",
+        "foreign_reads": 0,
+        "mixed_family_insert_status": 403,
+        "ids": [
+          "05a0e6da-a394-4e85-9b55-6de52e72cd62",
+          "90926729-af4a-4b1e-a79b-477d9e3b011d"
+        ]
+      },
+      {
+        "breeder": "breeder-26",
+        "foreign_reads": 0,
+        "mixed_family_insert_status": 403,
+        "ids": [
+          "fc41b7c9-e556-428d-bb87-a13d67616037",
+          "2a3296d1-77a2-4a83-9abf-15a771a3b207"
+        ]
+      },
+      {
+        "breeder": "breeder-27",
+        "foreign_reads": 0,
+        "mixed_family_insert_status": 403,
+        "ids": [
+          "ad04f9c3-52f8-43db-9435-744a87316325",
+          "382300bf-e6c9-4706-b229-2aaaedbcc648"
+        ]
+      },
+      {
+        "breeder": "breeder-28",
+        "foreign_reads": 0,
+        "mixed_family_insert_status": 403,
+        "ids": [
+          "71fcc43a-8056-40e1-b1bc-53cc51b72ba4",
+          "0b2ffd87-a459-4d01-ade6-f72220c48310"
+        ]
+      },
+      {
+        "breeder": "breeder-29",
+        "foreign_reads": 0,
+        "mixed_family_insert_status": 403,
+        "ids": [
+          "127ddde8-aa66-4901-b18c-610dbb5e931a",
+          "76e79582-eb83-4b33-930a-a573462ee079"
+        ]
+      },
+      {
+        "breeder": "breeder-30",
+        "foreign_reads": 0,
+        "mixed_family_insert_status": 403,
+        "ids": [
+          "36f35096-7c07-4633-a13e-d7b2abc7c658",
+          "467352c2-7e0f-47ca-90be-14263ac54d8a"
+        ]
+      },
+      {
+        "breeder": "breeder-31",
+        "foreign_reads": 0,
+        "mixed_family_insert_status": 403,
+        "ids": [
+          "d699c4c6-a8a6-4a33-8335-f12b2329dcab",
+          "3089bbf9-31d2-4b4d-990b-fec7763b252b"
+        ]
+      },
+      {
+        "breeder": "breeder-32",
+        "foreign_reads": 0,
+        "mixed_family_insert_status": 403,
+        "ids": [
+          "0e4e2c1a-3009-4330-939a-1c621caaec2f",
+          "b3aab550-b4eb-47c6-8bf9-c5e1807c5ada"
+        ]
+      },
+      {
+        "breeder": "breeder-33",
+        "foreign_reads": 0,
+        "mixed_family_insert_status": 403,
+        "ids": [
+          "e0d0317a-b2e9-412d-af19-4942e30e7713",
+          "7d500759-7094-403c-9f12-16391abbce0c"
+        ]
+      },
+      {
+        "breeder": "breeder-34",
+        "foreign_reads": 0,
+        "mixed_family_insert_status": 403,
+        "ids": [
+          "7549d816-28a3-45aa-85d1-83d2e015bec0",
+          "39349c5b-4dc3-45a2-aaab-1892717be93a"
+        ]
+      },
+      {
+        "breeder": "breeder-35",
+        "foreign_reads": 0,
+        "mixed_family_insert_status": 403,
+        "ids": [
+          "c68c2290-1afd-4729-95f5-b6d50f9d7952",
+          "232230b6-f574-4b50-a93f-60ab68c942e7"
+        ]
+      },
+      {
+        "breeder": "breeder-36",
+        "foreign_reads": 0,
+        "mixed_family_insert_status": 403,
+        "ids": [
+          "488bc2c7-e3e1-463a-bb7d-b2d40c0aca40",
+          "b5834b48-c7b7-49bd-beab-09e595e4626c"
+        ]
+      },
+      {
+        "breeder": "breeder-37",
+        "foreign_reads": 0,
+        "mixed_family_insert_status": 403,
+        "ids": [
+          "1cc2f5ec-4ef9-4241-8bfe-611b5ac625e3",
+          "f013bf2f-411e-4ffa-bb38-b83a005838a6"
+        ]
+      },
+      {
+        "breeder": "breeder-38",
+        "foreign_reads": 0,
+        "mixed_family_insert_status": 403,
+        "ids": [
+          "3e69a961-fa14-44c3-a6c5-135d4ecf3eda",
+          "9489b0fa-7bb7-4da4-ad55-14c95b7c2359"
+        ]
+      },
+      {
+        "breeder": "breeder-39",
+        "foreign_reads": 0,
+        "mixed_family_insert_status": 403,
+        "ids": [
+          "dbb256f5-eeb2-4e91-868e-4d4992afa9fa",
+          "ca487ceb-d639-48c2-9273-b8d4389f43bb"
+        ]
+      },
+      {
+        "breeder": "breeder-40",
+        "foreign_reads": 0,
+        "mixed_family_insert_status": 403,
+        "ids": [
+          "b26dd21d-6ad5-4eeb-b846-a0b567466cd4",
+          "060e81d4-d072-4c43-9d1c-c26d795fe61e"
+        ]
+      },
+      {
+        "breeder": "breeder-41",
+        "foreign_reads": 0,
+        "mixed_family_insert_status": 403,
+        "ids": [
+          "8d2e4bff-ab37-4678-b8d5-10585f008626",
+          "2bb25c87-68e9-4912-839b-8edafc8fdf77"
+        ]
+      },
+      {
+        "breeder": "breeder-42",
+        "foreign_reads": 0,
+        "mixed_family_insert_status": 403,
+        "ids": [
+          "ce65bf8c-360c-48c4-a00c-d3bc06fbbbab",
+          "28ea39ed-0c33-4084-822e-bd0a24a4b1b9"
+        ]
+      },
+      {
+        "breeder": "breeder-43",
+        "foreign_reads": 0,
+        "mixed_family_insert_status": 403,
+        "ids": [
+          "0b695f10-1d0c-4d4a-bb76-20089418e354",
+          "27616168-7765-4360-8a45-9591fee55cbf"
+        ]
+      },
+      {
+        "breeder": "breeder-44",
+        "foreign_reads": 0,
+        "mixed_family_insert_status": 403,
+        "ids": [
+          "b739d21d-ac3a-4354-8e56-0a3503de8e9e",
+          "65225093-b83d-437e-ac71-bbf2b0d232bf"
+        ]
+      },
+      {
+        "breeder": "breeder-45",
+        "foreign_reads": 0,
+        "mixed_family_insert_status": 403,
+        "ids": [
+          "f404f0cb-698f-4b3e-b9c3-1dfb2ef9d2a2",
+          "f24e519d-6086-4861-b9fc-b6f252a4a1c2"
+        ]
+      },
+      {
+        "breeder": "breeder-46",
+        "foreign_reads": 0,
+        "mixed_family_insert_status": 403,
+        "ids": [
+          "bd9d94be-7483-4d5c-8897-446de05af101",
+          "a4e31167-d0db-4d53-8b40-663832473ba9"
+        ]
+      },
+      {
+        "breeder": "breeder-47",
+        "foreign_reads": 0,
+        "mixed_family_insert_status": 403,
+        "ids": [
+          "5d4bbe0e-c8b9-499e-a269-ad0805430b7c",
+          "d12de4d6-2ba8-4aff-be76-93c6a070f170"
+        ]
+      },
+      {
+        "breeder": "breeder-48",
+        "foreign_reads": 0,
+        "mixed_family_insert_status": 403,
+        "ids": [
+          "6eed7907-f1d9-44ae-a2fd-4eaef8336931",
+          "73cbc123-8828-4f23-bf58-d45207b54d69"
+        ]
+      },
+      {
+        "breeder": "breeder-49",
+        "foreign_reads": 0,
+        "mixed_family_insert_status": 403,
+        "ids": [
+          "38d8ed1c-c906-4381-a20f-3785f0127967",
+          "624bbbbe-dc35-480a-8607-7aa142cc34be"
+        ]
+      }
+    ]
+  },
+  "access_policy_checks": {
+    "passed": true,
+    "checks": [
+      "owner and accepted member can read; outsider cannot read animals, weights, health, or breeding",
+      "revoked membership takes effect on the next request",
+      "unaccepted membership grants no access",
+      "inactive owners and demo herds grant no animal or history access",
+      "moving a health record into another family is rejected without changing it",
+      "mixed-family health writes fail atomically",
+      "moving an animal into another family is rejected",
+      "accepted members can create, update and delete their family health records",
+      "breeding reads require access to both parents; multiple-family scope refreshes after revocation",
+      "helper is private, stable, fixed-search-path; anonymous execution denied; RLS remains enabled"
+    ]
+  },
+  "permission_equivalence": {
+    "passed": true,
+    "identities_including_unauthenticated": 53,
+    "animal_identity_comparisons": 2650000,
+    "differences": 0,
+    "method": "Compare original animal_access(uuid) with cached-ring membership over all 50000 synthetic animals for each identity; request identity changes before each statement."
+  },
+  "data_audit": {
+    "logical_duplicate_weight_groups": 0,
+    "remaining_temporary_future_rows": 0,
+    "invalid_animal_revisions": 0,
+    "unauthorized_or_partial_weight_rows": 0,
+    "animals": 50000,
+    "health_records": 496000,
+    "breeding_records": 118000,
+    "weight_records": 377354,
+    "passed": true
+  },
+  "regression_verification": {
+    "passed": true,
+    "flutter_tests": 137,
+    "node_tests": 11,
+    "flutter_analyze": "No issues found",
+    "flutter_version": "3.38.5",
+    "dart_version": "3.10.4",
+    "database_lint_errors": 0,
+    "database_lint_scope": "public,breeder_private",
+    "database_lint_notes": "Pre-existing type-cast and unused-variable warnings in unchanged functions; no errors.",
+    "production_published": false,
+    "harness_calendar_error_check": "Scroll lazy error card into view, wait up to 10s, record maximum observed wait; save confirmation remains 80s",
+    "publication_status_scope": "Status when these isolated tests ran, before publication."
+  }
+}

@@ -44,7 +44,18 @@ export function calendarEvents(breedings,settings,health,shows,timezone='UTC') {
  return events.sort((a,b)=>a.date.localeCompare(b.date)||a.id.localeCompare(b.id));
 }
 export function escapeText(v){return String(v??'').replace(/\\/g,'\\\\').replace(/\r\n|\r|\n/g,'\\n').replace(/;/g,'\\;').replace(/,/g,'\\,').replace(/[\x00-\x08\x0b\x0c\x0e-\x1f\x7f]/g,'');}
-export function fold(line){let out='',part='',bytes=0;for(const char of line){const size=new TextEncoder().encode(char).length;if(bytes+size>75){out+=part+'\r\n';part=' ';bytes=1;}part+=char;bytes+=size;}return out+part;}
+export function fold(line) {
+ let out='',part='',bytes=0;
+ // Iterate code points so a fold never splits a UTF-8 character. Measuring the
+ // width directly avoids allocating an encoder and byte array per character.
+ for(const char of line){
+  const point=char.codePointAt(0);
+  const size=point<=0x7f?1:point<=0x7ff?2:point<=0xffff?3:4;
+  if(bytes+size>75){out+=part+'\r\n';part=' ';bytes=1;}
+  part+=char;bytes+=size;
+ }
+ return out+part;
+}
 export function renderCalendar(name,events,now=new Date()) {
  const stamp=now.toISOString().replace(/[-:]/g,'').replace(/\.\d{3}Z$/,'Z');
  const lines=['BEGIN:VCALENDAR','VERSION:2.0','PRODID:-//RingMaster Breeder//Herd Calendar//EN','CALSCALE:GREGORIAN',`X-WR-CALNAME:${escapeText(name+' • RingMaster Breeder')}`,'REFRESH-INTERVAL;VALUE=DURATION:PT6H','X-PUBLISHED-TTL:PT6H'];

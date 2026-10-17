@@ -1,0 +1,134 @@
+[
+  {
+    "events": 1000,
+    "implementation": "current",
+    "samples": [
+      {
+        "wall_ms": 105,
+        "cpu_ms": 142,
+        "bytes": 370798
+      },
+      {
+        "wall_ms": 100,
+        "cpu_ms": 133,
+        "bytes": 370798
+      },
+      {
+        "wall_ms": 113,
+        "cpu_ms": 124,
+        "bytes": 370798
+      }
+    ],
+    "identical_output": true
+  },
+  {
+    "events": 1000,
+    "implementation": "utf8_width_experiment",
+    "samples": [
+      {
+        "wall_ms": 7,
+        "cpu_ms": 7,
+        "bytes": 370798
+      },
+      {
+        "wall_ms": 17,
+        "cpu_ms": 27,
+        "bytes": 370798
+      },
+      {
+        "wall_ms": 33,
+        "cpu_ms": 39,
+        "bytes": 370798
+      }
+    ],
+    "identical_output": true
+  },
+  {
+    "events": 6500,
+    "implementation": "current",
+    "samples": [
+      {
+        "wall_ms": 596,
+        "cpu_ms": 859,
+        "bytes": 2420978
+      },
+      {
+        "wall_ms": 592,
+        "cpu_ms": 826,
+        "bytes": 2420978
+      },
+      {
+        "wall_ms": 614,
+        "cpu_ms": 860,
+        "bytes": 2420978
+      }
+    ],
+    "identical_output": true
+  },
+  {
+    "events": 6500,
+    "implementation": "utf8_width_experiment",
+    "samples": [
+      {
+        "wall_ms": 65,
+        "cpu_ms": 81,
+        "bytes": 2420978
+      },
+      {
+        "wall_ms": 94,
+        "cpu_ms": 131,
+        "bytes": 2420978
+      },
+      {
+        "wall_ms": 115,
+        "cpu_ms": 167,
+        "bytes": 2420978
+      }
+    ],
+    "identical_output": true
+  },
+  {
+    "events": 20000,
+    "implementation": "current",
+    "samples": [
+      {
+        "wall_ms": 2047,
+        "cpu_ms": 2782,
+        "bytes": 7473618
+      },
+      {
+        "wall_ms": 2111,
+        "cpu_ms": 2774,
+        "bytes": 7473618
+      },
+      {
+        "wall_ms": 1760,
+        "cpu_ms": 2598,
+        "bytes": 7473618
+      }
+    ],
+    "identical_output": true
+  },
+  {
+    "events": 20000,
+    "implementation": "utf8_width_experiment",
+    "samples": [
+      {
+        "wall_ms": 216,
+        "cpu_ms": 498,
+        "bytes": 7473618
+      },
+      {
+        "wall_ms": 174,
+        "cpu_ms": 342,
+        "bytes": 7473618
+      },
+      {
+        "wall_ms": 159,
+        "cpu_ms": 316,
+        "bytes": 7473618
+      }
+    ],
+    "identical_output": true
+  }
+]

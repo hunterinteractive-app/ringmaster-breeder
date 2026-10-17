@@ -1,0 +1,11 @@
+{
+  "logical_duplicate_weight_groups": 0,
+  "remaining_temporary_future_rows": 0,
+  "invalid_animal_revisions": 0,
+  "unauthorized_or_partial_weight_rows": 0,
+  "animals": 50000,
+  "health_records": 496000,
+  "breeding_records": 118000,
+  "weight_records": 377354,
+  "passed": true
+}
