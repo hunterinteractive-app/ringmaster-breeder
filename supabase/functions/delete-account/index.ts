@@ -39,7 +39,7 @@ Deno.serve(async req=>{
    const stopped=await show.rpc('apply_breeder_animals',{p_connection:job.connection.id,p_owner:job.connection.show_user_id,p_version:'infinity',p_animals:[]});
    if(stopped.error)throw stopped.error;
   }
-  for(const bucket of ['animal_photos','health_attachments']){
+  for(const bucket of ['animal_photos','health_attachments','offline_results']){
    const names=job.files.filter((f:any)=>f.bucket===bucket).map((f:any)=>f.name);
    for(let i=0;i<names.length;i+=100){const removed=await admin.storage.from(bucket).remove(names.slice(i,i+100));if(removed.error)throw removed.error;}
   }

@@ -2,3 +2,7 @@
 [functions.email-buyer-pedigree]
 # Handler verifies each user with getUser and checks family access.
 verify_jwt = false
+
+[functions.offline-jobs]
+# Handler verifies the caller and freezes each scoped request before processing.
+verify_jwt = false
