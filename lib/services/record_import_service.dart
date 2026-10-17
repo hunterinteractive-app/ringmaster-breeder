@@ -1,5 +1,6 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'family_service.dart';
+import '../offline/offline_runtime.dart';
 
 abstract interface class RecordImportGateway {
   Future<List<Map<String, dynamic>>> ownedRings();
@@ -26,7 +27,7 @@ class RecordImportService implements RecordImportGateway {
   }
 
   @override
-  Future<Map<String, dynamic>> lookup() async => Map<String, dynamic>.from(
+  Future<Map<String, dynamic>> lookup() async => OfflineRuntime.serviceResult(
     (await client.functions.invoke(
           'import-ringmaster-records',
           body: {'action': 'lookup'},
@@ -36,7 +37,7 @@ class RecordImportService implements RecordImportGateway {
   @override
   Future<Map<String, dynamic>> importRecords(
     Map<String, dynamic> selection,
-  ) async => Map<String, dynamic>.from(
+  ) async => OfflineRuntime.serviceResult(
     (await client.functions.invoke(
           'import-ringmaster-records',
           body: {...selection, 'action': 'import'},

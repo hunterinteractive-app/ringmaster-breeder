@@ -2,6 +2,7 @@ import '../services/sales_service.dart';
 import '../utils/weight_date.dart';
 import '../widgets/ringmaster_page_shell.dart';
 import '../widgets/weight_graph.dart';
+import '../offline/offline_runtime.dart';
 
 import 'package:flutter/material.dart';
 import '../services/animal_service.dart';
@@ -102,6 +103,15 @@ class _WeightHistoryScreenState extends State<WeightHistoryScreen> {
                             );
                           }
                           if (!mounted) return;
+                          if (record == null && OfflineRuntime.engine != null) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(
+                                content: Text(
+                                  'Saved on this device. Open Sync to check upload status.',
+                                ),
+                              ),
+                            );
+                          }
                           Navigator.pop(context);
                           if (mounted) {
                             setState(
@@ -154,6 +164,7 @@ class _WeightHistoryScreenState extends State<WeightHistoryScreen> {
       floatingActionButton: isLocked
           ? null
           : FloatingActionButton(
+              tooltip: 'Add weight',
               onPressed: () => addWeight(),
               child: const Icon(Icons.add),
             ),

@@ -2,6 +2,9 @@ import '../widgets/pedigree_email_dialog.dart';
 import '../widgets/ringmaster_page_shell.dart';
 import 'package:flutter/material.dart';
 import '../services/animal_service.dart';
+import '../offline/offline_runtime.dart';
+import '../offline/offline_store.dart';
+import '../offline/sync_engine.dart';
 import '../widgets/color_details_fields.dart';
 import '../utils/color_details.dart';
 import '../widgets/dob_field.dart';
@@ -40,6 +43,7 @@ class _EditAnimalScreenState extends State<EditAnimalScreen> {
   String originalStatus = 'active';
 
   int revision = 0;
+  Map<String, dynamic>? loadedAnimal;
   bool conflicted = false;
   bool isSaving = false;
   bool isLoaded = false;
@@ -48,6 +52,7 @@ class _EditAnimalScreenState extends State<EditAnimalScreen> {
   Future<void> loadAnimal() async {
     final animal = await (widget.loader ?? AnimalService.get)(widget.animalId);
     if (!mounted) return;
+    loadedAnimal = copyJson(animal);
 
     nameController.text = animal['name'] ?? '';
     tattooController.text = animal['tattoo'] ?? '';
@@ -98,14 +103,35 @@ class _EditAnimalScreenState extends State<EditAnimalScreen> {
       if (widget.writer != null) {
         await widget.writer!(widget.animalId, changes, revision);
       } else {
+        if (OfflineRuntime.engine != null && loadedAnimal != null) {
+          changes.removeWhere(
+            (key, value) => const DeepCollectionEquality().equals(
+              loadedAnimal![key],
+              value,
+            ),
+          );
+        }
         await AnimalService.update(
           widget.animalId,
           changes,
           expectedRevision: revision,
+          expectedBase: loadedAnimal,
         );
       }
 
-      if (mounted && status == 'sold' && originalStatus != 'sold') {
+      if (mounted && OfflineRuntime.engine != null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text(
+              'Saved on this device. Open Sync to check upload status.',
+            ),
+          ),
+        );
+      }
+      if (mounted &&
+          OfflineRuntime.engine == null &&
+          status == 'sold' &&
+          originalStatus != 'sold') {
         await offerBuyerPedigree(context, animalId: widget.animalId);
       }
       if (mounted) Navigator.pop(context, true);

@@ -3,6 +3,7 @@ import '../../config/legal_config.dart';
 import '../../services/legal_service.dart';
 import '../../widgets/ringmaster_page_shell.dart';
 import 'legal_screen.dart';
+import '../../widgets/sync_dialog.dart';
 
 class LegalGate extends StatefulWidget {
   final LegalGateway gateway;
@@ -74,6 +75,10 @@ class _LegalGateState extends State<LegalGate> {
       _error = null;
     });
     try {
+      if (!await confirmOfflineLogout(context)) {
+        if (mounted) setState(() => _saving = false);
+        return;
+      }
       await widget.gateway.signOut();
     } catch (_) {
       if (mounted) {

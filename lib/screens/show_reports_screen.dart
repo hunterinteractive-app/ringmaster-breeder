@@ -1,6 +1,6 @@
+import '../offline/offline_runtime.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../services/family_service.dart';
 import '../services/show_report_service.dart';
@@ -36,7 +36,7 @@ class _ShowReportsScreenState extends State<ShowReportsScreen> {
   Future<List<Map<String, dynamic>>> rows(String table) async {
     final all = <Map<String, dynamic>>[];
     for (var start = 0; ; start += 500) {
-      var query = Supabase.instance.client
+      var query = OfflineRuntime.client
           .from(table)
           .select()
           .eq('owner_id', ownerId!);
@@ -56,22 +56,22 @@ class _ShowReportsScreenState extends State<ShowReportsScreen> {
     });
     try {
       if (widget.animalId != null) {
-        final animal = await Supabase.instance.client
+        final animal = await OfflineRuntime.client
             .from('animals')
             .select('ring_id')
             .eq('id', widget.animalId!)
             .single();
-        final herd = await Supabase.instance.client
+        final herd = await OfflineRuntime.client
             .from('farms')
             .select('owner_id')
             .eq('id', animal['ring_id'])
             .single();
         ownerId = herd['owner_id'] as String;
       } else if (widget.ownAccount) {
-        final own = await Supabase.instance.client
+        final own = await OfflineRuntime.client
             .from('users')
             .select('id')
-            .eq('auth_user_id', Supabase.instance.client.auth.currentUser!.id)
+            .eq('auth_user_id', OfflineRuntime.client.auth.currentUser!.id)
             .single();
         ownerId = own['id'] as String;
       } else {
@@ -143,7 +143,7 @@ class _ShowReportsScreenState extends State<ShowReportsScreen> {
         reportId: id,
       );
       final uri = Uri.parse(data['url'] as String);
-      if (uri.scheme != 'https' ||
+      if (!['https', 'blob'].contains(uri.scheme) ||
           !await launchUrl(
             uri,
             mode: LaunchMode.externalApplication,
@@ -151,11 +151,15 @@ class _ShowReportsScreenState extends State<ShowReportsScreen> {
           )) {
         throw StateError('Unable to open');
       }
-    } catch (_) {
+    } catch (error) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Unable to open this report. Refresh and try again.'),
+          SnackBar(
+            content: Text(
+              error is StateError
+                  ? error.message.toString()
+                  : 'Unable to open this report. Refresh and try again.',
+            ),
           ),
         );
       }

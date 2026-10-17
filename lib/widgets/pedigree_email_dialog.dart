@@ -130,7 +130,12 @@ class _PedigreeEmailDialogState extends State<PedigreeEmailDialog> {
     canPop: !sending,
     child: AlertDialog(
       title: Text(
-        accepted ? 'Pedigree email submitted' : 'Email pedigree to buyer?',
+        accepted
+            ? (gateway is PedigreeEmailService &&
+                      (gateway as PedigreeEmailService).queued
+                  ? 'Pedigree email queued'
+                  : 'Pedigree email submitted')
+            : 'Email pedigree to buyer?',
       ),
       content: SizedBox(
         width: 510,
@@ -141,7 +146,10 @@ class _PedigreeEmailDialogState extends State<PedigreeEmailDialog> {
             children: [
               if (accepted)
                 Text(
-                  'The email provider accepted the pedigree email for $submittedRecipient. This does not yet confirm inbox delivery.',
+                  gateway is PedigreeEmailService &&
+                          (gateway as PedigreeEmailService).queued
+                      ? 'The approved PDF and recipient are saved on this device. Open Sync to track sending after reconnection.'
+                      : 'The email provider accepted the pedigree email for $submittedRecipient. This does not yet confirm inbox delivery.',
                 )
               else ...[
                 const Text(

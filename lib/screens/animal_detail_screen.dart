@@ -3,7 +3,6 @@ import 'global_pedigree_history_screen.dart';
 import '../utils/color_details.dart';
 import '../widgets/ringmaster_page_shell.dart';
 import 'package:flutter/material.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
 
 import 'pedigree_tree_screen.dart';
 import '../services/pedigree_service.dart';
@@ -15,6 +14,14 @@ import 'health_records_screen.dart';
 import 'show_reports_screen.dart';
 import '../services/animal_service.dart';
 import '../widgets/animal_avatar.dart';
+import '../offline/offline_runtime.dart';
+
+class _AnimalDetails {
+  final Map<String, dynamic> animal;
+  final double? weight;
+  final bool weightDownloaded;
+  const _AnimalDetails(this.animal, this.weight, this.weightDownloaded);
+}
 
 class AnimalDetailScreen extends StatefulWidget {
   final String animalId;
@@ -26,8 +33,22 @@ class AnimalDetailScreen extends StatefulWidget {
 }
 
 class _AnimalDetailScreenState extends State<AnimalDetailScreen> {
-  final supabase = Supabase.instance.client;
+  final supabase = OfflineRuntime.client;
   bool _uploadingPhoto = false;
+  late Future<_AnimalDetails> _details = _load();
+
+  Future<_AnimalDetails> _load() async {
+    final animal = await fetchAnimal();
+    try {
+      return _AnimalDetails(animal, await fetchWeight(), true);
+    } on OfflineDataUnavailable {
+      // Missing optional history must not hide an animal already downloaded
+      // with the herd list. Permission and other server errors still surface.
+      return _AnimalDetails(animal, null, false);
+    }
+  }
+
+  void _reload() => setState(() => _details = _load());
   Future<void> _uploadPhoto() async {
     setState(() => _uploadingPhoto = true);
     try {
@@ -43,7 +64,12 @@ class _AnimalDetailScreenState extends State<AnimalDetailScreen> {
         );
       }
     } finally {
-      if (mounted) setState(() => _uploadingPhoto = false);
+      if (mounted) {
+        setState(() {
+          _uploadingPhoto = false;
+          _details = _load();
+        });
+      }
     }
   }
 
@@ -85,15 +111,17 @@ class _AnimalDetailScreenState extends State<AnimalDetailScreen> {
   @override
   Widget build(BuildContext context) {
     return RingMasterPageShell(
-      onRefresh: () => setState(() {}),
+      onRefresh: _reload,
       title: "Animal Details",
-      body: FutureBuilder(
-        future: Future.wait([fetchAnimal(), fetchWeight()]),
+      body: FutureBuilder<_AnimalDetails>(
+        future: _details,
         builder: (context, snapshot) {
           if (snapshot.hasError) {
-            return const Center(
+            return Center(
               child: Text(
-                "Unable to load records. Please go back and try again.",
+                snapshot.error is OfflineDataUnavailable
+                    ? snapshot.error.toString()
+                    : "Unable to load records. Please go back and try again.",
               ),
             );
           }
@@ -101,8 +129,8 @@ class _AnimalDetailScreenState extends State<AnimalDetailScreen> {
             return const Center(child: CircularProgressIndicator());
           }
 
-          final animal = snapshot.data![0] as Map<String, dynamic>;
-          final double? weight = snapshot.data![1] as double?;
+          final animal = snapshot.data!.animal;
+          final weight = snapshot.data!.weight;
           final locked = isLocked(animal["status"]);
 
           return Padding(
@@ -161,7 +189,11 @@ class _AnimalDetailScreenState extends State<AnimalDetailScreen> {
                 _row("Sex", sexLabel(animal["species"], animal["sex"])),
                 _row(
                   "Current Weight",
-                  weight == null ? "-" : "${weight.toStringAsFixed(2)} lb",
+                  !snapshot.data!.weightDownloaded
+                      ? 'Not downloaded'
+                      : weight == null
+                      ? "-"
+                      : "${weight.toStringAsFixed(2)} lb",
                 ),
                 _row("Registration #", animal["registration_number"]),
                 _row("GC #", animal["grand_champion_number"]),
@@ -215,7 +247,7 @@ class _AnimalDetailScreenState extends State<AnimalDetailScreen> {
                             arguments: widget.animalId,
                           );
 
-                          if (updated == true && mounted) setState(() {});
+                          if (updated == true && mounted) _reload();
                         },
                   child: const Text("Edit Animal"),
                 ),

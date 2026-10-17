@@ -1,0 +1,52 @@
+/* Contracts exercised through the installed worker and real IndexedDB. */
+module.exports=async function offlineWorkflows(page,ring,originalAnimal){
+ return page.evaluate(async({ring,originalAnimal})=>{
+  const config=JSON.parse(await breederOffline.read('workspace:active')).value;
+  const headers={Authorization:'Bearer '+config.token,apikey:config.apiKey,'Content-Type':'application/json'};
+  const call=async(path,body,method='POST',extra={})=>{
+   const response=await fetch(config.url+path,{method,headers:{...headers,...extra},body:body==null?undefined:JSON.stringify(body)});
+   const value=await response.json();if(!response.ok)throw Error(path+': '+JSON.stringify(value));return value;
+  };
+  const check=(v,m)=>{if(!v)throw Error(m);};
+  const rpc=(name,body)=>call('/rest/v1/rpc/'+name,body);
+  const insert=(table,body)=>call('/rest/v1/'+table+'?select=*',body,'POST',{Accept:'application/vnd.pgrst.object+json'});
+  const patch=(table,id,body)=>call('/rest/v1/'+table+'?id=eq.'+id+'&select=*',body,'PATCH',{Accept:'application/vnd.pgrst.object+json'});
+  const get=path=>call('/rest/v1/'+path,null,'GET');
+  const added=await rpc('create_animal_with_color_details',{p_ring_id:ring,p_name:'Worker buck',p_tattoo:'WRKB',p_species:'rabbit',p_breed:'Mini Rex',p_variety:'Black',p_sex:'Buck',p_status:'active',p_dob:null,p_registration:'',p_gc:'',p_sire_id:null,p_dam_id:null,p_weight:4,p_color_details:{}});
+  const health=await insert('animal_health_records',{animal_id:added,title:'Worker vaccine',record_type:'health',administered_date:'2026-10-17'});
+  await patch('animal_health_records',health.id,{description:'Saved offline'});
+  check((await get('animal_health_records?select=*,animal:animals!inner(name,ring_id)&animal.ring_id=eq.'+ring)).some(r=>r.description==='Saved offline'),'Health join/projection');
+  await rpc('record_breeding_with_parents',{p_ring:ring,p_parents:[],p_records:[{sire_id:added,dam_id:originalAnimal,breeding_date:'2026-01-01',notes:''}]});
+  const breeding=(await get('breeding_records?select=*,dam:animals!breeding_records_dam_id_fkey!inner(*),tracking:breeding_tracking(*),offspring:breeding_offspring(*)&dam.ring_id=eq.'+ring))[0];
+  await rpc('save_breeding_tracking',{p_id:breeding.id,p_revision:0,p_data:{status:'active',due_date:'2026-02-01',check_result:'Not checked',birth_date:'2026-02-01',born_alive:1,born_dead:0,wean_date:'2026-03-01',weaned:1,weaned_males:1,weaned_females:0,notes:''}});
+  await rpc('create_litter_animals',{p_id:breeding.id,p_young:[{name:'Worker kit',tattoo:'WRKK',breed:'Mini Rex',variety:'Black',sex:'M'}]});
+  const tracking=await get('breeding_tracking?select=breeding:breeding_records!inner(*,dam:animals!inner(*))&breeding.dam.ring_id=eq.'+ring+'&or=(and(wean_date.gte.2026-01-01,wean_date.lt.2026-04-01))');
+  check(tracking.length===1,'Unvisited calendar window');
+  const draft=await insert('pedigree_drafts',{ring_id:ring,data:{species:'rabbit',root:'new0',nodes:{new0:{name:'Worker pedigree',tattoo:'WRKP',sex:'Doe',breed:'Mini Rex',variety:'Black',sire:'existing'},existing:{existing_id:added}}}});
+  await patch('pedigree_drafts',draft.id,{data:draft.data,updated_at:new Date().toISOString()});
+  check((await get('pedigree_drafts?user_id=eq.'+config.account)).length===1,'Saved draft visible to its owner before syncing');
+  const root=await rpc('save_pedigree_draft',{p_draft:draft.id});
+  check((await rpc('breeder_pedigree_snapshot',{p_animal_id:root})).sire.id===added,'Locally created pedigree links');
+  const settings=['rabbit','cavy'].map(species=>({ring_id:ring,species,gestation_min:28,gestation_max:72,palpation_min:14,palpation_max:28,nesting_day:null,weaning_min:4,weaning_max:8}));
+  await call('/rest/v1/breeding_settings?on_conflict=ring_id,species',settings,'POST',{Prefer:'resolution=merge-duplicates'});
+  await call('/rest/v1/breeding_settings?on_conflict=ring_id,species',settings.map(s=>({...s,palpation_max:29})),'POST',{Prefer:'resolution=merge-duplicates'});
+  check((await get('breeding_settings?ring_id=eq.'+ring)).every(s=>s.palpation_max===29),'Composite upsert');
+  await patch('users',config.account,{phone:'555-0100'});
+  const sale=await insert('animal_sales',{animal_id:added,ring_id:ring,animal_name:'',asking_cents:5000});
+  await patch('animal_sales',sale.id,{buyer_name:'Offline buyer',buyer_email:'buyer@example.test',sale_cents:5000});
+  await insert('animal_sale_payments',{sale_id:sale.id,kind:'payment',amount_cents:5000,paid_on:'2026-10-17'});
+  check((await get('animal_sales?id=eq.'+sale.id))[0].status==='sold','Sale completion projection');
+  const filePath=added+'/worker #test.pdf';
+  const file=await fetch(config.url+'/storage/v1/object/health_attachments/'+filePath.split('/').map(encodeURIComponent).join('/'),{method:'POST',headers:{...headers,'Content-Type':'application/pdf'},body:new TextEncoder().encode('%PDF-1.4\nfixture')});
+  check(file.ok,'Binary queue');check((await breederWorkspace.fileUrl(JSON.stringify({bucket:'health_attachments',path:filePath,full:true}))).startsWith('blob:'),'Pending file available offline');
+  const emailId=crypto.randomUUID();
+  const email=await call('/functions/v1/email-buyer-pedigree',{action:'send',request_id:emailId,animal_id:added,recipient:'buyer@example.test',pdf:btoa('%PDF-1.4\nfixture'),approved_snapshot:await rpc('breeder_pedigree_snapshot',{p_animal_id:added})});
+  check(email.queued===true,'Immutable email queued');
+  check((await call('/functions/v1/import-ringmaster-records',{action:'lookup'})).queued===true,'Outside lookup queued');
+  check((await call('/functions/v1/global-pedigree',{username:'fixture',password:'credential-canary-never-save'})).queued===true,'GP sign-in intent queued');
+  const exported=JSON.parse(await breederOffline.scan('v1:'+config.account+':'));
+  check(!JSON.stringify(exported).includes('credential-canary-never-save'),'No GP password persisted');
+  check(exported.some(d=>d.key.includes('cache:pending-file:')),'Immutable file bytes persisted separately from outbox');
+  return {queued:exported.filter(d=>d.key.includes(':op:')).length,added,root};
+ },{ring,originalAnimal});
+};

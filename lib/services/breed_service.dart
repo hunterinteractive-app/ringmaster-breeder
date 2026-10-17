@@ -1,8 +1,8 @@
-import 'package:supabase_flutter/supabase_flutter.dart';
+import '../offline/offline_runtime.dart';
 
 class BreedService {
   static Future<List<String>> fetchBreeds(String species) async {
-    final response = await Supabase.instance.client
+    final response = await OfflineRuntime.client
         .from('breeds')
         .select('name')
         .eq('species', species)

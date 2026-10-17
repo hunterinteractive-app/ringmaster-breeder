@@ -1,7 +1,7 @@
+import '../offline/offline_runtime.dart';
 import '../widgets/parent_picker.dart';
 import '../widgets/ringmaster_page_shell.dart';
 import 'package:flutter/material.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../widgets/catalog_field.dart';
 import '../widgets/color_details_fields.dart';
@@ -25,7 +25,7 @@ class AddAnimalScreen extends StatefulWidget {
 }
 
 class _AddAnimalScreenState extends State<AddAnimalScreen> {
-  final supabase = Supabase.instance.client;
+  final supabase = OfflineRuntime.client;
 
   final nameController = TextEditingController();
   final tattooController = TextEditingController();

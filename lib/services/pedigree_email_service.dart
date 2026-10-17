@@ -3,16 +3,23 @@ import 'dart:typed_data';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'sales_service.dart';
 import 'pedigree_pdf_service.dart';
+import 'pedigree_service.dart';
+import 'family_service.dart';
+import '../offline/offline_runtime.dart';
 
 class PedigreeEmailDraft {
   final String requestId, ownerName, ownerEmail, buyerEmail;
   final Uint8List pdf;
+  final Map<String, dynamic>? approvedSnapshot;
+  final String? saleId;
   const PedigreeEmailDraft({
     required this.requestId,
     required this.ownerName,
     required this.ownerEmail,
     this.buyerEmail = '',
     required this.pdf,
+    this.approvedSnapshot,
+    this.saleId,
   });
 }
 
@@ -30,13 +37,18 @@ abstract class PedigreeEmailGateway {
 }
 
 class PedigreeEmailService implements PedigreeEmailGateway {
+  bool queued = false;
   Future<Map<String, dynamic>> call(Map<String, dynamic> body) async {
     try {
-      final result = await Supabase.instance.client.functions.invoke(
+      final result = await OfflineRuntime.client.functions.invoke(
         'email-buyer-pedigree',
         body: body,
       );
       final data = Map<String, dynamic>.from(result.data as Map);
+      if (data['queued'] == true) {
+        queued = true;
+        return data;
+      }
       if (data['error'] != null) throw StateError(data['error']);
       return data;
     } on FunctionException catch (e) {
@@ -55,6 +67,33 @@ class PedigreeEmailService implements PedigreeEmailGateway {
     String animalId,
     String? saleId,
   ) async {
+    if (OfflineRuntime.workspaceReady) {
+      final client = OfflineRuntime.client;
+      final owner = await client
+          .from('users')
+          .select()
+          .eq('id', FamilyService.ownerId!)
+          .single();
+      final pedigree = await PedigreeService.build(animalId);
+      String buyer = '';
+      if (saleId != null) {
+        final sale = await client
+            .from('animal_sales')
+            .select('buyer_email')
+            .eq('id', saleId)
+            .single();
+        buyer = sale['buyer_email'] ?? '';
+      }
+      return PedigreeEmailDraft(
+        requestId: requestId,
+        ownerName: owner['display_name'] ?? owner['username'] ?? 'Breeder',
+        ownerEmail: owner['email'] ?? '',
+        buyerEmail: buyer,
+        pdf: await PedigreePdfService.generate(pedigree: pedigree),
+        approvedSnapshot: pedigree,
+        saleId: saleId,
+      );
+    }
     final data = await call({
       'action': 'prepare',
       'request_id': requestId,
@@ -83,6 +122,13 @@ class PedigreeEmailService implements PedigreeEmailGateway {
       'animal_id': animalId,
       'recipient': recipient,
       'pdf': base64Encode(draft.pdf),
+      if (draft.approvedSnapshot != null)
+        'approved_snapshot': draft.approvedSnapshot,
+      if (draft.approvedSnapshot != null)
+        'approved_owner_name': draft.ownerName,
+      if (draft.approvedSnapshot != null)
+        'approved_owner_email': draft.ownerEmail,
+      if (draft.saleId != null) 'sale_id': draft.saleId,
     });
   }
 

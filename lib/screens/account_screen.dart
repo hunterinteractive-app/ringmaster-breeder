@@ -1,4 +1,6 @@
+import '../offline/offline_runtime.dart';
 import 'global_pedigree_history_screen.dart';
+import '../widgets/sync_dialog.dart';
 import 'super_admin_screen.dart';
 import 'delete_account_screen.dart';
 import '../widgets/show_connection_panel.dart';
@@ -6,7 +8,6 @@ import 'dart:convert';
 import 'dart:typed_data';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
 import '../widgets/ringmaster_page_shell.dart';
 import '../services/family_service.dart';
 import '../services/license_service.dart';
@@ -21,7 +22,7 @@ class AccountScreen extends StatefulWidget {
 }
 
 class _AccountScreenState extends State<AccountScreen> {
-  final client = Supabase.instance.client;
+  final client = OfflineRuntime.client;
   final fields = <String, TextEditingController>{
     for (final key in [
       'display_name',
@@ -407,6 +408,7 @@ class _AccountScreenState extends State<AccountScreen> {
                         OutlinedButton.icon(
                           onPressed: () async {
                             try {
+                              if (!await confirmOfflineLogout(context)) return;
                               await client.auth.signOut();
                               if (context.mounted) {
                                 Navigator.of(

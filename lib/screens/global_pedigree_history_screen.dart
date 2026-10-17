@@ -1,5 +1,5 @@
+import '../offline/offline_runtime.dart';
 import 'package:flutter/material.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
 import '../widgets/ringmaster_page_shell.dart';
 
 class GlobalPedigreeHistoryScreen extends StatefulWidget {
@@ -24,7 +24,7 @@ class _GlobalPedigreeHistoryScreenState
     final rows = <Map<String, dynamic>>[];
     // Paginate: history may exceed the API's default 1,000-row limit.
     for (var offset = 0; ; offset += 500) {
-      var query = Supabase.instance.client
+      var query = OfflineRuntime.client
           .from('global_pedigree_history')
           .select();
       if (widget.ringId != null) {

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../services/family_service.dart';
+import '../offline/offline_runtime.dart';
 import '../widgets/ringmaster_page_shell.dart';
 
 class DeleteAccountScreen extends StatefulWidget {
@@ -34,7 +35,7 @@ class _DeleteAccountScreenState extends State<DeleteAccountScreen> {
       error = null;
     });
     try {
-      final response = await Supabase.instance.client.functions.invoke(
+      final response = await OfflineRuntime.client.functions.invoke(
         'delete-account',
         body: {
           'action': action,
@@ -45,7 +46,7 @@ class _DeleteAccountScreenState extends State<DeleteAccountScreen> {
       final data = Map<String, dynamic>.from(response.data as Map);
       if (data['deleted'] == true) {
         FamilyService.clear();
-        await Supabase.instance.client.auth.signOut(scope: SignOutScope.local);
+        await OfflineRuntime.client.auth.signOut(scope: SignOutScope.local);
         if (mounted) Navigator.of(context).popUntil((route) => route.isFirst);
       } else if (mounted) {
         setState(() => sent = true);
@@ -111,7 +112,7 @@ class _DeleteAccountScreenState extends State<DeleteAccountScreen> {
                     ),
                     const SizedBox(height: 20),
                     Text(
-                      'Confirm using a code sent to ${Supabase.instance.client.auth.currentUser?.email ?? 'your email'}.',
+                      'Confirm using a code sent to ${OfflineRuntime.client.auth.currentUser?.email ?? 'your email'}.',
                     ),
                     OutlinedButton(
                       onPressed: busy ? null : () => run('request-code'),
@@ -196,18 +197,54 @@ class AccountDeletionGate extends StatefulWidget {
 }
 
 class _AccountDeletionGateState extends State<AccountDeletionGate> {
-  late final Future<bool> pending = Supabase.instance.client
-      .from('account_deletions')
-      .select('user_id')
-      .eq('user_id', Supabase.instance.client.auth.currentUser!.id)
-      .maybeSingle()
-      .then((row) => row != null);
+  late Future<bool> pending = _load();
+  Future<bool> _load() async {
+    final result = await OfflineRuntime.readThrough('deletion', () async {
+      final row = await OfflineRuntime.client
+          .from('account_deletions')
+          .select('user_id')
+          .eq('user_id', OfflineRuntime.client.auth.currentUser!.id)
+          .maybeSingle();
+      return {'pending': row != null};
+    });
+    return result['pending'] == true;
+  }
+
   @override
   Widget build(BuildContext context) => FutureBuilder<bool>(
     future: pending,
     builder: (context, snapshot) {
       if (snapshot.connectionState != ConnectionState.done) {
         return const Center(child: CircularProgressIndicator());
+      }
+      if (OfflineRuntime.enabled && snapshot.hasError) {
+        // This gate sits above the app navigator. Its recovery controls need
+        // their own route/overlay so Sync can open without unmounting the gate.
+        return Navigator(
+          onGenerateRoute: (_) => MaterialPageRoute<void>(
+            builder: (_) => RingMasterPageShell(
+              title: 'Offline access',
+              showAccountButton: false,
+              showHomeButton: false,
+              showBackButton: false,
+              body: Center(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const Text(
+                      'Reconnect to verify this account before continuing.',
+                      textAlign: TextAlign.center,
+                    ),
+                    TextButton(
+                      onPressed: () => setState(() => pending = _load()),
+                      child: const Text('Retry account check'),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        );
       }
       if (snapshot.data == true) {
         return Navigator(

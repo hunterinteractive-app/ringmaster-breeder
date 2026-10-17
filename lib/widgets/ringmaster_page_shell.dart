@@ -3,6 +3,8 @@
 import 'package:flutter/material.dart';
 
 import '../theme/app_theme.dart';
+import '../offline/offline_runtime.dart';
+import 'sync_dialog.dart';
 
 class RingMasterPageShell extends StatelessWidget {
   final String title;
@@ -119,6 +121,7 @@ class RingMasterPageShell extends StatelessWidget {
           semanticLabel: 'RingMaster Breeder logo',
         );
     final resolvedActions = <Widget>[
+      if (OfflineRuntime.enabled) const SyncHeaderButton(),
       if (showHomeButton)
         IconButton(
           tooltip: 'Home',

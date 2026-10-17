@@ -1,5 +1,6 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'record_import_service.dart';
+import '../offline/offline_runtime.dart';
 
 abstract interface class GlobalPedigreeImportGateway {
   Future<List<Map<String, dynamic>>> ownedHerds();
@@ -51,7 +52,7 @@ class GlobalPedigreeImportService implements GlobalPedigreeImportGateway {
           'global-pedigree',
           body: body,
         );
-        final data = Map<String, dynamic>.from(response.data as Map);
+        final data = OfflineRuntime.serviceResult(response.data);
         if (data['account'] is! String ||
             (account != null && account != data['account'])) {
           throw const FormatException(
@@ -132,7 +133,7 @@ class GlobalPedigreeImportService implements GlobalPedigreeImportGateway {
         'p_sales_complete': data['sales_complete'] == true,
       },
     );
-    return Map<String, dynamic>.from(result as Map);
+    return OfflineRuntime.serviceResult(result);
   }
 
   @override

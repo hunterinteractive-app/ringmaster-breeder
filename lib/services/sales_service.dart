@@ -1,9 +1,10 @@
+import '../offline/offline_runtime.dart';
 import 'dart:math';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../models/sale_record.dart';
 
 class SalesService {
-  static SupabaseClient get client => Supabase.instance.client;
+  static SupabaseClient get client => OfflineRuntime.client;
   static String newId() {
     final bytes = List.generate(16, (_) => Random.secure().nextInt(256));
     bytes[6] = (bytes[6] & 15) | 64;

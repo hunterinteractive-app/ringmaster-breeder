@@ -1,6 +1,6 @@
+import '../offline/offline_runtime.dart';
 import '../widgets/ringmaster_page_shell.dart';
 import 'package:flutter/material.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
 import '../services/family_service.dart';
 import '../services/record_import_service.dart';
 
@@ -14,7 +14,7 @@ class RecordImportScreen extends StatefulWidget {
 
 class _RecordImportScreenState extends State<RecordImportScreen> {
   late final RecordImportGateway _gateway =
-      widget.gateway ?? RecordImportService(Supabase.instance.client);
+      widget.gateway ?? RecordImportService(OfflineRuntime.client);
   List<Map<String, dynamic>> _matches = [];
   List<Map<String, dynamic>> _rings = [];
   final _selected = <String>{};
@@ -46,11 +46,12 @@ class _RecordImportScreenState extends State<RecordImportScreen> {
         }
         _loading = false;
       });
-    } catch (_) {
+    } catch (error) {
       if (mounted) {
         setState(() {
-          _message =
-              'Unable to check your other RingMaster accounts. Please try again later.';
+          _message = error is StateError
+              ? error.message.toString()
+              : 'Unable to check your other RingMaster accounts. Please try again later.';
           _loading = false;
         });
       }
@@ -97,11 +98,12 @@ class _RecordImportScreenState extends State<RecordImportScreen> {
         ),
       );
       if (mounted) Navigator.of(context).popUntil((route) => route.isFirst);
-    } catch (_) {
+    } catch (error) {
       if (mounted) {
         setState(
-          () => _message =
-              'Import could not be completed. Check your Herd and selected records, then try again.',
+          () => _message = error is StateError
+              ? error.message.toString()
+              : 'Import could not be completed. Check your Herd and selected records, then try again.',
         );
       }
     } finally {
@@ -246,7 +248,7 @@ class _RecordImportScreenState extends State<RecordImportScreen> {
 class ImportedRecordsScreen extends StatelessWidget {
   const ImportedRecordsScreen({super.key});
   Future<List<Map<String, dynamic>>> _records() async {
-    final client = Supabase.instance.client;
+    final client = OfflineRuntime.client;
     final profiles = await client
         .from('breeder_exhibitor_profiles')
         .select()

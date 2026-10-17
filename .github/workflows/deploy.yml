@@ -22,8 +22,16 @@ jobs:
       - run: flutter pub get
       - run: flutter analyze
       - run: flutter test
+      - name: Verify offline job handlers
+        run: |
+          npx --yes deno@2 check supabase/functions/offline-jobs/index.ts supabase/functions/import-ringmaster-records/index.ts
+          npx --yes deno@2 test --allow-env supabase/functions/offline-jobs/core_test.ts supabase/functions/offline-jobs/handler_test.ts
       - name: Build web
-        run: flutter build web --release --pwa-strategy=none --dart-define=APP_VERSION=${{ github.sha }}
+        run: flutter build web --release --pwa-strategy=none --dart-define=OFFLINE_PILOT=true --dart-define=OFFLINE_FULL=true --dart-define=APP_VERSION=${{ github.sha }}
+      - name: Package offline app
+        run: python3 tool/prepare_offline_pilot.py build/web
+      - name: Verify shared offline repository
+        run: node tool/offline_workspace_test.cjs
       - name: Verify cache headers
         run: test -f build/web/_headers && test -f build/web/flutter_bootstrap.js
       - name: Deploy production

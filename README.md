@@ -60,4 +60,10 @@ Device subscriptions export dates from the first day of the previous month onwar
 
 ## Record save safety
 
+Phase 1 offline behavior, build/deployment instructions, recovery safeguards and
+phone qualification are documented in [docs/offline-pwa-plan.md](docs/offline-pwa-plan.md).
+The packaged PWA uses `OFFLINE_PILOT=true` and `OFFLINE_FULL=true`; CI includes both.
+Apply the matching backend migrations/functions before enabling complete workspace
+preparation. A complete download is required before offline use.
+
 Weight-entry dialogs and bulk weight/health saves retain their record IDs and payload while a save is uncertain. Retrying confirms matching saved records before inserting any missing records. A retry cannot overwrite an existing record with different data. Animal edits compare the revision originally loaded by the form; stale edits keep the draft visible and require an explicit reload. Database-triggered animal updates also advance the revision. Apply the animal revision migration before publishing the corresponding app version.

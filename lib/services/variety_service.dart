@@ -1,4 +1,4 @@
-import 'package:supabase_flutter/supabase_flutter.dart';
+import '../offline/offline_runtime.dart';
 
 class VarietyService {
   static Future<List<String>> fetchVarieties({
@@ -7,7 +7,7 @@ class VarietyService {
   }) async {
     if (breedName.isEmpty) return [];
 
-    final client = Supabase.instance.client;
+    final client = OfflineRuntime.client;
 
     // 1️⃣ Get breed ID
     final breed = await client

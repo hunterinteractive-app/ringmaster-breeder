@@ -1,5 +1,5 @@
+import '../offline/offline_runtime.dart';
 import 'package:flutter/material.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
 import '../services/family_service.dart';
 import '../widgets/ringmaster_page_shell.dart';
 import 'herd_calendar_screen.dart';
@@ -26,7 +26,7 @@ class _CalendarHomeScreenState extends State<CalendarHomeScreen> {
     });
     try {
       await FamilyService.refresh();
-      final rows = await Supabase.instance.client
+      final rows = await OfflineRuntime.client
           .from('farms')
           .select('id,name')
           .eq('owner_id', FamilyService.ownerId!)

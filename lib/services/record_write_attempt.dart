@@ -1,3 +1,4 @@
+import '../offline/offline_runtime.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'sales_service.dart';
 
@@ -54,7 +55,7 @@ class RecordWriteAttempt {
   }
 
   Future<void> save({SupabaseClient? client}) async {
-    final db = client ?? Supabase.instance.client;
+    final db = client ?? OfflineRuntime.client;
     final missing = await _missing(db);
     if (missing.isEmpty) return;
     try {

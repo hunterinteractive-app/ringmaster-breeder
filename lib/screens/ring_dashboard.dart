@@ -5,6 +5,7 @@ import '../services/family_service.dart';
 import '../services/license_service.dart';
 import 'record_import_screen.dart';
 import '../widgets/name_dialog.dart';
+import '../offline/offline_runtime.dart';
 
 class RingDashboard extends StatefulWidget {
   final String userId;
@@ -14,7 +15,7 @@ class RingDashboard extends StatefulWidget {
 }
 
 class _RingDashboardState extends State<RingDashboard> {
-  final _client = Supabase.instance.client;
+  final _client = OfflineRuntime.client;
   late Future<List<Map<String, dynamic>>> _rings;
   LicenseStatus? _license;
   bool _checkedImport = false;
@@ -27,6 +28,43 @@ class _RingDashboardState extends State<RingDashboard> {
   Future<List<Map<String, dynamic>>> _load() async {
     await FamilyService.refresh();
     final owner = FamilyService.ownerId!;
+    final offline = OfflineRuntime.engine;
+    if (offline != null) {
+      _license = await fetchLicenseStatus(owner);
+      final data = await OfflineRuntime.readThrough('farms:$owner', () async {
+        // This is a fresh online identity check, not merely a cached JWT.
+        final verified = await _client.auth.getUser();
+        if (verified.user?.id != widget.userId ||
+            !identical(offline, OfflineRuntime.engine)) {
+          throw StateError('Sign in again.');
+        }
+        final membership = Map<String, dynamic>.from(
+          await _client.rpc(
+                'breeder_family_access',
+                params: {'p_action': 'list'},
+              )
+              as Map,
+        );
+        if (!(membership['households'] as List).any(
+          (h) => h['owner_user_id'] == owner,
+        )) {
+          throw StateError(
+            'Family access changed. Refresh your herd selection.',
+          );
+        }
+        await offline.cache('family', membership);
+        final rows = await _client
+            .from('farms')
+            .select()
+            .eq('owner_id', owner)
+            .order('created_at');
+        await offline.verifyAccess();
+        return {'rows': rows};
+      });
+      return (data['rows'] as List)
+          .map((r) => Map<String, dynamic>.from(r as Map))
+          .toList();
+    }
     if (!_checkedImport) {
       _checkedImport = true;
       final own = FamilyService.households.firstWhere(
@@ -95,6 +133,58 @@ class _RingDashboardState extends State<RingDashboard> {
           const SnackBar(
             content: Text(
               'Unable to create Herd. Check your license and try again.',
+            ),
+          ),
+        );
+      }
+    }
+  }
+
+  Future<void> _manageHerd(Map<String, dynamic> herd, String action) async {
+    try {
+      if (action == 'rename') {
+        final name = await showDialog<String>(
+          context: context,
+          builder: (_) =>
+              const NameDialog(title: 'Rename Herd', label: 'Herd name'),
+        );
+        if (name == null) return;
+        await _client.from('farms').update({'name': name}).eq('id', herd['id']);
+      } else {
+        final confirmed = await showDialog<bool>(
+          context: context,
+          builder: (context) => AlertDialog(
+            title: Text('Delete ${herd['name']}?'),
+            content: const Text(
+              'Only an empty herd can be deleted. Herds with animals, history, sales or pedigree drafts are protected. This also removes its calendar subscriptions.',
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context, false),
+                child: const Text('Keep herd'),
+              ),
+              FilledButton(
+                onPressed: () => Navigator.pop(context, true),
+                child: const Text('Delete empty herd'),
+              ),
+            ],
+          ),
+        );
+        if (confirmed != true) return;
+        await _client.rpc(
+          'delete_empty_breeder_ring',
+          params: {'p_ring': herd['id']},
+        );
+      }
+      if (mounted) _refresh();
+    } catch (error) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              error is PostgrestException
+                  ? error.message
+                  : 'Unable to save this herd change. Your records are retained.',
             ),
           ),
         );
@@ -185,24 +275,52 @@ class _RingDashboardState extends State<RingDashboard> {
               ),
             ...rings.map(
               (ring) => Card(
-                child: ListTile(
-                  leading: const Icon(Icons.pets),
-                  title: Text(ring['name']),
-                  subtitle: Text(
-                    FamilyService.households.any(
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: ListTile(
+                        leading: const Icon(Icons.pets),
+                        title: Text(ring['name']),
+                        subtitle: Text(
+                          FamilyService.households.any(
+                                (h) =>
+                                    h['owner_user_id'] ==
+                                        FamilyService.ownerId &&
+                                    h['is_owner'] == true,
+                              )
+                              ? 'Your Herd'
+                              : 'Shared family Herd',
+                        ),
+                        onTap: () => Navigator.pushNamed(
+                          context,
+                          '/animals',
+                          arguments: {
+                            'ringId': ring['id'],
+                            'ringName': ring['name'],
+                          },
+                        ),
+                      ),
+                    ),
+                    PopupMenuButton<String>(
+                      tooltip: 'Manage herd',
+                      onSelected: (action) => _manageHerd(ring, action),
+                      itemBuilder: (_) => [
+                        const PopupMenuItem(
+                          value: 'rename',
+                          child: Text('Rename herd'),
+                        ),
+                        if (FamilyService.households.any(
                           (h) =>
-                              h['owner_user_id'] == FamilyService.ownerId &&
+                              h['owner_user_id'] == ring['owner_id'] &&
                               h['is_owner'] == true,
-                        )
-                        ? 'Your Herd'
-                        : 'Shared family Herd',
-                  ),
-                  trailing: const Icon(Icons.chevron_right),
-                  onTap: () => Navigator.pushNamed(
-                    context,
-                    '/animals',
-                    arguments: {'ringId': ring['id'], 'ringName': ring['name']},
-                  ),
+                        ))
+                          const PopupMenuItem(
+                            value: 'delete',
+                            child: Text('Delete empty herd'),
+                          ),
+                      ],
+                    ),
+                  ],
                 ),
               ),
             ),

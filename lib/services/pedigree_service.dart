@@ -1,10 +1,10 @@
-import 'package:supabase_flutter/supabase_flutter.dart';
+import '../offline/offline_runtime.dart';
 import 'family_service.dart';
 import '../utils/show_results.dart';
 
 class PedigreeService {
   static Future<Map<String, dynamic>> seller() async {
-    final client = Supabase.instance.client;
+    final client = OfflineRuntime.client;
     final user = client.auth.currentUser;
     if (user == null) throw StateError('Not logged in');
     final profile = await client
@@ -28,7 +28,7 @@ class PedigreeService {
   static Future<Map<String, dynamic>> build(String animalId) async =>
       withShowWins(
         Map<String, dynamic>.from(
-          await Supabase.instance.client.rpc(
+          await OfflineRuntime.client.rpc(
                 'breeder_pedigree_snapshot',
                 params: {'p_animal_id': animalId},
               )
@@ -47,7 +47,7 @@ class PedigreeService {
     if (ids.isEmpty) return pedigree;
     final rows = <Map<String, dynamic>>[];
     for (var start = 0; ; start += 500) {
-      final page = await Supabase.instance.client
+      final page = await OfflineRuntime.client
           .from('breeder_show_history')
           .select('animal_id,record,source_available')
           .inFilter('animal_id', ids)

@@ -1,5 +1,5 @@
+import '../offline/offline_runtime.dart';
 import 'package:flutter/material.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
 
 Map<String, dynamic> breedingDefaults(String species) => {
   'species': species,
@@ -66,7 +66,7 @@ class _BreedingSettingsDialogState extends State<BreedingSettingsDialog> {
       if (widget.writer != null) {
         await widget.writer!(rows);
       } else {
-        await Supabase.instance.client
+        await OfflineRuntime.client
             .from('breeding_settings')
             .upsert(rows, onConflict: 'ring_id,species');
       }

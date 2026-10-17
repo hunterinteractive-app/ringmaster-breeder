@@ -1,3 +1,4 @@
+import '../offline/offline_runtime.dart';
 import 'dart:async';
 import '../widgets/pedigree_preview.dart';
 import '../widgets/catalog_field.dart';
@@ -100,7 +101,7 @@ class _PedigreeEntryScreenState extends State<PedigreeEntryScreen> {
     });
   }
 
-  SupabaseClient get db => Supabase.instance.client;
+  SupabaseClient get db => OfflineRuntime.client;
   final form = GlobalKey<FormState>();
   int slot = 0;
   String? draftId;

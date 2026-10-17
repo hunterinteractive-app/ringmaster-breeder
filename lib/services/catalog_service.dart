@@ -1,4 +1,4 @@
-import 'package:supabase_flutter/supabase_flutter.dart';
+import '../offline/offline_runtime.dart';
 
 class CatalogService {
   static DateTime? _synced;
@@ -14,7 +14,7 @@ class CatalogService {
     if (_pending != null) return _pending;
     _pending = () async {
       try {
-        await Supabase.instance.client.functions.invoke('sync-breed-catalog');
+        await OfflineRuntime.client.functions.invoke('sync-breed-catalog');
         _synced = DateTime.now();
         _catalog = null;
       } catch (_) {
@@ -119,7 +119,7 @@ class CatalogService {
         DateTime.now().difference(_loaded!) > const Duration(seconds: 5)) {
       _loading ??= () async {
         final rows = List<Map<String, dynamic>>.from(
-          await Supabase.instance.client
+          await OfflineRuntime.client
               .from('breeds')
               .select(
                 'name,species,is_recognized,varieties(name,is_recognized,standard_name,standard_reference,catalog_kind)',

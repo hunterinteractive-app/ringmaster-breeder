@@ -1,5 +1,5 @@
 import 'package:flutter/foundation.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
+import '../offline/offline_runtime.dart';
 
 class FamilyService {
   static String? selectedHerd;
@@ -8,12 +8,12 @@ class FamilyService {
   static List<Map<String, dynamic>> invitations = [];
   static String? _actor;
   static String? get ownerId =>
-      _actor == Supabase.instance.client.auth.currentUser?.id
+      _actor == OfflineRuntime.client.auth.currentUser?.id
       ? selectedOwner.value ??
             (households.isEmpty
                 ? _actor
                 : households.first['owner_user_id'] as String)
-      : Supabase.instance.client.auth.currentUser?.id;
+      : OfflineRuntime.client.auth.currentUser?.id;
   static void clear() {
     selectedHerd = null;
     _actor = null;
@@ -27,14 +27,14 @@ class FamilyService {
     String? id,
     String? email,
   }) async {
-    final client = Supabase.instance.client;
+    final client = OfflineRuntime.client;
     final actor = client.auth.currentUser?.id;
     if (_actor != actor) {
       clear();
       _actor = actor;
     }
     if (actor == null) return;
-    final data = Map<String, dynamic>.from(
+    Future<Map<String, dynamic>> fetch() async => Map<String, dynamic>.from(
       await client.rpc(
             'breeder_family_access',
             params: {
@@ -45,6 +45,9 @@ class FamilyService {
           )
           as Map,
     );
+    final data = action == 'list'
+        ? await OfflineRuntime.readThrough('family', fetch)
+        : await fetch();
     if (client.auth.currentUser?.id != actor) return;
     households = (data['households'] as List)
         .map((e) => Map<String, dynamic>.from(e as Map))

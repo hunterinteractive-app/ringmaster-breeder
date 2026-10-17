@@ -1,6 +1,6 @@
-import 'package:supabase_flutter/supabase_flutter.dart';
+import '../offline/offline_runtime.dart';
 
-final supabase = Supabase.instance.client;
+final supabase = OfflineRuntime.client;
 
 class LicenseStatus {
   final bool hasActiveLicense;
@@ -17,6 +17,24 @@ class LicenseStatus {
 }
 
 Future<LicenseStatus> fetchLicenseStatus(String userId) async {
+  final data = await OfflineRuntime.readThrough('license:$userId', () async {
+    final status = await _fetchLicenseStatus(userId);
+    return {
+      'active': status.hasActiveLicense,
+      'tier': status.tierCode,
+      'max': status.maxRings,
+      'current': status.currentRings,
+    };
+  });
+  return LicenseStatus(
+    hasActiveLicense: data['active'] == true,
+    tierCode: data['tier'],
+    maxRings: data['max'],
+    currentRings: data['current'],
+  );
+}
+
+Future<LicenseStatus> _fetchLicenseStatus(String userId) async {
   // 1. Get active license
   final license = await supabase
       .from('user_licenses')

@@ -1,5 +1,5 @@
+import '../offline/offline_runtime.dart';
 import 'package:flutter/material.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
 import '../widgets/ringmaster_page_shell.dart';
 import '../utils/weight_date.dart';
 
@@ -9,7 +9,7 @@ Future<dynamic> supportView(
   String? id,
   String query = '',
   int offset = 0,
-}) async => Supabase.instance.client.rpc(
+}) async => OfflineRuntime.client.rpc(
   'breeder_support_view',
   params: {
     'p_action': action,

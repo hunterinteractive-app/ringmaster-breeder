@@ -1,3 +1,4 @@
+import '../offline/offline_runtime.dart';
 import '../services/pagination.dart';
 import 'global_pedigree_history_screen.dart';
 import '../utils/offspring_names.dart';
@@ -42,7 +43,7 @@ class _BreedingTrackerScreenState extends State<BreedingTrackerScreen> {
   late Future<List<Map<String, dynamic>>> records;
   String filter = 'Active';
   Map<String, Map<String, dynamic>> settings = {};
-  final client = Supabase.instance.client;
+  final client = OfflineRuntime.client;
   @override
   void initState() {
     super.initState();
@@ -267,7 +268,7 @@ class _LitterTrackingDialogState extends State<LitterTrackingDialog> {
       if (widget.writer != null) {
         await widget.writer!(data);
       } else {
-        await Supabase.instance.client.rpc(
+        await OfflineRuntime.client.rpc(
           'save_breeding_tracking',
           params: {
             'p_id': widget.record['id'],
@@ -526,7 +527,7 @@ class _LitterOffspringDialogState extends State<LitterOffspringDialog> {
   Future<List<Map<String, dynamic>>> herdAnimals() async {
     final rows = <Map<String, dynamic>>[];
     for (var offset = 0; ; offset += 500) {
-      final page = await Supabase.instance.client
+      final page = await OfflineRuntime.client
           .from('animals')
           .select('name,tattoo')
           .eq('ring_id', widget.record['dam']['ring_id'])
@@ -591,7 +592,7 @@ class _LitterOffspringDialogState extends State<LitterOffspringDialog> {
         }
         return;
       }
-      await Supabase.instance.client.rpc(
+      await OfflineRuntime.client.rpc(
         'create_litter_animals',
         params: {'p_id': widget.record['id'], 'p_young': young},
       );

@@ -2,9 +2,10 @@ import '../services/animal_service.dart';
 import '../widgets/ringmaster_page_shell.dart';
 import 'dart:typed_data';
 import 'package:flutter/material.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:url_launcher/url_launcher.dart';
+import '../offline/offline_runtime.dart';
+import '../offline/browser_store.dart';
 
 class HealthRecordsScreen extends StatefulWidget {
   final String animalId;
@@ -15,7 +16,7 @@ class HealthRecordsScreen extends StatefulWidget {
 }
 
 class _HealthRecordsScreenState extends State<HealthRecordsScreen> {
-  final supabase = Supabase.instance.client;
+  final supabase = OfflineRuntime.client;
 
   late Future<List<Map<String, dynamic>>> _records;
   @override
@@ -108,7 +109,7 @@ class HealthRecordModal extends StatefulWidget {
 }
 
 class _HealthRecordModalState extends State<HealthRecordModal> {
-  final supabase = Supabase.instance.client;
+  final supabase = OfflineRuntime.client;
 
   late TextEditingController titleCtrl;
   late TextEditingController medicationCtrl;
@@ -351,13 +352,22 @@ class _HealthRecordModalState extends State<HealthRecordModal> {
                 icon: const Icon(Icons.open_in_new),
                 label: const Text("View Attachment"),
                 onPressed: () async {
-                  final signedUrl = attachmentUrl!.startsWith('http')
-                      ? attachmentUrl!
-                      : await supabase.storage
-                            .from('health_attachments')
-                            .createSignedUrl(attachmentUrl!, 60);
+                  final cached = OfflineRuntime.workspaceReady
+                      ? await browserFileUrl(
+                          'health_attachments',
+                          attachmentUrl!,
+                          full: true,
+                        )
+                      : null;
+                  final signedUrl =
+                      cached ??
+                      (attachmentUrl!.startsWith('http')
+                          ? attachmentUrl!
+                          : await supabase.storage
+                                .from('health_attachments')
+                                .createSignedUrl(attachmentUrl!, 60));
                   final uri = Uri.parse(signedUrl);
-                  if (await canLaunchUrl(uri)) {
+                  if (uri.scheme == 'blob' || await canLaunchUrl(uri)) {
                     await launchUrl(uri, mode: LaunchMode.externalApplication);
                   }
                 },

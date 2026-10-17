@@ -1,6 +1,6 @@
+import '../offline/offline_runtime.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../config/app_config.dart';
 import '../utils/device_timezone.dart';
@@ -32,7 +32,7 @@ class _CalendarSubscriptionDialogState
       notice = null;
     });
     try {
-      final data = await Supabase.instance.client.rpc(
+      final data = await OfflineRuntime.client.rpc(
         'manage_calendar_subscription',
         params: {
           'p_ring': widget.ringId,

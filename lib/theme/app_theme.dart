@@ -12,6 +12,11 @@ class BreederColors {
 
 class AppTheme {
   static ThemeData get light => ThemeData(
+    // The pilot must render after a fresh offline launch without downloading
+    // Flutter's default Roboto font from Google's font CDN.
+    fontFamily: const bool.fromEnvironment('OFFLINE_PILOT')
+        ? 'BreederSans'
+        : null,
     useMaterial3: true,
     colorScheme:
         ColorScheme.fromSeed(

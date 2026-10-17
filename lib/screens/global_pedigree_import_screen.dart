@@ -1,5 +1,5 @@
+import '../offline/offline_runtime.dart';
 import 'package:flutter/material.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
 import '../services/global_pedigree_import_service.dart';
 import '../widgets/ringmaster_page_shell.dart';
 
@@ -15,7 +15,7 @@ class GlobalPedigreeImportScreen extends StatefulWidget {
 class _GlobalPedigreeImportScreenState
     extends State<GlobalPedigreeImportScreen> {
   late final _gateway =
-      widget.gateway ?? GlobalPedigreeImportService(Supabase.instance.client);
+      widget.gateway ?? GlobalPedigreeImportService(OfflineRuntime.client);
   final _username = TextEditingController();
   final _password = TextEditingController();
   final _form = GlobalKey<FormState>();
@@ -87,6 +87,8 @@ class _GlobalPedigreeImportScreenState
       await action();
     } on FormatException catch (e) {
       if (mounted) setState(() => _error = e.message);
+    } on StateError catch (e) {
+      if (mounted) setState(() => _error = e.message.toString());
     } catch (_) {
       if (mounted) {
         setState(

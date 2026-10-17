@@ -1,3 +1,4 @@
+import '../offline/offline_runtime.dart';
 import 'package:flutter/material.dart';
 import '../services/show_report_service.dart';
 import '../screens/show_reports_screen.dart';
@@ -28,7 +29,7 @@ class _ShowConnectionPanelState extends State<ShowConnectionPanel> {
     if (name.startsWith('reports-')) {
       return ShowReportService.request(name.substring(8));
     }
-    final response = await Supabase.instance.client.functions.invoke(
+    final response = await OfflineRuntime.client.functions.invoke(
       'show-connection',
       body: {'action': name, 'herd_ids': selected.toList()},
     );

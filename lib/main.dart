@@ -4,6 +4,7 @@ import 'screens/account_screen.dart';
 import 'screens/delete_account_screen.dart';
 import 'screens/legal/legal_gate.dart';
 import 'services/legal_service.dart';
+import 'offline/offline_runtime.dart';
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -26,6 +27,7 @@ Future<void> main() async {
     url: AppConfig.supabaseUrl,
     anonKey: AppConfig.supabaseKey,
   );
+  await OfflineRuntime.initialize();
   runApp(const MyApp());
 }
 
@@ -37,18 +39,18 @@ class MyApp extends StatelessWidget {
     debugShowCheckedModeBanner: false,
     theme: AppTheme.light,
     builder: (context, child) => StreamBuilder<AuthState>(
-      stream: Supabase.instance.client.auth.onAuthStateChange,
+      stream: OfflineRuntime.client.auth.onAuthStateChange,
       builder: (context, snapshot) =>
-          Supabase.instance.client.auth.currentSession == null
+          OfflineRuntime.client.auth.currentSession == null
           ? child ?? const SizedBox.shrink()
           : AppShell(
               child: AccountDeletionGate(
-                key: ValueKey(Supabase.instance.client.auth.currentUser!.id),
+                key: ValueKey(OfflineRuntime.client.auth.currentUser!.id),
                 child: LegalGate(
-                  key: ValueKey(Supabase.instance.client.auth.currentUser!.id),
+                  key: ValueKey(OfflineRuntime.client.auth.currentUser!.id),
                   gateway: LegalService(
-                    Supabase.instance.client,
-                    Supabase.instance.client.auth.currentUser!.id,
+                    OfflineRuntime.client,
+                    OfflineRuntime.client.auth.currentUser!.id,
                   ),
                   child: child ?? const SizedBox.shrink(),
                 ),
@@ -102,18 +104,25 @@ class AuthRoot extends StatefulWidget {
 
 class _AuthRootState extends State<AuthRoot> {
   StreamSubscription<AuthState>? _subscription;
-  final _client = Supabase.instance.client;
+  final _client = OfflineRuntime.client;
   @override
   void initState() {
     super.initState();
-    _subscription = _client.auth.onAuthStateChange.listen((state) {
-      if (!mounted) return;
-      if (state.session == null) {
-        FamilyService.clear();
-        Navigator.of(context).popUntil((route) => route.isFirst);
-      }
-      setState(() {});
-    });
+    _subscription = _client.auth.onAuthStateChange.listen(
+      (state) {
+        if (!mounted) return;
+        if (state.session == null) {
+          FamilyService.clear();
+          Navigator.of(context).popUntil((route) => route.isFirst);
+        }
+        setState(() {});
+      },
+      onError: (Object error, StackTrace stack) {
+        // Auth recovery emits transport errors while offline. Keep the cached
+        // signed-in view; the runtime retains drafts and retries verification.
+        if (mounted) setState(() {});
+      },
+    );
   }
 
   @override

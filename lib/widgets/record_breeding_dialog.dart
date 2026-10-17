@@ -1,3 +1,4 @@
+import '../offline/offline_runtime.dart';
 import 'parent_picker.dart';
 import '../utils/color_details.dart';
 import 'package:flutter/material.dart';
@@ -49,7 +50,7 @@ class _RecordBreedingDialogState extends State<RecordBreedingDialog> {
     if (loadedParents != null) return;
     if (ringId == null) throw StateError('No Herd selected');
     loadedParents = List<Map<String, dynamic>>.from(
-      await Supabase.instance.client
+      await OfflineRuntime.client
           .from('animals')
           .select()
           .eq('ring_id', ringId!),
@@ -193,7 +194,7 @@ class _RecordBreedingDialogState extends State<RecordBreedingDialog> {
       if (widget.writer != null) {
         await widget.writer!(rows);
       } else {
-        await Supabase.instance.client.rpc(
+        await OfflineRuntime.client.rpc(
           'record_breeding_with_parents',
           params: {
             'p_ring': ringId,

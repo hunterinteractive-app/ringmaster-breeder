@@ -1,8 +1,8 @@
+import '../offline/offline_runtime.dart';
 import '../services/herd_calendar_service.dart';
 import '../widgets/calendar_subscription_dialog.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
 import '../utils/herd_calendar.dart';
 import '../utils/animal_labels.dart';
 import '../widgets/ringmaster_page_shell.dart';
@@ -62,13 +62,13 @@ class _HerdCalendarScreenState extends State<HerdCalendarScreen> {
           : widget.loader != null
           ? await widget.loader!()
           : await HerdCalendarService(
-              Supabase.instance.client,
+              OfflineRuntime.client,
             ).load(widget.ringId, window);
       if (!mounted || request != _request) return;
       String? notice;
       if (widget.loader == null && widget.windowLoader == null) {
         try {
-          final response = await Supabase.instance.client.functions.invoke(
+          final response = await OfflineRuntime.client.functions.invoke(
             'show-calendar',
             body: {
               'ring_id': widget.ringId,
@@ -85,7 +85,9 @@ class _HerdCalendarScreenState extends State<HerdCalendarScreen> {
               List<Map<String, dynamic>>.from(data['shows'] ?? []),
             ),
           );
-          notice = data['connected'] == true
+          notice = data['downloaded_at'] != null
+              ? 'Entered shows downloaded ${data['downloaded_at']}. Reconnect and refresh for changes.'
+              : data['connected'] == true
               ? 'Entered shows and favorite deadlines refreshed from RingMaster Show.'
               : 'Connect RingMaster Show in Account to see your entered shows and favorite deadlines here.';
         } catch (_) {
