@@ -9,15 +9,26 @@
     (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
   if (!ios || !viewport) return;
   let timers = [];
+  let settlingUntil = 0;
+  const recheck = () => {
+    const input = document.activeElement;
+    if ((input?.tagName === 'INPUT' || input?.tagName === 'TEXTAREA') &&
+        Math.abs(viewport.scale - 1) < 0.01 &&
+        document.documentElement.clientHeight - viewport.height > 50) {
+      // Safari can pan the document after Flutter has already scrolled its
+      // own form. That second movement shifts the entire fixed app offscreen.
+      if (window.scrollX || window.scrollY) window.scrollTo(0, 0);
+      viewport.dispatchEvent(new Event('resize'));
+    }
+  };
   window.addEventListener('orientationchange', () => {
     timers.forEach(clearTimeout);
-    timers = [200, 500, 1000].map(delay => setTimeout(() => {
-      const input = document.activeElement;
-      if ((input?.tagName === 'INPUT' || input?.tagName === 'TEXTAREA') &&
-          Math.abs(viewport.scale - 1) < 0.01 &&
-          document.documentElement.clientHeight - viewport.height > 50) {
-        viewport.dispatchEvent(new Event('resize'));
-      }
-    }, delay));
+    settlingUntil = Date.now() + 2500;
+    timers = [200, 500, 1000, 1500].map(delay => setTimeout(recheck, delay));
+  });
+  viewport.addEventListener('scroll', () => {
+    if (Date.now() < settlingUntil && (window.scrollX || window.scrollY)) {
+      recheck();
+    }
   });
 })();

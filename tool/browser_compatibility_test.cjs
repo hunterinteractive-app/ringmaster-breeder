@@ -16,9 +16,14 @@ function viewportFixture(overrides = {}) {
   const document = { activeElement: input, documentElement: { clientHeight: 325 } };
   const timers = new Map();
   let id = 0, resizes = 0;
+  let now = 10000, scrolls = 0;
+  Object.assign(window, {
+    scrollX: 0, scrollY: 0,
+    scrollTo: (x, y) => { window.scrollX = x; window.scrollY = y; scrolls++; },
+  });
   window.visualViewport.addEventListener('resize', () => resizes++);
   const context = {
-    window, document, Event,
+    window, document, Event, Date: { now: () => now },
     navigator: { userAgent: 'iPhone', platform: 'iPhone', maxTouchPoints: 5 },
     setTimeout: callback => { timers.set(++id, callback); return id; },
     clearTimeout: key => timers.delete(key),
@@ -31,6 +36,8 @@ function viewportFixture(overrides = {}) {
     flush: () => { const pending = [...timers.values()]; timers.clear(); pending.forEach(fn => fn()); },
     resizes: () => resizes,
     pending: () => timers.size,
+    advance: ms => { now += ms; },
+    scrolls: () => scrolls,
   };
 }
 
@@ -38,22 +45,34 @@ async function main() {
   const f = viewportFixture();
   f.rotate();
   f.rotate();
-  assert.equal(f.pending(), 3, 'A second rotation replaces pending measurements');
+  assert.equal(f.pending(), 4, 'A second rotation replaces pending measurements');
   f.flush();
-  assert.equal(f.resizes(), 3);
+  assert.equal(f.resizes(), 4);
   assert.equal(f.document.activeElement, f.input);
   assert.equal(f.input.value, 'Unsaved barn edit');
   f.window.visualViewport.height = 325;
   f.rotate(); f.flush();
-  assert.equal(f.resizes(), 3, 'Dismissing the keyboard needs no correction');
+  assert.equal(f.resizes(), 4, 'Dismissing the keyboard needs no correction');
   f.window.visualViewport.height = 72;
   f.window.visualViewport.scale = 1.5;
   f.rotate(); f.flush();
-  assert.equal(f.resizes(), 3, 'Pinch zoom must not be treated as a keyboard');
+  f.window.scrollY = 121;
+  f.window.visualViewport.dispatchEvent(new Event('scroll'));
+  assert.equal(f.scrolls(), 0, 'Rotation recovery must respect pinch zoom');
+  assert.equal(f.resizes(), 4, 'Pinch zoom must not be treated as a keyboard');
   f.window.visualViewport.scale = 1;
+  f.window.visualViewport.dispatchEvent(new Event('scroll'));
+  assert.equal(f.window.scrollY, 0, 'Undo Safari document panning after rotation');
+  assert.equal(f.scrolls(), 1);
+  assert.equal(f.input.value, 'Unsaved barn edit');
+  assert.equal(f.document.activeElement, f.input);
+  f.advance(2501);
+  f.window.scrollY = 121;
+  f.window.visualViewport.dispatchEvent(new Event('scroll'));
+  assert.equal(f.scrolls(), 1, 'Do not keep overriding scrolling after rotation settles');
   f.document.activeElement = { tagName: 'BODY' };
   f.rotate(); f.flush();
-  assert.equal(f.resizes(), 3, 'No focused input needs no keyboard correction');
+  assert.equal(f.resizes(), 5, 'No focused input needs no keyboard correction');
   const android = viewportFixture({ navigator: { userAgent: 'Android', platform: 'Linux', maxTouchPoints: 5 } });
   android.rotate(); android.flush();
   assert.equal(android.resizes(), 0);
