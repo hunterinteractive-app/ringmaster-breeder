@@ -1,3 +1,4 @@
+import 'adaptive_layout.dart';
 import 'package:flutter/material.dart';
 import 'package:printing/printing.dart';
 import '../services/pedigree_email_service.dart';
@@ -128,7 +129,7 @@ class _PedigreeEmailDialogState extends State<PedigreeEmailDialog> {
   @override
   Widget build(BuildContext context) => PopScope(
     canPop: !sending,
-    child: AlertDialog(
+    child: AdaptiveFormDialog(
       title: Text(
         accepted
             ? (gateway is PedigreeEmailService &&

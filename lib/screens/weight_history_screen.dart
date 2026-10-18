@@ -48,7 +48,7 @@ class _WeightHistoryScreenState extends State<WeightHistoryScreen> {
       builder: (_) => StatefulBuilder(
         builder: (dialogContext, setDialogState) => PopScope(
           canPop: !isSaving,
-          child: AlertDialog(
+          child: AdaptiveFormDialog(
             title: Text(record == null ? 'Add Weight' : 'Edit Latest Weight'),
             content: TextField(
               controller: controller,

@@ -1,3 +1,4 @@
+import 'adaptive_layout.dart';
 import '../offline/offline_runtime.dart';
 import 'package:flutter/material.dart';
 
@@ -104,7 +105,7 @@ class _BreedingSettingsDialogState extends State<BreedingSettingsDialog> {
   @override
   Widget build(BuildContext context) => PopScope(
     canPop: !saving,
-    child: AlertDialog(
+    child: AdaptiveFormDialog(
       title: const Text('Breeding settings'),
       content: SizedBox(
         width: 560,

@@ -1,3 +1,4 @@
+import 'adaptive_layout.dart';
 import 'package:flutter/material.dart';
 import '../models/sale_record.dart';
 import '../services/sales_service.dart';
@@ -72,7 +73,7 @@ class _BulkSaleDialogState extends State<BulkSaleDialog> {
         .toList();
     return PopScope(
       canPop: !saving,
-      child: AlertDialog(
+      child: AdaptiveFormDialog(
         title: const Text('Mark animals For Sale'),
         content: SizedBox(
           width: 620,

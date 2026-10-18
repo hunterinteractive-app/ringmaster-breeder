@@ -1,3 +1,4 @@
+import 'adaptive_layout.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import '../services/record_write_attempt.dart';
@@ -143,7 +144,7 @@ class _BulkRecordsDialogState extends State<BulkRecordsDialog> {
   @override
   Widget build(BuildContext context) => PopScope(
     canPop: !saving,
-    child: AlertDialog(
+    child: AdaptiveFormDialog(
       title: Text(
         widget.weights
             ? 'Bulk add weights'

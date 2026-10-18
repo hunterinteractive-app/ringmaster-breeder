@@ -1,3 +1,4 @@
+import 'adaptive_layout.dart';
 import '../offline/offline_runtime.dart';
 import 'parent_picker.dart';
 import '../utils/color_details.dart';
@@ -221,7 +222,7 @@ class _RecordBreedingDialogState extends State<RecordBreedingDialog> {
   @override
   Widget build(BuildContext context) => PopScope(
     canPop: !saving,
-    child: AlertDialog(
+    child: AdaptiveFormDialog(
       title: const Text('Record breeding'),
       content: SizedBox(
         width: 600,

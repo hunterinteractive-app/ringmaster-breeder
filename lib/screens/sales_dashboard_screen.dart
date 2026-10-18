@@ -521,7 +521,7 @@ class _SaleEditDialogState extends State<SaleEditDialog> {
   @override
   Widget build(BuildContext context) => PopScope(
     canPop: !saving,
-    child: AlertDialog(
+    child: AdaptiveFormDialog(
       title: Text(widget.sale.data['animal_name']),
       content: SizedBox(
         width: 540,
@@ -718,7 +718,7 @@ class _SalePaymentDialogState extends State<SalePaymentDialog> {
   @override
   Widget build(BuildContext context) => PopScope(
     canPop: !saving,
-    child: AlertDialog(
+    child: AdaptiveFormDialog(
       title: const Text('Record payment or refund'),
       content: SizedBox(
         width: 500,

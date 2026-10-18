@@ -1,3 +1,4 @@
+import 'adaptive_layout.dart';
 import 'package:flutter/material.dart';
 import '../utils/animal_labels.dart';
 import '../utils/color_details.dart';
@@ -253,7 +254,7 @@ class _QuickParentDialogState extends State<QuickParentDialog> {
           (a['tattoo'] ?? '').toString().trim().toLowerCase() ==
               data['tattoo'].toString().trim().toLowerCase(),
     );
-    return AlertDialog(
+    return AdaptiveFormDialog(
       title: Text('Add ${widget.label.toLowerCase()}'),
       content: SizedBox(
         width: 480,

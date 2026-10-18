@@ -130,3 +130,32 @@ class AdaptiveOverview extends StatelessWidget {
         )
       : child;
 }
+
+/// A form's heading can scroll away when a phone keyboard leaves little height.
+/// Keep the scroll structure stable across keyboard and window-size changes so
+/// focused fields and controller state survive; actions remain outside it.
+class AdaptiveFormDialog extends StatelessWidget {
+  final Widget? title;
+  final Widget? content;
+  final List<Widget>? actions;
+  const AdaptiveFormDialog({super.key, this.title, this.content, this.actions});
+
+  @override
+  Widget build(BuildContext context) {
+    final compact = BreederLayout.compact(context);
+    return AlertDialog(
+      scrollable: true,
+      insetPadding: compact
+          ? const EdgeInsets.symmetric(horizontal: 12, vertical: 8)
+          : null,
+      titlePadding: compact ? const EdgeInsets.fromLTRB(16, 12, 16, 0) : null,
+      contentPadding: compact
+          ? const EdgeInsets.fromLTRB(16, 12, 16, 12)
+          : const EdgeInsets.fromLTRB(24, 20, 24, 24),
+      actionsPadding: compact ? const EdgeInsets.fromLTRB(12, 0, 12, 8) : null,
+      title: title,
+      content: content,
+      actions: actions,
+    );
+  }
+}

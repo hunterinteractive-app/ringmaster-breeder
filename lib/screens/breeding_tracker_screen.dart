@@ -353,7 +353,7 @@ class _LitterTrackingDialogState extends State<LitterTrackingDialog> {
   @override
   Widget build(BuildContext context) => PopScope(
     canPop: !saving,
-    child: AlertDialog(
+    child: AdaptiveFormDialog(
       title: const Text('Gestation & litter tracking'),
       content: SizedBox(
         width: 560,
@@ -618,7 +618,7 @@ class _LitterOffspringDialogState extends State<LitterOffspringDialog> {
     final cavy = widget.record['dam']['species'] == 'cavy';
     return PopScope(
       canPop: !busy,
-      child: AlertDialog(
+      child: AdaptiveFormDialog(
         title: const Text('Create offspring records'),
         content: SizedBox(
           width: 600,

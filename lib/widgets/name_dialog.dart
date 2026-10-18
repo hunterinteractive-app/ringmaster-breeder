@@ -1,3 +1,4 @@
+import 'adaptive_layout.dart';
 import 'package:flutter/material.dart';
 
 class NameDialog extends StatefulWidget {
@@ -17,7 +18,7 @@ class _NameDialogState extends State<NameDialog> {
   }
 
   @override
-  Widget build(BuildContext context) => AlertDialog(
+  Widget build(BuildContext context) => AdaptiveFormDialog(
     title: Text(widget.title),
     content: TextField(
       controller: _controller,

@@ -110,7 +110,7 @@ class HealthRecordModal extends StatefulWidget {
 }
 
 class _HealthRecordModalState extends State<HealthRecordModal> {
-  final supabase = OfflineRuntime.client;
+  late final supabase = OfflineRuntime.client;
 
   late TextEditingController titleCtrl;
   late TextEditingController medicationCtrl;
@@ -268,12 +268,15 @@ class _HealthRecordModalState extends State<HealthRecordModal> {
 
   @override
   Widget build(BuildContext context) {
-    return AdaptivePadding(
+    final spacing = BreederLayout.compact(context) ? 12.0 : 16.0;
+    // Keyboard clearance is functional space, not decorative padding: compact
+    // spacing must not shrink it or the final controls remain behind the IME.
+    return Padding(
       padding: EdgeInsets.fromLTRB(
-        16,
-        16,
-        16,
-        MediaQuery.of(context).viewInsets.bottom + 16,
+        spacing,
+        spacing,
+        spacing,
+        MediaQuery.viewInsetsOf(context).bottom + spacing,
       ),
       child: SingleChildScrollView(
         child: Column(
