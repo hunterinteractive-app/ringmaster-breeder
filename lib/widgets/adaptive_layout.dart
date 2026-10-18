@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 
 /// Shared density rules. Text scaling and touch targets remain accessible;
@@ -166,11 +168,70 @@ class AdaptiveOverview extends StatelessWidget {
 /// Keep the scroll structure stable across keyboard and window-size changes so
 /// focused fields and controller state survive. Very short viewports also scroll
 /// the actions, leaving room for a complete input rather than a clipped strip.
-class AdaptiveFormDialog extends StatelessWidget {
+class AdaptiveFormDialog extends StatefulWidget {
   final Widget? title;
   final Widget? content;
   final List<Widget>? actions;
   const AdaptiveFormDialog({super.key, this.title, this.content, this.actions});
+
+  @override
+  State<AdaptiveFormDialog> createState() => _AdaptiveFormDialogState();
+}
+
+class _AdaptiveFormDialogState extends State<AdaptiveFormDialog>
+    with WidgetsBindingObserver {
+  Timer? _keyboardLayout;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addObserver(this);
+  }
+
+  @override
+  void dispose() {
+    _keyboardLayout?.cancel();
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  @override
+  void didChangeMetrics() {
+    // The browser can resize after EditableText's own caret visibility pass.
+    // Recheck after layout so a newly opened keyboard cannot hide a field
+    // behind the dialog's pinned actions or an outer scroll viewport.
+    _keyboardLayout?.cancel();
+    // AlertDialog animates its inset for 100 ms. Wait for the final viewport
+    // and that transition before measuring the scrollable area.
+    _keyboardLayout = Timer(const Duration(milliseconds: 250), () {
+      WidgetsBinding.instance.addPostFrameCallback(
+        (_) => _revealFocusedField(),
+      );
+      WidgetsBinding.instance.ensureVisualUpdate();
+    });
+  }
+
+  void _revealFocusedField() {
+    if (!mounted || MediaQuery.viewInsetsOf(context).bottom == 0) return;
+    final focused = FocusManager.instance.primaryFocus?.context;
+    if (focused == null ||
+        focused.findAncestorStateOfType<_AdaptiveFormDialogState>() != this) {
+      return;
+    }
+    BuildContext target = focused;
+    focused.visitAncestorElements((element) {
+      if (element.widget is TextField) {
+        target = element;
+        return false;
+      }
+      return true;
+    });
+    Scrollable.ensureVisible(
+      target,
+      alignment: 0.5,
+      duration: const Duration(milliseconds: 150),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -186,7 +247,7 @@ class AdaptiveFormDialog extends StatelessWidget {
           ? const EdgeInsets.fromLTRB(16, 12, 16, 12)
           : const EdgeInsets.fromLTRB(24, 20, 24, 24),
       actionsPadding: compact ? const EdgeInsets.fromLTRB(12, 0, 12, 8) : null,
-      title: title,
+      title: widget.title,
       // At landscape keyboard heights, even a pinned action row can consume
       // the entire dialog. Scroll its actions with the fields in that case.
       // The content keeps the same parent and position when the IME opens.
@@ -194,20 +255,20 @@ class AdaptiveFormDialog extends StatelessWidget {
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          if (content != null) content!,
-          if (short && actions != null)
+          if (widget.content != null) widget.content!,
+          if (short && widget.actions != null)
             Padding(
               padding: const EdgeInsets.only(top: 12),
               child: OverflowBar(
                 alignment: MainAxisAlignment.end,
                 spacing: 8,
                 overflowAlignment: OverflowBarAlignment.end,
-                children: actions!,
+                children: widget.actions!,
               ),
             ),
         ],
       ),
-      actions: short ? null : actions,
+      actions: short ? null : widget.actions,
     );
   }
 }

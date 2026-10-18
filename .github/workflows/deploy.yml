@@ -32,6 +32,8 @@ jobs:
         run: python3 tool/prepare_offline_pilot.py build/web
       - name: Verify shared offline repository
         run: node tool/offline_workspace_test.cjs
+      - name: Verify browser startup and keyboard recovery
+        run: node tool/browser_compatibility_test.cjs
       - name: Verify cache headers
         run: test -f build/web/_headers && test -f build/web/flutter_bootstrap.js
       - name: Deploy production

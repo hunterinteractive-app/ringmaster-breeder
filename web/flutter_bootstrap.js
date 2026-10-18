@@ -1,6 +1,16 @@
 {{flutter_js}}
 {{flutter_build_config}}
 async function startBreeder() {
+  // These record routes need Navigator arguments held in memory. A browser
+  // reload cannot reconstruct them from the URL alone; reopen the herd list
+  // instead of building a record page with a missing ID, including offline.
+  const recordRoutes = new Set([
+    '#/animals', '#/add-animal', '#/animal-detail', '#/edit-animal',
+    '#/weight-history',
+  ]);
+  if (recordRoutes.has(location.hash.split('?')[0])) {
+    history.replaceState(history.state, '', location.pathname + location.search);
+  }
   if (window.BREEDER_OFFLINE_BUILD === true) {
     if ('serviceWorker' in navigator) {
       // Registration failures leave the online app usable. The pilot never

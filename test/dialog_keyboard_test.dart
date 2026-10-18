@@ -63,17 +63,16 @@ void main() {
         Finder field(String label) => find.byWidgetPredicate(
           (w) => w is TextField && w.decoration?.labelText == label,
         );
-        final label = payment ? 'Method, e.g. cash or check' : 'Buyer name';
+        final label = payment ? 'Method, e.g. cash or check' : 'Buyer email';
         await tester.ensureVisible(field(label));
         await tester.tap(field(label));
         await tester.enterText(field(label), 'Keep my draft');
         tester.view.viewInsets = const FakeViewPadding(bottom: 313);
         await tester.pumpAndSettle();
-        await Scrollable.ensureVisible(
-          tester.element(field(label)),
-          alignment: 0.5,
-        );
+        await tester.pump(const Duration(milliseconds: 300));
         await tester.pumpAndSettle();
+        // A real user cannot call ensureVisible after the keyboard opens.
+        // The dialog must recover its focused field after the viewport shrinks.
         // Checking only against the screen would miss a field clipped to a thin
         // strip between a fixed dialog heading and its actions.
         final viewport = tester.getRect(
