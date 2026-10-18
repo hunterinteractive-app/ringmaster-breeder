@@ -137,7 +137,8 @@ class _BulkRecordsDialogState extends State<BulkRecordsDialog> {
     padding: const EdgeInsets.only(bottom: 12),
     child: TextField(
       controller: controller,
-      maxLines: lines,
+      maxLines: BreederLayout.fieldLines(context, lines),
+      keyboardType: lines > 1 ? TextInputType.multiline : null,
       decoration: InputDecoration(labelText: label),
     ),
   );

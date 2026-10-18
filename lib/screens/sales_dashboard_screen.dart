@@ -626,9 +626,11 @@ class _SaleEditDialogState extends State<SaleEditDialog> {
     padding: const EdgeInsets.only(top: 12),
     child: TextField(
       controller: c,
-      maxLines: lines,
+      maxLines: BreederLayout.fieldLines(context, lines),
       keyboardType: money
           ? const TextInputType.numberWithOptions(decimal: true)
+          : lines > 1
+          ? TextInputType.multiline
           : null,
       decoration: InputDecoration(labelText: label),
     ),

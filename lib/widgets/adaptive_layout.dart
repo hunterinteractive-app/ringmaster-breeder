@@ -3,6 +3,14 @@ import 'package:flutter/material.dart';
 /// Shared density rules. Text scaling and touch targets remain accessible;
 /// compact layouts recover space from decoration, gaps and secondary content.
 class BreederLayout {
+  static bool shortViewport(BuildContext context) {
+    final media = MediaQuery.of(context);
+    return media.size.height - media.viewInsets.bottom < 160;
+  }
+
+  static int fieldLines(BuildContext context, int normal) =>
+      shortViewport(context) ? 1 : normal;
+
   static bool compact(BuildContext context) {
     final scope = context.dependOnInheritedWidgetOfExactType<_DensityScope>();
     final media = MediaQuery.of(context);
@@ -133,7 +141,8 @@ class AdaptiveOverview extends StatelessWidget {
 
 /// A form's heading can scroll away when a phone keyboard leaves little height.
 /// Keep the scroll structure stable across keyboard and window-size changes so
-/// focused fields and controller state survive; actions remain outside it.
+/// focused fields and controller state survive. Very short viewports also scroll
+/// the actions, leaving room for a complete input rather than a clipped strip.
 class AdaptiveFormDialog extends StatelessWidget {
   final Widget? title;
   final Widget? content;
@@ -143,10 +152,11 @@ class AdaptiveFormDialog extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final compact = BreederLayout.compact(context);
+    final short = BreederLayout.shortViewport(context);
     return AlertDialog(
       scrollable: true,
       insetPadding: compact
-          ? const EdgeInsets.symmetric(horizontal: 12, vertical: 8)
+          ? EdgeInsets.symmetric(horizontal: 12, vertical: short ? 4 : 8)
           : null,
       titlePadding: compact ? const EdgeInsets.fromLTRB(16, 12, 16, 0) : null,
       contentPadding: compact
@@ -154,8 +164,27 @@ class AdaptiveFormDialog extends StatelessWidget {
           : const EdgeInsets.fromLTRB(24, 20, 24, 24),
       actionsPadding: compact ? const EdgeInsets.fromLTRB(12, 0, 12, 8) : null,
       title: title,
-      content: content,
-      actions: actions,
+      // At landscape keyboard heights, even a pinned action row can consume
+      // the entire dialog. Scroll its actions with the fields in that case.
+      // The content keeps the same parent and position when the IME opens.
+      content: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          if (content != null) content!,
+          if (short && actions != null)
+            Padding(
+              padding: const EdgeInsets.only(top: 12),
+              child: OverflowBar(
+                alignment: MainAxisAlignment.end,
+                spacing: 8,
+                overflowAlignment: OverflowBarAlignment.end,
+                children: actions!,
+              ),
+            ),
+        ],
+      ),
+      actions: short ? null : actions,
     );
   }
 }

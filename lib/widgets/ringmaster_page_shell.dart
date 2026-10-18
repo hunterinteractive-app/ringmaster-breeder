@@ -248,55 +248,62 @@ class RingMasterPageShell extends StatelessWidget {
                 keyboardVisible ||
                 constraints.maxHeight < 600 ||
                 constraints.maxWidth < 380;
+            // Landscape Chrome can leave only 80 logical pixels above the IME.
+            // Keep the form mounted while temporarily giving it the whole area.
+            final hideHeader = constraints.maxHeight < 160;
+            final radius = hideHeader ? 0.0 : bottomRadius;
             return Column(
               children: [
-                Container(
-                  color: topColor,
-                  padding: EdgeInsets.fromLTRB(
-                    compact ? 8 : horizontalPadding,
-                    compact ? 4 : topPadding,
-                    compact ? 8 : horizontalPadding,
-                    compact ? 4 : 18,
+                Offstage(
+                  offstage: hideHeader,
+                  child: Container(
+                    color: topColor,
+                    padding: EdgeInsets.fromLTRB(
+                      compact ? 8 : horizontalPadding,
+                      compact ? 4 : topPadding,
+                      compact ? 8 : horizontalPadding,
+                      compact ? 4 : 18,
+                    ),
+                    child: compact
+                        ? _CompactHeader(
+                            title: title,
+                            leading: leading,
+                            showBack: shouldShowBack,
+                            onBack: onBack,
+                            keyboardVisible: keyboardVisible,
+                            menu: _navigationMenu(context),
+                            actions: actions ?? const [],
+                          )
+                        : isMobile
+                        ? _MobileHeader(
+                            title: title,
+                            subtitle: subtitle,
+                            logo: resolvedLogo,
+                            leading: leading,
+                            showBack: shouldShowBack,
+                            onBack: onBack,
+                            actions: resolvedActions,
+                            topColor: topColor,
+                            logoSize: logoSize,
+                            titleSize: titleSize,
+                            subtitleSize: subtitleSize,
+                            iconSize: iconSize,
+                          )
+                        : _WideHeader(
+                            title: title,
+                            subtitle: subtitle,
+                            logo: resolvedLogo,
+                            leading: leading,
+                            showBack: shouldShowBack,
+                            onBack: onBack,
+                            actions: resolvedActions,
+                            topColor: topColor,
+                            logoSize: logoSize,
+                            titleSize: titleSize,
+                            subtitleSize: subtitleSize,
+                            iconSize: iconSize,
+                          ),
                   ),
-                  child: compact
-                      ? _CompactHeader(
-                          title: title,
-                          leading: leading,
-                          showBack: shouldShowBack,
-                          onBack: onBack,
-                          keyboardVisible: keyboardVisible,
-                          menu: _navigationMenu(context),
-                          actions: actions ?? const [],
-                        )
-                      : isMobile
-                      ? _MobileHeader(
-                          title: title,
-                          subtitle: subtitle,
-                          logo: resolvedLogo,
-                          leading: leading,
-                          showBack: shouldShowBack,
-                          onBack: onBack,
-                          actions: resolvedActions,
-                          topColor: topColor,
-                          logoSize: logoSize,
-                          titleSize: titleSize,
-                          subtitleSize: subtitleSize,
-                          iconSize: iconSize,
-                        )
-                      : _WideHeader(
-                          title: title,
-                          subtitle: subtitle,
-                          logo: resolvedLogo,
-                          leading: leading,
-                          showBack: shouldShowBack,
-                          onBack: onBack,
-                          actions: resolvedActions,
-                          topColor: topColor,
-                          logoSize: logoSize,
-                          titleSize: titleSize,
-                          subtitleSize: subtitleSize,
-                          iconSize: iconSize,
-                        ),
                 ),
                 Expanded(
                   child: Container(
@@ -304,12 +311,12 @@ class RingMasterPageShell extends StatelessWidget {
                     decoration: BoxDecoration(
                       color: pageBg,
                       borderRadius: BorderRadius.vertical(
-                        top: Radius.circular(bottomRadius),
+                        top: Radius.circular(radius),
                       ),
                     ),
                     child: ClipRRect(
                       borderRadius: BorderRadius.vertical(
-                        top: Radius.circular(bottomRadius),
+                        top: Radius.circular(radius),
                       ),
                       child: Material(color: pageBg, child: resolvedBody),
                     ),

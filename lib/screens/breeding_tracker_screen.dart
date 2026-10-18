@@ -445,9 +445,13 @@ class _LitterTrackingDialogState extends State<LitterTrackingDialog> {
                   TextFormField(
                     initialValue: data['notes'],
                     maxLength: 4000,
-                    minLines: 2,
-                    maxLines: 4,
-                    decoration: const InputDecoration(
+                    minLines: BreederLayout.fieldLines(context, 2),
+                    maxLines: BreederLayout.fieldLines(context, 4),
+                    keyboardType: TextInputType.multiline,
+                    decoration: InputDecoration(
+                      counterText: BreederLayout.shortViewport(context)
+                          ? ''
+                          : null,
                       labelText: 'Tracking notes',
                     ),
                     onChanged: (v) => data['notes'] = v,

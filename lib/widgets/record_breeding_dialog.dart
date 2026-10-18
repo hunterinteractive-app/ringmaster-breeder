@@ -318,7 +318,8 @@ class _RecordBreedingDialogState extends State<RecordBreedingDialog> {
                 ),
                 TextField(
                   controller: notes,
-                  maxLines: 3,
+                  maxLines: BreederLayout.fieldLines(context, 3),
+                  keyboardType: TextInputType.multiline,
                   maxLength: 4000,
                   decoration: const InputDecoration(
                     labelText: 'Notes (optional)',

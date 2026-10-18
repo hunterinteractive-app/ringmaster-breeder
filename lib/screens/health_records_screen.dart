@@ -268,7 +268,11 @@ class _HealthRecordModalState extends State<HealthRecordModal> {
 
   @override
   Widget build(BuildContext context) {
-    final spacing = BreederLayout.compact(context) ? 12.0 : 16.0;
+    final spacing = BreederLayout.shortViewport(context)
+        ? 4.0
+        : BreederLayout.compact(context)
+        ? 12.0
+        : 16.0;
     // Keyboard clearance is functional space, not decorative padding: compact
     // spacing must not shrink it or the final controls remain behind the IME.
     return Padding(
@@ -317,7 +321,8 @@ class _HealthRecordModalState extends State<HealthRecordModal> {
             TextField(
               controller: descriptionCtrl,
               decoration: const InputDecoration(labelText: 'Notes'),
-              maxLines: 3,
+              maxLines: BreederLayout.fieldLines(context, 3),
+              keyboardType: TextInputType.multiline,
             ),
 
             const AdaptiveGap(height: 12),

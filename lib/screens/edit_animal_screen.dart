@@ -329,10 +329,12 @@ class _EditAnimalScreenState extends State<EditAnimalScreen> {
             ),
             TextField(
               controller: legDetailsController,
-              minLines: 4,
-              maxLines: 8,
+              minLines: BreederLayout.fieldLines(context, 4),
+              maxLines: BreederLayout.fieldLines(context, 8),
               maxLength: 4000,
-              decoration: const InputDecoration(
+              keyboardType: TextInputType.multiline,
+              decoration: InputDecoration(
+                counterText: BreederLayout.shortViewport(context) ? '' : null,
                 labelText: 'Legs / show details',
                 hintText: 'Type or paste results, one per line.',
               ),

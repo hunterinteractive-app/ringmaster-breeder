@@ -607,12 +607,19 @@ class _PedigreeEntryScreenState extends State<PedigreeEntryScreen> {
       readOnly: readOnly,
       decoration: InputDecoration(
         labelText: labels[field],
+        counterText: BreederLayout.shortViewport(context) ? '' : null,
         hintText: field == 'leg_details'
             ? 'Type or paste results, one per line.'
             : null,
       ),
-      minLines: field == 'leg_details' ? 4 : 1,
-      maxLines: field == 'leg_details' ? 8 : 1,
+      minLines: BreederLayout.fieldLines(
+        context,
+        field == 'leg_details' ? 4 : 1,
+      ),
+      maxLines: BreederLayout.fieldLines(
+        context,
+        field == 'leg_details' ? 8 : 1,
+      ),
       maxLength: field == 'leg_details' ? 4000 : null,
       keyboardType: field == 'leg_details' ? TextInputType.multiline : null,
       textInputAction: field == 'leg_details'

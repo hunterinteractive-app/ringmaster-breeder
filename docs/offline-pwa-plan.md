@@ -169,7 +169,8 @@ result even if the source changes before a lost-response retry.
 
 ## Browser storage and updates
 
-Target iOS 15.6+ Safari/Home Screen and Android 10+ with updated Chrome. Detect
+Target iOS 15.6+ Safari/Home Screen and Android 11+ with updated Chrome. Android 10
+is outside the advertised support range. Detect
 storage estimates, persistence and background capabilities rather than assuming
 they exist. Installing on the Home Screen is recommended for barn use; it does
 not replace the initial record/file download. Clearing browser data, uninstalling
@@ -273,7 +274,7 @@ Before calling a phone/version qualified, test on that hardware:
    payments or unintended recipient emails as test fixtures.
 
 Start with the owner's current iPhone and an Android device/emulator. Older iOS
-15.6/17 and Android 10 hardware remain a separate qualification step. Background
+15.6/17 hardware remains a separate qualification step. Background
 Sync opportunism and iOS storage eviction require real-device observation.
 
 ## Responsive screen acceptance
@@ -283,6 +284,12 @@ below 600 logical pixels wide or 500 pixels of usable height. Native keyboard
 insets and browser viewport resizing both trigger compact layouts. System text
 scaling remains enabled, and resize does not replace the navigation/form tree.
 Add/Edit Animal forms stop growing at 720 pixels on larger screens.
+
+When the usable height drops below 160 pixels, the header temporarily hides,
+dialog actions join the form's scroll view, and multiline inputs use one visible
+line. Longer text remains editable and expands again when space returns. The
+form tree and draft values survive these transitions. Landscape keyboard tests
+cover an 80-pixel viewport at normal and 130% text sizes.
 
 Animal Details puts its primary edit action beside the essential information on
 phones, with a smaller photo, a two-column field layout, and expandable registration
