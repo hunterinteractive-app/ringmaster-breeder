@@ -5,6 +5,7 @@ import 'package:ringmaster_breeder/models/sale_record.dart';
 import 'package:ringmaster_breeder/screens/sales_dashboard_screen.dart';
 import 'package:ringmaster_breeder/theme/app_theme.dart';
 import 'package:ringmaster_breeder/widgets/app_shell.dart';
+import 'package:ringmaster_breeder/widgets/adaptive_layout.dart';
 import 'package:ringmaster_breeder/widgets/ringmaster_page_shell.dart';
 
 void main() {
@@ -44,6 +45,15 @@ void main() {
     final rect = tester.getRect(target);
     expect(rect.top, greaterThanOrEqualTo(0));
     expect(rect.bottom, lessThanOrEqualTo(80));
+    final ancestors = find.ancestor(
+      of: target,
+      matching: find.byType(Scrollable),
+    );
+    for (var i = 0; i < ancestors.evaluate().length; i++) {
+      final viewport = tester.getRect(ancestors.at(i));
+      expect(rect.top, greaterThanOrEqualTo(viewport.top - 1));
+      expect(rect.bottom, lessThanOrEqualTo(viewport.bottom + 1));
+    }
     expect(target.hitTestable(), findsOneWidget);
   }
 
@@ -57,19 +67,22 @@ void main() {
           tester,
           RingMasterPageShell(
             title: 'Edit Animal',
-            body: ListView(
-              padding: const EdgeInsets.all(12),
-              children: [
-                TextField(
-                  controller: controller,
-                  decoration: const InputDecoration(labelText: 'Name'),
-                ),
-                const SizedBox(height: 200),
-                FilledButton(
-                  onPressed: () {},
-                  child: const Text('Save changes'),
-                ),
-              ],
+            body: AdaptivePadding(
+              padding: const EdgeInsets.all(16),
+              child: ListView(
+                children: [
+                  TextField(
+                    controller: controller,
+                    style: const TextStyle(fontSize: 16, height: 1.5),
+                    decoration: const InputDecoration(labelText: 'Name'),
+                  ),
+                  const SizedBox(height: 200),
+                  FilledButton(
+                    onPressed: () {},
+                    child: const Text('Save changes'),
+                  ),
+                ],
+              ),
             ),
           ),
           scale,

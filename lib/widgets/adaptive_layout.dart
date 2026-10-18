@@ -4,6 +4,8 @@ import 'package:flutter/material.dart';
 /// compact layouts recover space from decoration, gaps and secondary content.
 class BreederLayout {
   static bool shortViewport(BuildContext context) {
+    final scope = context.dependOnInheritedWidgetOfExactType<_DensityScope>();
+    if (scope != null) return scope.shortViewport;
     final media = MediaQuery.of(context);
     return media.size.height - media.viewInsets.bottom < 160;
   }
@@ -20,12 +22,22 @@ class BreederLayout {
   }
 
   static EdgeInsets pagePadding(BuildContext context, {double normal = 24}) =>
-      EdgeInsets.all(compact(context) ? 12 : normal);
+      EdgeInsets.all(
+        shortViewport(context)
+            ? 4
+            : compact(context)
+            ? 12
+            : normal,
+      );
 
   static EdgeInsets padding(BuildContext context, EdgeInsetsGeometry padding) {
     final resolved = padding.resolve(Directionality.of(context));
     if (!compact(context)) return resolved;
-    double edge(double value) => value >= 16 ? 12 : value;
+    double edge(double value) => shortViewport(context) && value >= 8
+        ? 4
+        : value >= 16
+        ? 12
+        : value;
     return EdgeInsets.fromLTRB(
       edge(resolved.left),
       edge(resolved.top),
@@ -84,6 +96,12 @@ class AdaptiveUi extends StatelessWidget {
     // Keep this tree identical across resizing so routes and form state survive.
     return _DensityScope(
       compact: compact,
+      // Scaffold removes the consumed keyboard inset from descendants' media
+      // queries. Carry the usable-height decision through that boundary.
+      shortViewport:
+          MediaQuery.sizeOf(context).height -
+              MediaQuery.viewInsetsOf(context).bottom <
+          160,
       child: Theme(data: theme, child: child),
     );
   }
@@ -91,11 +109,16 @@ class AdaptiveUi extends StatelessWidget {
 
 class _DensityScope extends InheritedWidget {
   final bool compact;
-  const _DensityScope({required this.compact, required super.child});
+  final bool shortViewport;
+  const _DensityScope({
+    required this.compact,
+    required this.shortViewport,
+    required super.child,
+  });
 
   @override
   bool updateShouldNotify(_DensityScope oldWidget) =>
-      compact != oldWidget.compact;
+      compact != oldWidget.compact || shortViewport != oldWidget.shortViewport;
 }
 
 class AdaptivePadding extends StatelessWidget {
