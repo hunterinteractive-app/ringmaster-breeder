@@ -195,6 +195,7 @@ class _AddAnimalScreenState extends State<AddAnimalScreen> {
       body: AdaptivePadding(
         padding: const EdgeInsets.all(16),
         child: ListView(
+          padding: const EdgeInsets.only(top: 8),
           children: [
             Card(
               child: AdaptivePadding(

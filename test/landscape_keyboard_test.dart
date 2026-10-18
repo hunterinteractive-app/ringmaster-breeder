@@ -70,6 +70,7 @@ void main() {
             body: AdaptivePadding(
               padding: const EdgeInsets.all(16),
               child: ListView(
+                padding: const EdgeInsets.only(top: 8),
                 children: [
                   TextField(
                     controller: controller,
