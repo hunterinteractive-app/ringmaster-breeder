@@ -42,8 +42,16 @@ jobs:
       - name: Install PostgreSQL 17 clients and GnuPG
         run: |
           sudo apt-get update -qq
-          sudo apt-get install -y postgresql-client-17 gnupg
+          sudo apt-get install -y --no-install-recommends curl ca-certificates gnupg
+          sudo install -d /usr/share/postgresql-common/pgdg
+          sudo curl --fail --silent --show-error --location \
+            https://www.postgresql.org/media/keys/ACCC4CF8.asc \
+            --output /usr/share/postgresql-common/pgdg/apt.postgresql.org.asc
+          echo 'deb [signed-by=/usr/share/postgresql-common/pgdg/apt.postgresql.org.asc] https://apt.postgresql.org/pub/repos/apt noble-pgdg main' | sudo tee /etc/apt/sources.list.d/pgdg.list > /dev/null
+          sudo apt-get update -qq
+          sudo apt-get install -y --no-install-recommends postgresql-client-17
           echo /usr/lib/postgresql/17/bin >> "$GITHUB_PATH"
+          /usr/lib/postgresql/17/bin/pg_dump --version
       - name: Verify recovery tools
         run: python3 -m unittest discover -s test/backups -v
       - name: Snapshot, encrypt, verify and upload

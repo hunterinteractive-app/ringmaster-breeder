@@ -193,7 +193,8 @@ def create(output):
             verified = extract(encrypted, Path(temp) / 'verified')
         write_json(output / (name + '.complete.json'), {
             'archive': name, 'sha256': sha256(encrypted), 'bytes': encrypted.stat().st_size,
-            'snapshot_at': verified['snapshot_at'], 'project': PROJECT, 'format_version': 1})
+            'snapshot_at': verified['snapshot_at'], 'project': PROJECT, 'format_version': 1,
+            'owner_count': verified['owner_count'], 'object_count': verified['object_count']})
         return encrypted
     except Exception:
         shutil.rmtree(output)
@@ -218,6 +219,15 @@ def upload(archive):
     marker = archive.with_name(archive.name + '.complete.json')
     run(['aws', 's3', 'cp', str(marker), base + '.complete.json', *options], stdout=subprocess.DEVNULL)
     print('Verified encrypted snapshot uploaded under ' + PREFIX + '/')
+    record = json.loads(marker.read_text())
+    print(json.dumps(record, sort_keys=True))
+    if os.environ.get('GITHUB_STEP_SUMMARY'):
+        with open(os.environ['GITHUB_STEP_SUMMARY'], 'a') as summary:
+            summary.write('\nVerified Breeder backup\n\n')
+            for label in ('archive', 'snapshot_at', 'bytes', 'owner_count', 'object_count', 'sha256'):
+                if label in record:
+                    summary.write(f'- {label}: `{record[label]}`\n')
+            summary.write('- Verification: decrypted payload checksums and B2 encrypted read-back passed.\n')
 
 
 def main():
