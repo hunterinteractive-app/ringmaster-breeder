@@ -54,3 +54,7 @@ app.*.map.json
 supabase/.temp/
 
 .wrangler/
+
+# Private backup/recovery working copies
+.backups/
+__pycache__/

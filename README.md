@@ -24,6 +24,14 @@ Testing enrollment currently grants each newly created, verified Breeder identit
 
 The modernization migration was applied to the existing project after validation against a local copy of its schema. `docs/database-baseline.sql` is a reference snapshot before modernization, not an installation script. `supabase/tests/family_access.sql` tests synthetic accounts inside a transaction and rolls back. It verifies verified-email linking, pending/accepted invitations, family editing, unrelated-account isolation, quotas, protected licenses, private attachments, pedigree access, and revocation.
 
+## Backups and recovery
+
+The nightly B2 service-backup workflow and administrator-assisted individual
+owner recovery are documented in [service backups](docs/service-backups.md).
+Backups include database records and original Storage files. Activation requires
+Breeder-specific GitHub secrets and a successful first B2 run. Individual recovery
+restores snapshot records while preserving newer records and current access.
+
 ## Deployment
 
 GitHub Actions checks analysis and tests, builds Flutter web, and uploads to Cloudflare Pages on pushes to `main`. Pull requests run checks without publishing. Configure `CLOUDFLARE_API_TOKEN` and `CLOUDFLARE_ACCOUNT_ID` as repository secrets The `ringmaster-breeder` Pages project and `breeder.ringmasterone.com` domain already exist. After the Actions credentials are configured, disable the existing direct GitHub builds in Pages so Actions controls deployment. Local Flutter is 3.38.5; CI follows Show and Club's pinned Flutter 3.41.4.

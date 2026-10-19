@@ -1,0 +1,59 @@
+name: Back up Breeder service to Backblaze B2
+
+on:
+  schedule:
+    # Nightly 06:47 UTC (02:47 EDT / 01:47 EST). Schedules can be delayed.
+    - cron: '47 6 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: breeder-service-backup
+  cancel-in-progress: false
+
+jobs:
+  backup:
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 90
+    env:
+      SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
+      SUPABASE_URL: https://aqfsrolvaewcpkdkttiz.supabase.co
+      SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+      BACKUP_PASSPHRASE: ${{ secrets.BACKUP_PASSPHRASE }}
+      AWS_ACCESS_KEY_ID: ${{ secrets.B2_KEY_ID }}
+      AWS_SECRET_ACCESS_KEY: ${{ secrets.B2_APPLICATION_KEY }}
+      AWS_DEFAULT_REGION: ${{ secrets.B2_REGION }}
+      B2_BUCKET: ${{ secrets.B2_BUCKET }}
+      B2_ENDPOINT: ${{ secrets.B2_ENDPOINT }}
+      AWS_REQUEST_CHECKSUM_CALCULATION: when_required
+      AWS_RESPONSE_CHECKSUM_VALIDATION: when_required
+    steps:
+      - uses: actions/checkout@v4
+      - name: Validate configuration
+        shell: bash
+        run: |
+          set -euo pipefail
+          for setting in SUPABASE_DB_URL SUPABASE_SERVICE_ROLE_KEY BACKUP_PASSPHRASE AWS_ACCESS_KEY_ID AWS_SECRET_ACCESS_KEY AWS_DEFAULT_REGION B2_BUCKET B2_ENDPOINT; do
+            test -n "${!setting}" || { echo "Missing required secret: $setting"; exit 1; }
+          done
+      - name: Install PostgreSQL 17 clients and GnuPG
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y postgresql-client-17 gnupg
+          echo /usr/lib/postgresql/17/bin >> "$GITHUB_PATH"
+      - name: Verify recovery tools
+        run: python3 -m unittest discover -s test/backups -v
+      - name: Snapshot, encrypt, verify and upload
+        run: python3 tool/backups/service.py create --output "$RUNNER_TEMP/breeder-encrypted-backup" --upload
+      - name: Remove encrypted working copy
+        if: always()
+        run: rm -rf "$RUNNER_TEMP/breeder-encrypted-backup"
+      - name: Report result
+        if: always()
+        env:
+          RESULT: ${{ job.status }}
+        run: |
+          echo "Breeder service backup: $RESULT. Check the B2 completion marker for the latest verified snapshot." >> "$GITHUB_STEP_SUMMARY"
