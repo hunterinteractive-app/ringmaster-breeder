@@ -28,8 +28,9 @@ The modernization migration was applied to the existing project after validation
 
 The nightly B2 service-backup workflow and administrator-assisted individual
 owner recovery are documented in [service backups](docs/service-backups.md).
-Backups include database records and original Storage files. Activation requires
-Breeder-specific GitHub secrets and a successful first B2 run. Individual recovery
+Backups include database records and original Storage files. Verified nightly
+copies are retained for 90 days; first-of-month copies are retained for 365 days.
+Breeder's GitHub secrets and first successful B2 run are configured. Individual recovery
 restores snapshot records while preserving newer records and current access.
 
 ## Deployment

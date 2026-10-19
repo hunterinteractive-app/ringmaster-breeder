@@ -9,9 +9,11 @@ at most about 24 hours of lost **synced** data. It is not continuous replication
 or a promise of a 24-hour recovery point when jobs fail. Recovery time depends
 on database/file size and must be measured in a real replacement-project drill.
 
-The destination is the existing Backblaze B2 backup bucket used by Show, under
-the separate `ringmaster-breeder/service/` prefix. This workflow neither changes
-Show's backups nor deletes anything from B2.
+The destination is the existing Backblaze B2 backup bucket used by Show. Nightly
+copies use `ringmaster-breeder/service/`; first-of-month copies use
+`ringmaster-breeder/monthly/YYYY-MM/`. The workflow does not delete B2 objects.
+The bucket applies separate expiration rules to each prefix, preserving Show's
+existing retention.
 
 Each archive contains:
 
@@ -69,11 +71,35 @@ hold the exported snapshot session and is rejected. CI requires PostgreSQL 17
 clients and GnuPG; the hosted Ubuntu runner provides AWS CLI v2. No backup keys
 belong in Flutter, source control, review attachments, or unencrypted artifacts.
 
-Add a B2 lifecycle rule **only for `ringmaster-breeder/service/`** retaining
-90 days of daily snapshots; verify how existing bucket rules and old versions
-interact before saving it. Do not shorten Show's existing retention. This is a
-proposed retention policy, not a rule this code has installed. Full file copies
-are stored nightly, so budget for approximately 90 copies of the stored files.
+The following custom B2 lifecycle rules were saved and read back on October 19,
+2026. Keep the prefixes separate; a broader overlapping rule could shorten
+monthly retention.
+
+| Prefix | Days after upload until hidden | Days hidden until deleted |
+| --- | ---: | ---: |
+| `ringmaster-breeder/service/` | 90 | 1 |
+| `ringmaster-breeder/monthly/` | 365 | 1 |
+| `ringmaster-show/database/` (unchanged) | 399 | 1 |
+
+Nightly backups remain visible for 90 days and monthly copies for 365 days
+(approximately 12 months). B2 permanently deletes the hidden copy one day later;
+lifecycle processing is asynchronous. These bucket rules apply to archives and
+their completion markers. Do not replace the custom rules with a bucket-wide rule.
+
+On the first day of each month in `America/Indiana/Indianapolis`, the backup job
+retains the first successfully verified nightly archive as that month's copy.
+It copies the exact encrypted bytes, verifies B2 read-back, and publishes a
+separate completion marker. A repeated first-day run verifies the existing monthly
+archive and preserves it instead of overwriting it. An access error or corrupt
+monthly copy fails the job and is not treated as a missing backup. The workflow's
+concurrency group serializes writers. If all first-day runs fail or the schedule
+is missed, the job does not label a later snapshot as the first; alert/retry on the
+first day or manually retain a verified first-day archive from the daily history.
+The first scheduled monthly copy after activation is November 1, 2026.
+
+Full file copies are stored nightly, so budget for approximately 90 daily copies
+plus 12 monthly copies of the database and stored files, with a short hidden-file
+deletion grace period.
 Use B2 Object Lock if stronger protection from administrator deletion is needed;
 retention/immutability are bucket settings, not something the writer enforces.
 

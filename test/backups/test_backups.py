@@ -10,11 +10,12 @@ import tarfile
 import tempfile
 import unittest
 from unittest.mock import patch
+from types import SimpleNamespace
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[2] / 'tool' / 'backups'))
 from common import literal, sha256, write_json
 from files import media_references
-from service import PROJECT, crypt, extract, object_key, report_completion, upload, validate_source, verify_directory
+from service import PROJECT, crypt, extract, object_key, preserve_first_of_month, report_completion, upload, validate_source, verify_directory
 
 
 class BackupTests(unittest.TestCase):
@@ -138,6 +139,60 @@ class BackupTests(unittest.TestCase):
         self.assertIn('snapshot.gpg', summary.read_text())
         self.assertIn('abc123', summary.read_text())
         self.assertIn('object_count: `3`', summary.read_text())
+
+    def monthly_fixture(self, point):
+        archive = self.root / 'daily.gpg'
+        archive.write_bytes(b'encrypted-first-snapshot')
+        write_json(archive.with_name(archive.name + '.complete.json'), {
+            'archive':archive.name,'snapshot_at':point,'project':PROJECT,
+            'bytes':archive.stat().st_size,'sha256':sha256(archive),'format_version':1})
+        return archive
+
+    def test_monthly_date_uses_eastern_calendar(self):
+        # UTC has reached November, but Indianapolis is still on October 31.
+        archive = self.monthly_fixture('2026-11-01T01:00:00+00:00')
+        with patch('service.run') as aws, patch('service.subprocess.run') as head:
+            self.assertFalse(preserve_first_of_month(archive))
+            aws.assert_not_called()
+            head.assert_not_called()
+
+    def test_first_day_copy_is_verified_once_and_preserved_on_retry(self):
+        archive = self.monthly_fixture('2026-11-01T06:47:00+00:00')
+        remote = {}
+        writes = []
+        def aws(command, **kwargs):
+            source,destination = command[3],command[4]
+            if source.startswith('s3://'):
+                Path(destination).write_bytes(remote[source])
+            else:
+                remote[destination]=Path(source).read_bytes()
+                writes.append(destination)
+        def head(command, **kwargs):
+            marker='s3://synthetic/'+command[command.index('--key')+1]
+            return SimpleNamespace(returncode=0 if marker in remote else 1,
+                                   stderr=b'' if marker in remote else b'An error occurred (404)')
+        with patch.dict(os.environ, B2_ENDPOINT='https://s3.us-west-004.backblazeb2.com', B2_BUCKET='synthetic', GITHUB_STEP_SUMMARY=''), patch('service.run',aws), patch('service.subprocess.run',head), redirect_stdout(io.StringIO()):
+            self.assertTrue(preserve_first_of_month(archive))
+            self.assertEqual(len(writes),2)
+            self.assertTrue(all('/ringmaster-breeder/monthly/2026-11/' in w for w in writes))
+            stored=dict(remote)
+            archive.write_bytes(b'later-first-day-snapshot')
+            self.assertFalse(preserve_first_of_month(archive))
+            self.assertEqual(remote,stored)
+            self.assertEqual(len(writes),2)
+            # Corruption of a retained monthly copy is surfaced, never replaced.
+            object_url=next(k for k in remote if not k.endswith('.json'))
+            remote[object_url]=b'corrupt'
+            with self.assertRaisesRegex(ValueError,'failed verification'):
+                preserve_first_of_month(archive)
+
+    def test_monthly_access_denial_does_not_mean_missing_backup(self):
+        archive=self.monthly_fixture('2026-11-01T06:47:00+00:00')
+        denied=SimpleNamespace(returncode=1,stderr=b'An error occurred (403)')
+        with patch.dict(os.environ,B2_BUCKET='synthetic',B2_ENDPOINT='https://s3.us-west-004.backblazeb2.com'), patch('service.subprocess.run',return_value=denied), patch('service.run') as aws:
+            with self.assertRaisesRegex(RuntimeError,'refusing to overwrite'):
+                preserve_first_of_month(archive)
+            aws.assert_not_called()
 
 
 if __name__ == '__main__':

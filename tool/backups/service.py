@@ -15,12 +15,15 @@ import tempfile
 from urllib.parse import quote, urlparse
 from urllib.request import Request, urlopen
 import uuid
+from zoneinfo import ZoneInfo
 
 from common import Database, literal, run, sha256, write_json
 from owner import TABLES, PRESERVED, export_owner
 
 PROJECT = 'aqfsrolvaewcpkdkttiz'
 PREFIX = 'ringmaster-breeder/service'
+MONTHLY_PREFIX = 'ringmaster-breeder/monthly'
+BACKUP_TIMEZONE = ZoneInfo('America/Indiana/Indianapolis')
 OBJECTS_SQL = """SELECT coalesce(jsonb_agg(to_jsonb(t)-'last_accessed_at' ORDER BY bucket_id,name),'[]')
                  FROM storage.objects t"""
 
@@ -201,13 +204,16 @@ def create(output):
         raise
 
 
-def upload(archive):
+def upload(archive, prefix=PREFIX):
     endpoint = os.environ['B2_ENDPOINT']
     parsed = urlparse(endpoint)
     if parsed.scheme != 'https' or not (parsed.hostname or '').endswith('.backblazeb2.com'):
         raise ValueError('Expected a Backblaze B2 HTTPS S3 endpoint')
     bucket = os.environ['B2_BUCKET']
-    base = f's3://{bucket}/{PREFIX}/{archive.name}'
+    import re
+    if prefix != PREFIX and not re.fullmatch(MONTHLY_PREFIX + r'/\d{4}-\d{2}', prefix):
+        raise ValueError('Backup destination must be a Breeder daily or monthly prefix')
+    base = f's3://{bucket}/{prefix}/{archive.name}'
     options = ['--endpoint-url', endpoint, '--only-show-errors']
     run(['aws', 's3', 'cp', str(archive), base, *options], stdout=subprocess.DEVNULL)
     # Re-download encrypted bytes: multipart ETags are not reliable SHA-256 checksums.
@@ -218,20 +224,71 @@ def upload(archive):
             raise ValueError('B2 read-back mismatch; completion marker was not published')
     marker = archive.with_name(archive.name + '.complete.json')
     run(['aws', 's3', 'cp', str(marker), base + '.complete.json', *options], stdout=subprocess.DEVNULL)
-    print('Verified encrypted snapshot uploaded under ' + PREFIX + '/')
+    print('Verified encrypted snapshot uploaded under ' + prefix + '/')
 
 
-def report_completion(archive):
+def report_completion(archive, prefix=PREFIX):
     marker = archive.with_name(archive.name + '.complete.json')
     record = json.loads(marker.read_text())
     print(json.dumps(record, sort_keys=True))
     if os.environ.get('GITHUB_STEP_SUMMARY'):
         with open(os.environ['GITHUB_STEP_SUMMARY'], 'a') as summary:
             summary.write('\nVerified Breeder backup\n\n')
+            summary.write(f'- storage_prefix: `{prefix}`\n')
             for label in ('archive', 'snapshot_at', 'bytes', 'owner_count', 'object_count', 'sha256'):
                 if label in record:
                     summary.write(f'- {label}: `{record[label]}`\n')
             summary.write('- Verification: decrypted payload checksums and B2 encrypted read-back passed.\n')
+
+
+def preserve_first_of_month(archive):
+    """Keep one verified first-day snapshot per Eastern calendar month.
+
+    The workflow's concurrency group serializes producers. A completed monthly
+    copy is verified on retries and never replaced by a later first-day run.
+    """
+    source = json.loads(archive.with_name(archive.name + '.complete.json').read_text())
+    point = datetime.fromisoformat(source['snapshot_at']).astimezone(BACKUP_TIMEZONE)
+    if point.day != 1:
+        return False
+    month = point.strftime('%Y-%m')
+    prefix = MONTHLY_PREFIX + '/' + month
+    name = 'breeder-' + month + '-first.tar.gz.gpg'
+    endpoint = os.environ['B2_ENDPOINT']
+    bucket = os.environ['B2_BUCKET']
+    key = prefix + '/' + name
+    remote = f's3://{bucket}/{key}'
+    head = subprocess.run(['aws', 's3api', 'head-object', '--bucket', bucket,
+                           '--key', key + '.complete.json', '--endpoint-url', endpoint],
+                          stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    with tempfile.TemporaryDirectory(prefix='breeder-monthly-', dir=archive.parent) as temp:
+        copy = Path(temp) / name
+        marker = copy.with_name(name + '.complete.json')
+        options = ['--endpoint-url', endpoint, '--only-show-errors']
+        if head.returncode == 0:
+            run(['aws', 's3', 'cp', remote + '.complete.json', str(marker), *options], stdout=subprocess.DEVNULL)
+            saved = json.loads(marker.read_text())
+            saved_point = datetime.fromisoformat(saved['snapshot_at']).astimezone(BACKUP_TIMEZONE)
+            if (saved.get('project') != PROJECT or saved.get('archive') != name
+                    or saved_point.strftime('%Y-%m') != month or saved_point.day != 1):
+                raise ValueError('Existing monthly completion marker requires review')
+            run(['aws', 's3', 'cp', remote, str(copy), *options], stdout=subprocess.DEVNULL)
+            if sha256(copy) != saved['sha256'] or copy.stat().st_size != saved['bytes']:
+                raise ValueError('Existing monthly copy failed verification; not overwritten')
+            print('Existing first-of-month backup verified and preserved for ' + month)
+            report_completion(copy, prefix)
+            return False
+        error = head.stderr.decode(errors='replace')
+        if not any(code in error for code in ('(404)', '(NoSuchKey)', '(NotFound)')):
+            raise RuntimeError('Cannot inspect monthly completion marker; refusing to overwrite')
+        # The source is already verified by the daily upload. No new database dump
+        # or encryption is needed; retain precisely the same encrypted bytes.
+        os.link(archive, copy)
+        write_json(marker, dict(source, archive=name, source_archive=archive.name,
+                                retention_class='monthly', snapshot_month=month))
+        upload(copy, prefix)
+        report_completion(copy, prefix)
+        return True
 
 
 def main():
@@ -253,6 +310,7 @@ def main():
         if args.upload:
             upload(archive)
             report_completion(archive)
+            preserve_first_of_month(archive)
         else:
             print('Local encrypted snapshot verified; not uploaded.')
 
