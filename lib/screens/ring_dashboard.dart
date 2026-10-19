@@ -4,7 +4,6 @@ import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../services/family_service.dart';
 import '../services/license_service.dart';
-import 'record_import_screen.dart';
 import '../widgets/name_dialog.dart';
 import '../offline/offline_runtime.dart';
 
@@ -19,7 +18,6 @@ class _RingDashboardState extends State<RingDashboard> {
   final _client = OfflineRuntime.client;
   late Future<List<Map<String, dynamic>>> _rings;
   LicenseStatus? _license;
-  bool _checkedImport = false;
   @override
   void initState() {
     super.initState();
@@ -65,42 +63,6 @@ class _RingDashboardState extends State<RingDashboard> {
       return (data['rows'] as List)
           .map((r) => Map<String, dynamic>.from(r as Map))
           .toList();
-    }
-    if (!_checkedImport) {
-      _checkedImport = true;
-      final own = FamilyService.households.firstWhere(
-        (h) => h['is_owner'] == true,
-      )['owner_user_id'];
-      final profiles = await _client
-          .from('breeder_exhibitor_profiles')
-          .select('id')
-          .eq('owner_id', own)
-          .limit(1);
-      if (profiles.isEmpty) {
-        try {
-          final lookup = Map<String, dynamic>.from(
-            (await _client.functions.invoke(
-                  'import-ringmaster-records',
-                  body: {'action': 'lookup'},
-                )).data
-                as Map,
-          );
-          if (mounted && (lookup['matches'] as List? ?? []).isNotEmpty) {
-            WidgetsBinding.instance.addPostFrameCallback((_) {
-              if (mounted) {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute<void>(
-                    builder: (_) => RecordImportScreen(initialLookup: lookup),
-                  ),
-                );
-              }
-            });
-          }
-        } catch (_) {
-          /* Optional import remains available from Account. */
-        }
-      }
     }
     _license = await fetchLicenseStatus(owner);
     final rings = await _client

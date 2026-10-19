@@ -8,7 +8,13 @@ import '../services/record_import_service.dart';
 class RecordImportScreen extends StatefulWidget {
   final Map<String, dynamic>? initialLookup;
   final RecordImportGateway? gateway;
-  const RecordImportScreen({super.key, this.initialLookup, this.gateway});
+  final VoidCallback? onContinue;
+  const RecordImportScreen({
+    super.key,
+    this.initialLookup,
+    this.gateway,
+    this.onContinue,
+  });
   @override
   State<RecordImportScreen> createState() => _RecordImportScreenState();
 }
@@ -23,6 +29,7 @@ class _RecordImportScreenState extends State<RecordImportScreen> {
   String? _ring;
   String? _message;
   bool _loading = true, _busy = false, _animals = false, _entries = true;
+  bool _lookupReady = false, _imported = false;
   @override
   void initState() {
     super.initState();
@@ -30,9 +37,15 @@ class _RecordImportScreenState extends State<RecordImportScreen> {
   }
 
   Future<void> _load() async {
+    setState(() {
+      _loading = true;
+      _message = null;
+      _lookupReady = false;
+    });
     try {
       final rings = await _gateway.ownedRings();
       final data = widget.initialLookup ?? await _gateway.lookup();
+      if (data['matches'] is! List) throw StateError('Profile lookup failed');
       if (!mounted) return;
       setState(() {
         _matches = List<Map<String, dynamic>>.from(
@@ -46,6 +59,7 @@ class _RecordImportScreenState extends State<RecordImportScreen> {
               'No matching Show or Club profiles were found for your verified email.';
         }
         _loading = false;
+        _lookupReady = true;
       });
     } catch (error) {
       if (mounted) {
@@ -98,7 +112,13 @@ class _RecordImportScreenState extends State<RecordImportScreen> {
           ],
         ),
       );
-      if (mounted) Navigator.of(context).popUntil((route) => route.isFirst);
+      if (mounted) {
+        if (widget.onContinue != null) {
+          setState(() => _imported = true);
+        } else {
+          Navigator.of(context).popUntil((route) => route.isFirst);
+        }
+      }
     } catch (error) {
       if (mounted) {
         setState(
@@ -115,6 +135,9 @@ class _RecordImportScreenState extends State<RecordImportScreen> {
   @override
   Widget build(BuildContext context) => RingMasterPageShell(
     title: 'Import RingMaster records',
+    showAccountButton: widget.onContinue == null,
+    showHomeButton: widget.onContinue == null,
+    showBackButton: widget.onContinue == null,
     body: _loading
         ? const Center(child: CircularProgressIndicator())
         : ListView(
@@ -240,6 +263,20 @@ class _RecordImportScreenState extends State<RecordImportScreen> {
                 AdaptivePadding(
                   padding: const EdgeInsets.symmetric(vertical: 20),
                   child: Semantics(liveRegion: true, child: Text(_message!)),
+                ),
+              if (!_lookupReady)
+                TextButton(
+                  onPressed: _busy ? null : _load,
+                  child: const Text('Retry profile lookup'),
+                ),
+              if (widget.onContinue != null && _lookupReady)
+                TextButton(
+                  onPressed: _busy ? null : widget.onContinue,
+                  child: Text(
+                    _imported || _matches.isEmpty
+                        ? 'Continue to herd setup'
+                        : 'Continue without importing',
+                  ),
                 ),
             ],
           ),

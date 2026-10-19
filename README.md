@@ -20,6 +20,8 @@ Verified sign-in links the legacy Breeder account by its unique normalized email
 
 ## Database
 
+Testing enrollment currently grants each newly created, verified Breeder identity an active `HOBBY` license for one herd. The insert trigger does not change existing licenses or reissue cancelled access. Administrators can stop future grants with `update breeder_private.testing_access set enabled=false where singleton;`. Existing testing licenses have no automatic expiration and remain active until explicitly changed; disabling enrollment alone does not revoke them. The setting is inaccessible to app users. `supabase/tests/testing_herd_access.sql` verifies onboarding, the one-herd quota, verification requirements, cancellation preservation, and the enrollment switch inside a rolled-back transaction.
+
 The modernization migration was applied to the existing project after validation against a local copy of its schema. `docs/database-baseline.sql` is a reference snapshot before modernization, not an installation script. `supabase/tests/family_access.sql` tests synthetic accounts inside a transaction and rolls back. It verifies verified-email linking, pending/accepted invitations, family editing, unrelated-account isolation, quotas, protected licenses, private attachments, pedigree access, and revocation.
 
 ## Deployment
@@ -42,7 +44,7 @@ Animal, health, weight, and pedigree workflows have been updated, but a complete
 
 ## Cross-app imports
 
-Verified first-login matching now includes Breeder in Show and Club's server lookup. Club presents Show and Breeder candidates; Show retains its existing local-claim and Club priority, then checks Breeder when no Club match exists. Breeder checks Show and Club and offers a review screen on first login when matching profiles exist. Imports are also available from the dashboard.
+Verified first-login matching now includes Breeder in Show and Club's server lookup. Club presents Show and Breeder candidates; Show retains its existing local-claim and Club priority, then checks Breeder when no Club match exists. After accepting the Terms and Privacy Policy, new Breeder users review Show/Club profile matches before herd setup, including in builds with offline mode enabled. They can import selected profiles or explicitly continue without importing; no matches also offers a continuation. Connection failures offer retry and do not silently bypass the step. Onboarding lookup/import requests require server confirmation rather than queuing an import job. Existing accounts with imported profiles or a non-demo herd bypass this first-use step, including from downloaded data. Imports remain available in Account Settings.
 
 Select exhibitor profiles from one source per import. Show can additionally supply animals and individual entries/results; Club has no owned animal/entry tables and supplies profiles only. Animals require an existing personally owned Ring. Profiles and history can be imported before a Ring exists; a later animal import links retained history. Family members can read imported profiles and history, while personal imports require the signed-in owner's identity. Sources are copied without changing original records.
 
