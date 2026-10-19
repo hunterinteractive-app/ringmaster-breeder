@@ -32,10 +32,16 @@ An archive without that marker is not a completed backup. Failed jobs do not
 delete earlier recovery points. Storage mutations/deletions during copying fail
 the run instead of silently publishing a mismatched snapshot; retry the workflow.
 
-**Not yet activated:** the workflow must reach `main`, the secrets below must be
-configured in the Breeder repository, and the first B2 run must pass. Local
-tests are not evidence of a production backup. GitHub secret values cannot be
-read back or automatically copied from the Show repository.
+**Activated:** the first production backup completed on October 19, 2026,
+at 05:57 UTC (01:57 Eastern daylight time). Its encrypted B2 upload passed
+read-back verification and its completion marker was published.
+See the [successful production run](https://github.com/hunterinteractive-app/ringmaster-breeder/actions/runs/39207136709).
+The nightly schedule is enabled on `main`. A managed replacement-project restore
+drill is still required to qualify end-to-end disaster recovery.
+
+GitHub does not return stored secret values. Reuse requires authorized re-entry
+or re-encryption for the destination repository. Breeder uses its own encryption
+passphrase and a B2 key with read/write access restricted to its prefix.
 
 ## One-time setup
 

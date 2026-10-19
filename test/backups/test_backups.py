@@ -14,7 +14,7 @@ from unittest.mock import patch
 sys.path.insert(0, str(Path(__file__).resolve().parents[2] / 'tool' / 'backups'))
 from common import literal, sha256, write_json
 from files import media_references
-from service import PROJECT, crypt, extract, object_key, upload, validate_source, verify_directory
+from service import PROJECT, crypt, extract, object_key, report_completion, upload, validate_source, verify_directory
 
 
 class BackupTests(unittest.TestCase):
@@ -106,6 +106,8 @@ class BackupTests(unittest.TestCase):
         archive = self.root / 'snapshot.gpg'
         archive.write_bytes(b'encrypted-synthetic')
         archive.with_name(archive.name + '.complete.json').write_text('{}')
+        summary = self.root / 'summary.md'
+        summary.write_text('')
         for corrupt in (False, True):
             published = []
             def aws(command, **kwargs):
@@ -114,7 +116,7 @@ class BackupTests(unittest.TestCase):
                     Path(destination).write_bytes(b'wrong' if corrupt else archive.read_bytes())
                 else:
                     published.append(destination)
-            with patch.dict(os.environ, B2_ENDPOINT='https://s3.us-west-004.backblazeb2.com', B2_BUCKET='synthetic'), patch('service.run', aws):
+            with patch.dict(os.environ, B2_ENDPOINT='https://s3.us-west-004.backblazeb2.com', B2_BUCKET='synthetic', GITHUB_STEP_SUMMARY=str(summary)), patch('service.run', aws):
                 if corrupt:
                     with self.assertRaisesRegex(ValueError, 'read-back'):
                         upload(archive)
@@ -123,6 +125,19 @@ class BackupTests(unittest.TestCase):
                         upload(archive)
             self.assertEqual(len(published), 1 if corrupt else 2)
             self.assertTrue(all('/ringmaster-breeder/service/' in p for p in published))
+            self.assertEqual(summary.read_text(), '')
+
+    def test_completion_report_preserves_verification_metadata(self):
+        archive = self.root / 'snapshot.gpg'
+        marker = archive.with_name(archive.name + '.complete.json')
+        write_json(marker, {'archive':archive.name,'snapshot_at':'2026-10-19T05:57:10Z',
+                            'bytes':100,'owner_count':2,'object_count':3,'sha256':'abc123'})
+        summary = self.root / 'summary.md'
+        with patch.dict(os.environ, GITHUB_STEP_SUMMARY=str(summary)), redirect_stdout(io.StringIO()):
+            report_completion(archive)
+        self.assertIn('snapshot.gpg', summary.read_text())
+        self.assertIn('abc123', summary.read_text())
+        self.assertIn('object_count: `3`', summary.read_text())
 
 
 if __name__ == '__main__':

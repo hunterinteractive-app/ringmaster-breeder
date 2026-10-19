@@ -219,6 +219,10 @@ def upload(archive):
     marker = archive.with_name(archive.name + '.complete.json')
     run(['aws', 's3', 'cp', str(marker), base + '.complete.json', *options], stdout=subprocess.DEVNULL)
     print('Verified encrypted snapshot uploaded under ' + PREFIX + '/')
+
+
+def report_completion(archive):
+    marker = archive.with_name(archive.name + '.complete.json')
     record = json.loads(marker.read_text())
     print(json.dumps(record, sort_keys=True))
     if os.environ.get('GITHUB_STEP_SUMMARY'):
@@ -248,6 +252,7 @@ def main():
         archive = create(args.output)
         if args.upload:
             upload(archive)
+            report_completion(archive)
         else:
             print('Local encrypted snapshot verified; not uploaded.')
 
