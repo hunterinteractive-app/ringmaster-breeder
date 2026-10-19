@@ -21,6 +21,8 @@ dependencies:
 
   http: 1.6.0
 
+  xml: 6.6.1
+
   pdf: ^3.10.8
   printing: ^5.12.0
   

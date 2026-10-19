@@ -305,3 +305,45 @@ test('large relationship queries index each child table once',()=>{
   assert.equal(rows.reduce((n,r)=>n+r.animal_weights.length,0),10000);
   assert.ok(reads<=20000,'Child table was scanned repeatedly for each animal');
 });
+
+test('Rabbit Register preview and commit require network and refresh only after commit', async()=>{
+  const f=await fixture({fetch:async(input)=>{
+    const url=typeof input==='string'?input:input.url;
+    if(url.includes('/rpc/import_rabbit_register')){
+      const body=await input.clone().json();
+      return Response.json({status:body.p_commit?'imported':'preview',issues:[]});
+    }
+  }});
+  const request=(commit)=>new Request('https://fixture.invalid/rest/v1/rpc/import_rabbit_register',{
+    method:'POST',headers:{Authorization:'Bearer '+f.token,'Content-Type':'application/json'},
+    body:JSON.stringify({p_ring:ring,p_source:'fixture',p_data:{animals:[],records:[]},p_commit:commit}),
+  });
+  const snapshots=()=>f.calls.filter(c=>typeof c.url==='string'&&c.url.includes('breeder_offline_snapshot')).length;
+  const before=snapshots();
+  assert.equal((await (await f.workspace.handle(request(false))).json()).status,'preview');
+  assert.equal(snapshots(),before);
+  assert.equal((await (await f.workspace.handle(request(true))).json()).status,'imported');
+  assert.equal(snapshots(),before+1);
+  assert.equal((await f.workspace.operations()).length,0);
+});
+
+test('Kintraks preview and commit require network and refresh only after commit', async()=>{
+  const f=await fixture({fetch:async(input)=>{
+    const url=typeof input==='string'?input:input.url;
+    if(url.includes('/rpc/import_kintraks')){
+      const body=await input.clone().json();
+      return Response.json({status:body.p_commit?'imported':'preview',issues:[]});
+    }
+  }});
+  const request=(commit)=>new Request('https://fixture.invalid/rest/v1/rpc/import_kintraks',{
+    method:'POST',headers:{Authorization:'Bearer '+f.token,'Content-Type':'application/json'},
+    body:JSON.stringify({p_ring:ring,p_source:'fixture',p_data:{animals:[],records:[]},p_commit:commit}),
+  });
+  const snapshots=()=>f.calls.filter(c=>typeof c.url==='string'&&c.url.includes('breeder_offline_snapshot')).length;
+  const before=snapshots();
+  assert.equal((await (await f.workspace.handle(request(false))).json()).status,'preview');
+  assert.equal(snapshots(),before);
+  assert.equal((await (await f.workspace.handle(request(true))).json()).status,'imported');
+  assert.equal(snapshots(),before+1);
+  assert.equal((await f.workspace.operations()).length,0);
+});

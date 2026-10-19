@@ -1,3 +1,7 @@
+import 'kintraks_import_screen.dart';
+import 'kintraks_history_screen.dart';
+import 'rabbit_register_import_screen.dart';
+import 'rabbit_register_history_screen.dart';
 import '../widgets/adaptive_layout.dart';
 import '../offline/offline_runtime.dart';
 import 'global_pedigree_history_screen.dart';
@@ -317,19 +321,30 @@ class _AccountScreenState extends State<AccountScreen> {
                     section('Import & export', Icons.import_export, [
                       ListTile(
                         contentPadding: EdgeInsets.zero,
+                        title: const Text('Import from Kintraks'),
+                        subtitle: const Text(
+                          'Upload a Kintraks All records CSV export.',
+                        ),
+                        trailing: const Icon(Icons.chevron_right),
+                        onTap: () => open(const KintraksImportScreen()),
+                      ),
+                      ListTile(
+                        contentPadding: EdgeInsets.zero,
+                        title: const Text('Import from Rabbit Register'),
+                        subtitle: const Text(
+                          'Upload an Evans Rabbit Register XML export.',
+                        ),
+                        trailing: const Icon(Icons.chevron_right),
+                        onTap: () => open(const RabbitRegisterImportScreen()),
+                      ),
+                      ListTile(
+                        contentPadding: EdgeInsets.zero,
                         title: const Text('Import from Global Pedigree'),
                         subtitle: const Text(
                           'Bring in your rabbits and pedigree ancestors.',
                         ),
                         trailing: const Icon(Icons.chevron_right),
                         onTap: () => open(const GlobalPedigreeImportScreen()),
-                      ),
-                      ListTile(
-                        title: const Text('Global Pedigree history'),
-                        subtitle: const Text(
-                          'Imported litters, breedings, and dated weights.',
-                        ),
-                        onTap: () => open(const GlobalPedigreeHistoryScreen()),
                       ),
                       ListTile(
                         contentPadding: EdgeInsets.zero,
@@ -339,12 +354,6 @@ class _AccountScreenState extends State<AccountScreen> {
                         ),
                         trailing: const Icon(Icons.chevron_right),
                         onTap: () => open(const RecordImportScreen()),
-                      ),
-                      ListTile(
-                        contentPadding: EdgeInsets.zero,
-                        title: const Text('Imported profiles & show history'),
-                        trailing: const Icon(Icons.chevron_right),
-                        onTap: () => open(const ImportedRecordsScreen()),
                       ),
                       const Divider(),
                       const Text(
@@ -359,6 +368,35 @@ class _AccountScreenState extends State<AccountScreen> {
                               ? 'Preparing export…'
                               : 'Export animals (CSV)',
                         ),
+                      ),
+                    ]),
+                    section('Imported history', Icons.history, [
+                      ListTile(
+                        title: const Text('Kintraks history'),
+                        subtitle: const Text(
+                          'Original animal fields, custom information, and import choices.',
+                        ),
+                        onTap: () => open(const KintraksHistoryScreen()),
+                      ),
+                      ListTile(
+                        title: const Text('Rabbit Register history'),
+                        subtitle: const Text(
+                          'Original rabbits, contacts, litters, show results, and weights.',
+                        ),
+                        onTap: () => open(const RabbitRegisterHistoryScreen()),
+                      ),
+                      ListTile(
+                        title: const Text('Global Pedigree history'),
+                        subtitle: const Text(
+                          'Imported litters, breedings, and dated weights.',
+                        ),
+                        onTap: () => open(const GlobalPedigreeHistoryScreen()),
+                      ),
+                      ListTile(
+                        contentPadding: EdgeInsets.zero,
+                        title: const Text('Imported profiles & show history'),
+                        trailing: const Icon(Icons.chevron_right),
+                        onTap: () => open(const ImportedRecordsScreen()),
                       ),
                     ]),
                     section('Subscription', Icons.credit_card_outlined, [

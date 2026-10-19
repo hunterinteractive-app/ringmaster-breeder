@@ -1,3 +1,5 @@
+import 'kintraks_history_screen.dart';
+import 'rabbit_register_history_screen.dart';
 import '../widgets/adaptive_layout.dart';
 import '../widgets/pedigree_email_dialog.dart';
 import 'global_pedigree_history_screen.dart';
@@ -197,6 +199,28 @@ class _AnimalDetailScreenState extends State<AnimalDetailScreen> {
                   ),
                 ),
                 child: const Text('Global Pedigree history'),
+              ),
+
+              ElevatedButton(
+                onPressed: () => Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) =>
+                        RabbitRegisterHistoryScreen(animalId: widget.animalId),
+                  ),
+                ),
+                child: const Text('Rabbit Register history'),
+              ),
+
+              ElevatedButton(
+                onPressed: () => Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) =>
+                        KintraksHistoryScreen(animalId: widget.animalId),
+                  ),
+                ),
+                child: const Text('Kintraks history'),
               ),
 
               if (animal['status'] == 'sold') ...[

@@ -663,6 +663,18 @@
                 ),
               );
             }
+            if (name === "import_rabbit_register" || name === "import_kintraks") {
+              // Import review/commit requires the authoritative server. Never
+              // queue a potentially partial export or reuse an old preview.
+              const response = await boundedFetch(request.clone());
+              if (response.ok && body.p_commit === true) {
+                const result = await response.clone().json();
+                if (result.status === "imported") {
+                  await refresh({ skipFiles: true }).catch(() => {});
+                }
+              }
+              return response;
+            }
             if (name === "import_global_pedigree_with_sales") {
               if (body.p_commit === true) {
                 return await queuedExternal("global-pedigree-import", body);

@@ -67,3 +67,11 @@ Apply the matching backend migrations/functions before enabling complete workspa
 preparation. A complete download is required before offline use.
 
 Weight-entry dialogs and bulk weight/health saves retain their record IDs and payload while a save is uncertain. Retrying confirms matching saved records before inserting any missing records. A retry cannot overwrite an existing record with different data. Animal edits compare the revision originally loaded by the form; stale edits keep the draft visible and require an explicit reload. Database-triggered animal updates also advance the revision. Apply the animal revision migration before publishing the corresponding app version.
+
+## Rabbit Register XML import
+
+Account Settings → Import & export → Import from Rabbit Register previews Evans Rabbit Register's Other XML exports. It supports rabbit/pedigree records, dated weights and retained source contacts, litters and show results, with explicit review for unknown sex, missing parents, cycles and existing-animal matches. Apply the new migration before releasing the client. See `docs/rabbit-register-import.md` for behavior, setup, limits and verification.
+
+## Kintraks CSV import
+
+Account → Import & export → Import from Kintraks previews All records CSV exports. It preserves source IDs, pedigrees, pounds-and-ounces weight snapshots, and all custom fields. Current herd membership requires explicit selection; ancestors default to archived pedigree records. Apply the Kintraks migration before releasing the client. See [Kintraks import](docs/kintraks-import.md) for supported fields, review behavior, setup, and verification.

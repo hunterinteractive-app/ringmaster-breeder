@@ -1,3 +1,4 @@
+import 'rabbit_register_history_screen.dart';
 import '../widgets/adaptive_layout.dart';
 import '../offline/offline_runtime.dart';
 import '../services/pagination.dart';
@@ -116,6 +117,16 @@ class _BreedingTrackerScreenState extends State<BreedingTrackerScreen> {
     title: 'Breedings & litters',
     onRefresh: refresh,
     actions: [
+      IconButton(
+        tooltip: 'Rabbit Register litter history',
+        icon: const Icon(Icons.inventory_2_outlined),
+        onPressed: () => Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (_) => RabbitRegisterHistoryScreen(ringId: widget.ringId),
+          ),
+        ),
+      ),
       IconButton(
         tooltip: 'Imported litter & breeding history',
         icon: const Icon(Icons.history),
