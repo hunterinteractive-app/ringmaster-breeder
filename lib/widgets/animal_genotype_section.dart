@@ -105,12 +105,14 @@ class AnimalGenotypeDialog extends StatefulWidget {
   final String? colorInference;
   final Future<void> Function(Map<String, dynamic>) onSave;
   final bool storageReady;
+  final bool hypothetical;
   const AnimalGenotypeDialog({
     super.key,
     this.initial,
     this.colorInference,
     required this.onSave,
     this.storageReady = true,
+    this.hypothetical = false,
   });
 
   @override
@@ -333,7 +335,9 @@ class _AnimalGenotypeDialogState extends State<AnimalGenotypeDialog> {
   Widget build(BuildContext context) => PopScope(
     canPop: !saving,
     child: AlertDialog(
-      title: const Text('Change genotype'),
+      title: Text(
+        widget.hypothetical ? 'Hypothetical genotype' : 'Change genotype',
+      ),
       content: SizedBox(
         width: 600,
         child: SingleChildScrollView(
@@ -354,8 +358,10 @@ class _AnimalGenotypeDialogState extends State<AnimalGenotypeDialog> {
                 tilePadding: EdgeInsets.zero,
                 title: const Text('Advanced: type or paste genotype'),
                 children: [
-                  const Text(
-                    'Keep the original notation, including unknown _, - or ? symbols. Advanced entries are saved as references without biological verification. Editing marks the entry as Breeder entered; review its source below.',
+                  Text(
+                    widget.hypothetical
+                        ? 'Type or paste a temporary genotype. Keep unknown _, - or ? symbols. These assumptions apply only to this experiment and are not biologically verified.'
+                        : 'Keep the original notation, including unknown _, - or ? symbols. Advanced entries are saved as references without biological verification. Editing marks the entry as Breeder entered; review its source below.',
                   ),
                   const SizedBox(height: 12),
                   TextField(
@@ -390,34 +396,36 @@ class _AnimalGenotypeDialogState extends State<AnimalGenotypeDialog> {
                 key: const ValueKey('genotype-preview'),
               ),
               const SizedBox(height: 12),
-              DropdownButtonFormField<String>(
-                initialValue: basis,
-                key: ValueKey(basis),
-                isExpanded: true,
-                decoration: const InputDecoration(
-                  labelText: 'How was it obtained?',
+              if (!widget.hypothetical)
+                DropdownButtonFormField<String>(
+                  initialValue: basis,
+                  key: ValueKey(basis),
+                  isExpanded: true,
+                  decoration: const InputDecoration(
+                    labelText: 'How was it obtained?',
+                  ),
+                  items: [
+                    for (final e in AnimalGenotype.bases.entries)
+                      DropdownMenuItem(value: e.key, child: Text(e.value)),
+                  ],
+                  onChanged: saving || conflicted
+                      ? null
+                      : (v) => setState(() => basis = v!),
                 ),
-                items: [
-                  for (final e in AnimalGenotype.bases.entries)
-                    DropdownMenuItem(value: e.key, child: Text(e.value)),
-                ],
-                onChanged: saving || conflicted
-                    ? null
-                    : (v) => setState(() => basis = v!),
-              ),
               const SizedBox(height: 12),
-              TextField(
-                key: const ValueKey('genotype-source'),
-                controller: source,
-                enabled: !saving && !conflicted,
-                maxLength: 300,
-                maxLines: 3,
-                minLines: 1,
-                decoration: const InputDecoration(
-                  labelText: 'Source or explanation (optional)',
-                  hintText: 'Example: Rabbit Register or breeding records',
+              if (!widget.hypothetical)
+                TextField(
+                  key: const ValueKey('genotype-source'),
+                  controller: source,
+                  enabled: !saving && !conflicted,
+                  maxLength: 300,
+                  maxLines: 3,
+                  minLines: 1,
+                  decoration: const InputDecoration(
+                    labelText: 'Source or explanation (optional)',
+                    hintText: 'Example: Rabbit Register or breeding records',
+                  ),
                 ),
-              ),
               if (widget.colorInference != null)
                 TextButton(
                   onPressed: saving || conflicted
@@ -430,8 +438,10 @@ class _AnimalGenotypeDialogState extends State<AnimalGenotypeDialog> {
                         }),
                   child: const Text('Use color-based estimate'),
                 ),
-              const Text(
-                'Compatible saved genes help narrow offspring predictions. Unknown genes remain unresolved; saved entries are not independently verified.',
+              Text(
+                widget.hypothetical
+                    ? 'These choices are temporary assumptions. They never update a rabbit record. Unknown genes remain unresolved.'
+                    : 'Compatible saved genes help narrow offspring predictions. Unknown genes remain unresolved; saved entries are not independently verified.',
               ),
               TextButton(
                 onPressed: saving || conflicted
@@ -459,7 +469,13 @@ class _AnimalGenotypeDialogState extends State<AnimalGenotypeDialog> {
         ),
         FilledButton(
           onPressed: saving || conflicted || !widget.storageReady ? null : save,
-          child: Text(saving ? 'Saving…' : 'Save genotype'),
+          child: Text(
+            saving
+                ? (widget.hypothetical ? 'Applying…' : 'Saving…')
+                : widget.hypothetical
+                ? 'Use in What If'
+                : 'Save genotype',
+          ),
         ),
       ],
     ),

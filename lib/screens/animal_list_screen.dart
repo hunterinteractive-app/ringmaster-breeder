@@ -17,6 +17,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import '../config/genetics_preview.dart';
 import '../offline/offline_runtime.dart';
 import 'genetics_screen.dart';
+import 'what_if_screen.dart';
 
 String _displayDob(dynamic value) {
   final date = DateTime.tryParse(value?.toString() ?? '');
@@ -89,6 +90,16 @@ class _AnimalListScreenState extends State<AnimalListScreen> {
             onAdd: _add,
             onRefresh: _refresh,
             onOpen: _open,
+            onWhatIfs:
+                GeneticsPreview.allowsEmail(
+                  OfflineRuntime.client.auth.currentUser?.email,
+                )
+                ? () => Navigator.of(context).push(
+                    MaterialPageRoute<void>(
+                      builder: (_) => const WhatIfScreen(),
+                    ),
+                  )
+                : null,
             onGenetics:
                 GeneticsPreview.allowsEmail(
                   OfflineRuntime.client.auth.currentUser?.email,
@@ -110,7 +121,7 @@ class AnimalBrowser extends StatefulWidget {
   final String? ringId;
   final List<Map<String, dynamic>> animals;
   final VoidCallback onAdd, onRefresh;
-  final VoidCallback? onGenetics;
+  final VoidCallback? onGenetics, onWhatIfs;
   final ValueChanged<Map<String, dynamic>> onOpen;
   const AnimalBrowser({
     super.key,
@@ -120,6 +131,7 @@ class AnimalBrowser extends StatefulWidget {
     required this.onOpen,
     this.ringId,
     this.onGenetics,
+    this.onWhatIfs,
   });
   @override
   State<AnimalBrowser> createState() => _AnimalBrowserState();
@@ -371,11 +383,20 @@ class _AnimalBrowserState extends State<AnimalBrowser> {
       if (v == 'tracking') _tracking();
       if (v == 'calendar') _calendar();
       if (v == 'genetics') widget.onGenetics?.call();
+      if (v == 'what_ifs') widget.onWhatIfs?.call();
       if (v == 'weights' || v == 'health') {
         _bulk(v == 'weights');
       }
     },
     itemBuilder: (_) => [
+      if (widget.onWhatIfs != null)
+        const PopupMenuItem(
+          value: 'what_ifs',
+          child: ListTile(
+            leading: Icon(Icons.shuffle),
+            title: Text('What Ifs'),
+          ),
+        ),
       if (widget.onGenetics != null)
         const PopupMenuItem(
           value: 'genetics',
