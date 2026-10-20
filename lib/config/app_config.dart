@@ -1,7 +1,7 @@
 class AppConfig {
   static const version = String.fromEnvironment(
     'APP_VERSION',
-    defaultValue: '0.2.0',
+    defaultValue: '0.20.1',
   );
   static const supabaseUrl = String.fromEnvironment(
     'SUPABASE_URL',

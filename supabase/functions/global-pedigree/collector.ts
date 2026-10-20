@@ -49,8 +49,12 @@ export function rabbit(html: string, id: string, owned: boolean, live = owned) {
   for (const row of Array.from(table.querySelectorAll("tr"))) {
     const label = row.querySelector(".inputLabel"),
       value = row.querySelector(".inputData");
-    if (label && value) {
-      fields.set(clean(label.textContent).replace(/:$/, ""), value);
+    if (label) {
+      const key = clean(label.textContent).replace(/:$/, "");
+      if (key === "Known Genotype" && (!value || fields.has(key))) {
+        throw new Error("A rabbit genotype could not be read. Please reconnect.");
+      }
+      if (value) fields.set(key, value);
     }
   }
   const value = (key: string) => clean(fields.get(key)?.textContent);
@@ -66,6 +70,12 @@ export function rabbit(html: string, id: string, owned: boolean, live = owned) {
     ) throw new Error("An unsupported pedigree link was found.");
     return rid;
   };
+  // Preserve source notation, including case, spaces and unknown _ / - / ?.
+  // The label does not establish how these genes were determined.
+  const knownGenotype = fields.get("Known Genotype")?.textContent?.trim() || null;
+  if (knownGenotype && Array.from(knownGenotype).length > 500) {
+    throw new Error("A rabbit genotype is too long to import. Contact support@ringmasterone.com for help.");
+  }
   const breed = optional(value("Breed"));
   let name = clean(doc.querySelector("#hybridDefaultHeading")?.textContent);
   if (breed && name.endsWith(` - ${breed}`)) {
@@ -95,6 +105,7 @@ export function rabbit(html: string, id: string, owned: boolean, live = owned) {
     tattoo: optional(value("Ear Number")),
     breed,
     variety: optional(value("Variety")),
+    known_genotype: knownGenotype,
     sex: ["Buck", "Doe"].includes(sex) ? sex : null,
     dob: date ? `${date[3]}-${date[1]}-${date[2]}` : null,
     weight: rawWeight && weight

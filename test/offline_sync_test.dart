@@ -229,6 +229,22 @@ void main() {
   });
 
   test(
+    'Genotype drafts survive offline storage and conflict with changed color facts',
+    () async {
+      final genotype = {'notation': 'aa bb C- D-', 'basis': 'inferred'};
+      await engine.enqueue(edit('genotype', {'genotype': genotype}));
+      expect((await engine.animal('a'))!['genotype'], genotype);
+      final restored = reopen();
+      await restored.refresh();
+      remote.animals['a']!.addAll({'variety': 'Blue', 'revision': 2});
+      await restored.sync();
+      expect(restored.attention, 1);
+      expect(remote.animals['a']!.containsKey('genotype'), isFalse);
+      expect((await restored.animal('a'))!['genotype'], genotype);
+    },
+  );
+
+  test(
     'blocked animal dependencies wait while unrelated animals sync',
     () async {
       await engine.enqueue(edit('edit', {'name': 'Willow'}));

@@ -13,6 +13,10 @@ import '../services/animal_service.dart';
 import '../utils/animal_labels.dart';
 import '../theme/app_theme.dart';
 import '../widgets/animal_avatar.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
+import '../config/genetics_preview.dart';
+import '../offline/offline_runtime.dart';
+import 'genetics_screen.dart';
 
 String _displayDob(dynamic value) {
   final date = DateTime.tryParse(value?.toString() ?? '');
@@ -77,12 +81,25 @@ class _AnimalListScreenState extends State<AnimalListScreen> {
         if (!snapshot.hasData) {
           return const Center(child: CircularProgressIndicator());
         }
-        return AnimalBrowser(
-          animals: snapshot.data!,
-          ringId: widget.ringId,
-          onAdd: _add,
-          onRefresh: _refresh,
-          onOpen: _open,
+        return StreamBuilder<AuthState>(
+          stream: OfflineRuntime.client.auth.onAuthStateChange,
+          builder: (context, _) => AnimalBrowser(
+            animals: snapshot.data!,
+            ringId: widget.ringId,
+            onAdd: _add,
+            onRefresh: _refresh,
+            onOpen: _open,
+            onGenetics:
+                GeneticsPreview.allowsEmail(
+                  OfflineRuntime.client.auth.currentUser?.email,
+                )
+                ? () => Navigator.of(context).push(
+                    MaterialPageRoute<void>(
+                      builder: (_) => GeneticsScreen(animals: snapshot.data!),
+                    ),
+                  )
+                : null,
+          ),
         );
       },
     ),
@@ -93,6 +110,7 @@ class AnimalBrowser extends StatefulWidget {
   final String? ringId;
   final List<Map<String, dynamic>> animals;
   final VoidCallback onAdd, onRefresh;
+  final VoidCallback? onGenetics;
   final ValueChanged<Map<String, dynamic>> onOpen;
   const AnimalBrowser({
     super.key,
@@ -101,6 +119,7 @@ class AnimalBrowser extends StatefulWidget {
     required this.onRefresh,
     required this.onOpen,
     this.ringId,
+    this.onGenetics,
   });
   @override
   State<AnimalBrowser> createState() => _AnimalBrowserState();
@@ -351,65 +370,74 @@ class _AnimalBrowserState extends State<AnimalBrowser> {
       if (v == 'breeding') _recordBreeding();
       if (v == 'tracking') _tracking();
       if (v == 'calendar') _calendar();
+      if (v == 'genetics') widget.onGenetics?.call();
       if (v == 'weights' || v == 'health') {
         _bulk(v == 'weights');
       }
     },
-    itemBuilder: (_) => const [
-      PopupMenuItem(
+    itemBuilder: (_) => [
+      if (widget.onGenetics != null)
+        const PopupMenuItem(
+          value: 'genetics',
+          child: ListTile(
+            leading: Icon(Icons.science_outlined),
+            title: Text('Genetics'),
+          ),
+        ),
+      const PopupMenuItem(
         value: 'sales',
         child: ListTile(
           leading: Icon(Icons.sell_outlined),
           title: Text('Sales dashboard'),
         ),
       ),
-      PopupMenuItem(
+      const PopupMenuItem(
         value: 'for_sale',
         child: ListTile(
           leading: Icon(Icons.checklist),
           title: Text('Bulk mark For Sale'),
         ),
       ),
-      PopupMenuItem(
+      const PopupMenuItem(
         value: 'calendar',
         child: ListTile(
           leading: Icon(Icons.calendar_month),
           title: Text('Herd calendar'),
         ),
       ),
-      PopupMenuItem(
+      const PopupMenuItem(
         value: 'tracking',
         child: ListTile(
           leading: Icon(Icons.child_care),
           title: Text('Breedings & litters'),
         ),
       ),
-      PopupMenuItem(
+      const PopupMenuItem(
         value: 'breeding',
         child: ListTile(
           leading: Icon(Icons.favorite_outline),
           title: Text('Record breeding'),
         ),
       ),
-      PopupMenuItem(
+      const PopupMenuItem(
         value: 'add',
         child: ListTile(leading: Icon(Icons.add), title: Text('Add animal')),
       ),
-      PopupMenuItem(
+      const PopupMenuItem(
         value: 'weights',
         child: ListTile(
           leading: Icon(Icons.monitor_weight_outlined),
           title: Text('Bulk add weights'),
         ),
       ),
-      PopupMenuItem(
+      const PopupMenuItem(
         value: 'health',
         child: ListTile(
           leading: Icon(Icons.medical_services_outlined),
           title: Text('Bulk add health / vaccine records'),
         ),
       ),
-      PopupMenuItem(
+      const PopupMenuItem(
         value: 'refresh',
         child: ListTile(
           leading: Icon(Icons.refresh),

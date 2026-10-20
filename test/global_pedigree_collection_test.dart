@@ -25,7 +25,11 @@ void main() {
             'animals': first
                 ? []
                 : [
-                    {'source_id': '1', 'name': 'Collected Rabbit'},
+                    {
+                      'source_id': '1',
+                      'name': 'Collected Rabbit',
+                      'known_genotype': 'aa bb C_ dd E_',
+                    },
                   ],
             'history': first
                 ? []
@@ -53,6 +57,10 @@ void main() {
           client,
         ).collect('fixture', 'temporary');
         expect((result['animals'] as List).length, 1);
+        expect(
+          (result['animals'] as List).single['known_genotype'],
+          'aa bb C_ dd E_',
+        );
         expect(
           (result['history'] as List).single['recorded_date'],
           '2025-05-15',

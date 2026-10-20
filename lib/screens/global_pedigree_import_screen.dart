@@ -440,6 +440,7 @@ class _GlobalPedigreeImportScreenState
                                             'Sire ear number: ${_parentLabel(record, 'sire_id')}',
                                             'Dam ear number: ${_parentLabel(record, 'dam_id')}',
                                             'Weight: ${record['weight'] ?? 'Unknown'}',
+                                            'Source genotype: ${record['known_genotype'] ?? 'Not recorded'}',
                                             'Notes: ${record['notes'] ?? 'None'}',
                                           ].join('\n'),
                                         ),
@@ -476,7 +477,7 @@ class _GlobalPedigreeImportScreenState
                                         ),
                                 ),
                                 const Text(
-                                  'For the same animal, the selected record supplies its dates, parents, notes, and weight. A rabbit is active if any merged source record is in the live herd. The other records are merged into it, and all pedigree links and source IDs are retained.',
+                                  'For the same animal, the selected record supplies its dates, parents, notes, weight, and genotype. Other source genotypes are retained for reference. A rabbit is active if any merged source record is in the live herd. The other records are merged into it, and all pedigree links and source IDs are retained.',
                                 ),
                               ],
                             ),
@@ -519,16 +520,17 @@ class _GlobalPedigreeImportScreenState
                               ),
                               subtitle: Text(
                                 [
-                                      row['tattoo'],
-                                      row['sex'],
-                                      row['breed'],
-                                      row['pedigree_only'] == true
-                                          ? 'Ancestor'
-                                          : 'Herd rabbit',
-                                      row['action'],
-                                    ]
-                                    .where((v) => v != null && v != '')
-                                    .join(' • '),
+                                  row['tattoo'],
+                                  row['sex'],
+                                  row['breed'],
+                                  row['pedigree_only'] == true
+                                      ? 'Ancestor'
+                                      : 'Herd rabbit',
+                                  row['action'],
+                                  if (row['known_genotype'] != null)
+                                    'Source genotype: ${row['known_genotype']}',
+                                  row['genotype_action'],
+                                ].where((v) => v != null && v != '').join(' • '),
                               ),
                             ),
                           ),

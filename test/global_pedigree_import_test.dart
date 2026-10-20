@@ -76,6 +76,8 @@ class FakeGlobalPedigree implements GlobalPedigreeImportGateway {
           'name': 'Fixture Rabbit',
           'sex': 'Buck',
           'action': 'New record',
+          'known_genotype': 'aa bb C_ dd E_',
+          'genotype_action': 'Genotype saved as imported reference',
         },
       ],
     };
@@ -125,6 +127,10 @@ void main() {
     await connect(tester, gateway);
     expect(gateway.commits, 0);
     expect(find.text('Fixture Rabbit'), findsOneWidget);
+    expect(
+      find.textContaining('Source genotype: aa bb C_ dd E_'),
+      findsOneWidget,
+    );
     await tester.scrollUntilVisible(
       find.text('Import into herd'),
       200,

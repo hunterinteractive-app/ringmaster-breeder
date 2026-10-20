@@ -37,6 +37,8 @@ await db.exec(readFileSync(repo+'/supabase/migrations/20261013154734_global_pedi
 await db.exec(readFileSync(repo+'/supabase/migrations/20261013194706_global_pedigree_history.sql','utf8'));
 await db.exec(readFileSync(repo+'/supabase/migrations/20261013202924_global_pedigree_history_profile_weights.sql','utf8'));
 await db.exec(readFileSync(repo+'/supabase/migrations/20261014011410_global_pedigree_live_membership.sql','utf8'));
+await db.exec(readFileSync(repo+'/supabase/migrations/20261020105258_animal_genotype_record.sql','utf8'));
+await db.exec(readFileSync(repo+'/supabase/migrations/20261020112220_global_pedigree_genotype.sql','utf8'));
 await db.exec('create trigger breeder_validate_weight before insert on public.animal_weights for each row execute function breeder_private.validate_weight();');
 await db.exec("set role authenticated; select set_config('request.jwt.claim.sub','11111111-1111-4111-8111-111111111111',false);");
 const ring='aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa';
@@ -157,4 +159,51 @@ result=await runSales([{...sh[0],source_id:'future',sale_date:'2999-01-01'}],tru
 await db.exec("select set_config('request.jwt.claim.sub','22222222-2222-4222-8222-222222222222',false)");
 assert.equal((await db.query('select count(*)::int n from animal_sales')).rows[0].n,0);await assert.rejects(runSales(sh,true),/Select a herd you own/);
 console.log('Historical sales checks passed: separate source IDs, zero price, blank buyer, unknown receipts, stable animal status, retries, future date and ownership.');
+// Genotype reference import: source unknowns remain literal, no biology is guessed.
+await db.exec("select set_config('request.jwt.claim.sub','11111111-1111-4111-8111-111111111111',false)");
+const ga=[{source_id:'gene-new',name:'Source Genotype',sex:'Doe',known_genotype:'aa bb C_ dd E_',sire_id:'gene-ancestor'},
+ {source_id:'gene-ancestor',name:'Ancestor Genotype',sex:'Buck',pedigree_only:true,known_genotype:'aa bb C? D- E- enen Sa-'},
+ {source_id:'gene-blank',name:'No Genotype',sex:'Buck'}];
+result=await run(ga);
+assert.equal(result.rows.find(r=>r.source_id==='gene-new').known_genotype,'aa bb C_ dd E_');
+assert.equal((await db.query("select count(*)::int n from animals where name='Source Genotype'")).rows[0].n,0);
+assert.equal((await db.query("select animals->0->>'known_genotype' g from global_pedigree_import_drafts")).rows[0].g,'aa bb C_ dd E_');
+assert.equal((await run(ga,true)).status,'imported');
+let genotype=(await db.query("select genotype from animals where name='Source Genotype'")).rows[0].genotype;
+assert.deepEqual(genotype,{notation:'aa bb C_ dd E_',basis:'imported',source:'Global Pedigree: Known Genotype (rabbit gene-new). Method not verified.'});
+assert.equal((await db.query("select genotype->>'notation' g from animals where name='Ancestor Genotype'")).rows[0].g,'aa bb C? D- E- enen Sa-');
+assert.deepEqual((await db.query("select genotype from animals where name='No Genotype'")).rows[0].genotype,{});
+const changed=ga.map(a=>a.source_id==='gene-new'?{...a,known_genotype:'aa bb CC dd EE'}:a);
+assert.equal((await run(changed,true)).animals_added,0);
+assert.deepEqual((await db.query("select genotype from animals where name='Source Genotype'")).rows[0].genotype,genotype);
+assert.equal((await db.query("select source_known_genotype g from global_pedigree_animals where source_id='gene-new'")).rows[0].g,'aa bb CC dd EE');
+await run(ga.map(({known_genotype,...a})=>a),true);
+assert.equal((await db.query("select source_known_genotype g from global_pedigree_animals where source_id='gene-new'")).rows[0].g,'aa bb CC dd EE');
+// A pre-existing manual entry is never overwritten, even if source differs.
+await db.exec("insert into animals(ring_id,name,tattoo,species,sex,genotype) values('aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa','Manual Gene','G1','rabbit','Doe','{\"notation\":\"bb dd\",\"basis\":\"breeder_entered\"}')");
+result=await run([{source_id:'manual-gene',name:'Manual Gene',tattoo:'G1',sex:'Doe',known_genotype:'bb D-'}],true);
+assert.equal(result.animals_existing,1);
+assert.equal((await db.query("select genotype->>'notation' g from animals where name='Manual Gene'")).rows[0].g,'bb dd');
+assert.equal((await db.query("select source_known_genotype g from global_pedigree_animals where source_id='manual-gene'")).rows[0].g,'bb D-');
+// Merges retain the selected genotype and each source's differing evidence.
+const gm=[{source_id:'gm1',name:'Gene Merge',tattoo:'GM',sex:'Buck',keep_separate:true,known_genotype:'aa bb C-'},
+ {source_id:'gm2',name:'Gene Merge',tattoo:'GM',sex:'Buck',same_as:'gm1',known_genotype:'aa bb cc'}];
+assert.equal((await run(gm,true)).status,'imported');
+assert.equal((await db.query("select genotype->>'notation' g from animals where name='Gene Merge'")).rows[0].g,'aa bb C-');
+assert.deepEqual((await db.query("select source_known_genotype g from global_pedigree_animals where source_id in ('gm1','gm2') order by source_id")).rows,[{g:'aa bb C-'},{g:'aa bb cc'}]);
+for(const invalid of [123,{},[],true,'a'.repeat(501)]) {
+ result=await run([{source_id:'bad-gene',name:'Bad Gene',sex:'Buck',known_genotype:invalid}],true);
+ assert.equal(result.status,'preview');assert(result.issues.some(x=>x.includes('invalid source genotype')));
+}
+assert.equal((await db.query("select count(*)::int n from animals where name='Bad Gene'")).rows[0].n,0);
+// Genotype also survives the actual sales/history wrapper used by the client.
+assert.equal((await db.query('select public.import_global_pedigree_with_sales($1,$2,$3::jsonb,$4::jsonb,true,true,true) result',
+ [ring,'gene-wrapper',JSON.stringify([{source_id:'gw',name:'Wrapper Gene',sex:'Doe',known_genotype:'bb dd'}]),'[]'])).rows[0].result.status,'imported');
+assert.equal((await db.query("select genotype->>'notation' g from animals where name='Wrapper Gene'")).rows[0].g,'bb dd');
+await db.exec("select set_config('request.jwt.claim.sub','22222222-2222-4222-8222-222222222222',false)");
+assert.equal((await db.query('select count(*)::int n from global_pedigree_animals')).rows[0].n,0);
+await assert.rejects(run(ga,true),/Select a herd you own/);
+assert.equal((await db.query("update global_pedigree_animals set source_known_genotype='cc' returning source_id")).rows.length,0);
+await assert.rejects(db.exec("update global_pedigree_animals set source_account='other'"),/permission denied/);
+console.log('Genotype checks passed: preview/draft, imported references and ancestors, literal unknowns, missing values, repeat/manual preservation, source evidence, merges, invalid inputs, wrapper and owner isolation.');
 await db.close();

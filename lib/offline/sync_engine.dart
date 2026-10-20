@@ -202,6 +202,7 @@ class SyncEngine extends ChangeNotifier {
     'breed',
     'variety',
     'color_details',
+    'genotype',
     'sex',
     'dob',
     'status',

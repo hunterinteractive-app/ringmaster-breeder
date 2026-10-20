@@ -18,6 +18,10 @@ import 'show_reports_screen.dart';
 import '../services/animal_service.dart';
 import '../widgets/animal_avatar.dart';
 import '../offline/offline_runtime.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
+import '../config/genetics_preview.dart';
+import '../genetics/animal_genotype.dart';
+import '../widgets/animal_genotype_section.dart';
 
 class _AnimalDetails {
   final Map<String, dynamic> animal;
@@ -28,8 +32,18 @@ class _AnimalDetails {
 
 class AnimalDetailScreen extends StatefulWidget {
   final String animalId;
+  final Future<Map<String, dynamic>> Function(String)? loader;
+  final Future<double?> Function(String)? weightLoader;
+  final Future<void> Function(String, Map<String, dynamic>, int)?
+  genotypeWriter;
 
-  const AnimalDetailScreen({super.key, required this.animalId});
+  const AnimalDetailScreen({
+    super.key,
+    required this.animalId,
+    this.loader,
+    this.weightLoader,
+    this.genotypeWriter,
+  });
 
   @override
   State<AnimalDetailScreen> createState() => _AnimalDetailScreenState();
@@ -51,7 +65,83 @@ class _AnimalDetailScreenState extends State<AnimalDetailScreen> {
     }
   }
 
-  void _reload() => setState(() => _details = _load());
+  void _reload() => setState(() {
+    _details = _load();
+  });
+  Future<void> _changeGenotype(Map<String, dynamic> animal) async {
+    if (!GeneticsPreview.allowsEmail(supabase.auth.currentUser?.email) ||
+        isLocked(animal['status'])) {
+      return;
+    }
+    // The deployed schema supplies an empty genotype on preexisting rows.
+    // Older downloaded rows may omit the new column until the next sync.
+    final baseline = <String, dynamic>{
+      'genotype': <String, dynamic>{},
+      ...animal,
+    };
+    final updated = await showDialog<bool>(
+      context: context,
+      barrierDismissible: false,
+      builder: (_) => StreamBuilder<AuthState>(
+        stream: supabase.auth.onAuthStateChange,
+        builder: (context, _) =>
+            !GeneticsPreview.allowsEmail(supabase.auth.currentUser?.email)
+            ? AlertDialog(
+                content: const Text(
+                  'This preview is not available for this account.',
+                ),
+                actions: [
+                  TextButton(
+                    onPressed: () => Navigator.pop(context),
+                    child: const Text('Close'),
+                  ),
+                ],
+              )
+            : AnimalGenotypeDialog(
+                initial: AnimalGenotype.read(baseline['genotype']),
+                colorInference: AnimalGenotype.colorInference(baseline),
+                onSave: (value) async {
+                  if (!GeneticsPreview.allowsEmail(
+                    supabase.auth.currentUser?.email,
+                  )) {
+                    throw StateError(
+                      'This preview is not available for this account.',
+                    );
+                  }
+                  final changes = <String, dynamic>{'genotype': value};
+                  final revision = (baseline['revision'] as num).toInt();
+                  if (widget.genotypeWriter != null) {
+                    await widget.genotypeWriter!(
+                      widget.animalId,
+                      changes,
+                      revision,
+                    );
+                  } else {
+                    await AnimalService.update(
+                      widget.animalId,
+                      changes,
+                      expectedRevision: revision,
+                      expectedBase: baseline,
+                    );
+                  }
+                },
+              ),
+      ),
+    );
+    if (updated == true && mounted) {
+      _reload();
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            OfflineRuntime.engine == null
+                ? 'Genotype saved.'
+                : 'Saved on this device. Open Sync to check upload status.',
+          ),
+        ),
+      );
+    }
+  }
+
   Future<void> _uploadPhoto() async {
     setState(() => _uploadingPhoto = true);
     try {
@@ -87,11 +177,12 @@ class _AnimalDetailScreenState extends State<AnimalDetailScreen> {
 
   /// --- Queries ---
   Future<Map<String, dynamic>> fetchAnimal() =>
-      AnimalService.get(widget.animalId);
+      (widget.loader ?? AnimalService.get)(widget.animalId);
   Future<Map<String, dynamic>?> fetchParent(String? id) =>
       AnimalService.parent(id);
 
-  Future<double?> fetchWeight() => AnimalService.latestWeight(widget.animalId);
+  Future<double?> fetchWeight() =>
+      (widget.weightLoader ?? AnimalService.latestWeight)(widget.animalId);
 
   // ------------------------------------------------------------
   // SAVE + SHARE PDF UTILITY
@@ -112,7 +203,12 @@ class _AnimalDetailScreenState extends State<AnimalDetailScreen> {
   }
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context) => StreamBuilder<AuthState>(
+    stream: supabase.auth.onAuthStateChange,
+    builder: (context, _) => _buildDetails(context),
+  );
+
+  Widget _buildDetails(BuildContext context) {
     return RingMasterPageShell(
       onRefresh: _reload,
       title: "Animal Details",
@@ -146,6 +242,14 @@ class _AnimalDetailScreenState extends State<AnimalDetailScreen> {
             lockMessage: locked ? statusLockMessage(animal['status']) : null,
             uploadingPhoto: _uploadingPhoto,
             onPhoto: locked ? null : _uploadPhoto,
+            genotypeSection:
+                GeneticsPreview.allowsEmail(supabase.auth.currentUser?.email) &&
+                    animal['species']?.toString().toLowerCase() == 'rabbit'
+                ? AnimalGenotypeSection(
+                    animal: animal,
+                    onChange: locked ? null : () => _changeGenotype(animal),
+                  )
+                : null,
             parents: [
               FutureBuilder(
                 future: fetchParent(animal["sire_id"]),
@@ -359,6 +463,7 @@ class AnimalDetailContent extends StatelessWidget {
   final VoidCallback? onPhoto;
   final List<Widget> parents;
   final List<Widget> actions;
+  final Widget? genotypeSection;
 
   const AnimalDetailContent({
     super.key,
@@ -369,6 +474,7 @@ class AnimalDetailContent extends StatelessWidget {
     this.onPhoto,
     this.parents = const [],
     this.actions = const [],
+    this.genotypeSection,
   });
 
   @override
@@ -515,6 +621,7 @@ class AnimalDetailContent extends StatelessWidget {
         else
           for (final (label, value) in basic)
             AnimalDetailRow(title: label, value: value),
+        if (genotypeSection != null) genotypeSection!,
         const AdaptiveGap(height: 16),
         if (compact) ...[
           ExpansionTile(

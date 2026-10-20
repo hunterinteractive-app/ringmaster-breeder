@@ -1,4 +1,4 @@
-import { assertEquals, assertRejects } from "jsr:@std/assert@1.0.14";
+import { assertEquals, assertRejects, assertThrows } from "jsr:@std/assert@1.0.14";
 import {
   batch,
   herdIds,
@@ -42,6 +42,20 @@ Deno.test("detail parser preserves fields, normalizes placeholders, and converts
   assertEquals(a.notes, "Test notes");
   assertEquals(rabbit(detail("???", ""), "2", false).sex, null);
   assertEquals(rabbit(detail("???", ""), "2", false).weight, null);
+});
+Deno.test("Known Genotype preserves source notation and missing values stay unknown", () => {
+  const withGenotype = (text: string) => detail().replace('</table>',
+    `<tr><td class="inputLabel">Known Genotype:</td><td class="inputData">${text}</td></tr></table>`);
+  assertEquals(rabbit(withGenotype('aa bb C_ dd E_'), '1', true).known_genotype, 'aa bb C_ dd E_');
+  assertEquals(rabbit(withGenotype('at- bb C? dd E- enen Sa-'), '2', false).known_genotype, 'at- bb C? dd E- enen Sa-');
+  assertEquals(rabbit(withGenotype('???'), '1', true).known_genotype, '???');
+  assertEquals(rabbit(withGenotype(''), '1', true).known_genotype, null);
+  assertEquals(rabbit(detail(), '1', true).known_genotype, null);
+  assertThrows(() => rabbit(withGenotype('a'.repeat(501)), '1', true), Error, 'too long');
+  assertThrows(() => rabbit(withGenotype('aa').replace('</table>',
+    '<tr><td class="inputLabel">Known Genotype:</td><td class="inputData">bb</td></tr></table>'), '1', true), Error, 'genotype could not be read');
+  assertThrows(() => rabbit(detail().replace('</table>',
+    '<tr><td class="inputLabel">Known Genotype:</td></tr></table>'), '1', true), Error, 'genotype could not be read');
 });
 Deno.test("herd listing ignores pedigree links and deduplicates detail links", () => {
   assertEquals(

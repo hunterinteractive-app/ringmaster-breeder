@@ -86,6 +86,16 @@ test('deterministic RPC IDs survive retries and include the initial weight',asyn
   const retry=await A.prepare(tables(),Q.clone(r),'aaaaaaaa-1111-4111-8111-111111111111',new Date(now).toISOString());
   assert.deepEqual(first,retry);assert.equal(first.mutations.length,2);assert.equal(first.mutations[1].row.animal_id,first.result);
 });
+test('genotype is writable offline and conflicts with changed animal color facts',()=>{
+  const genotype={notation:'aa bb C- D-',basis:'inferred'};
+  assert.doesNotThrow(()=>A.validate({type:'table',target:'animals',method:'PATCH',body:{genotype}}));
+  const before={...tables().animals[0],genotype:{},variety:'Chocolate'};
+  const mutation=A.patchMutation('animals',before,{genotype});
+  assert.deepEqual(mutation.row.genotype,genotype);
+  assert.equal(mutation.before.variety,'Chocolate');
+  assert.equal(mutation.before.status,'active');
+  assert.deepEqual(before.genotype,{});
+});
 test('pedigree local IDs preserve shared ancestors and server node order',async()=>{
   const d=tables();d.pedigree_drafts=[{id:'draft',ring_id:ring,data:{species:'rabbit',root:'new0',nodes:{new0:{name:'New',sex:'Doe',sire:'new1',dam:'new2'},new1:{name:'Sire',sex:'Buck'},new2:{existing_id:animal}}}}];
   const p=await A.prepare(d,{type:'rpc',target:'save_pedigree_draft',body:{p_draft:'draft'}},'aaaaaaaa-1111-4111-8111-111111111111',new Date(now).toISOString());
