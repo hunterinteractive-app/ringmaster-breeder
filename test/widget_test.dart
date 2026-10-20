@@ -145,7 +145,7 @@ void main() {
       ),
     );
     expect(find.text('RingMaster Breeder'), findsOneWidget);
-    expect(find.text('Version 0.20.1'), findsOneWidget);
+    expect(find.text('Version 0.20.2'), findsOneWidget);
     expect(tester.takeException(), isNull);
   });
 }

@@ -95,11 +95,10 @@ void main() {
         );
         await tester.enterText(find.byType(TextField), '');
         await tester.pumpAndSettle();
-        await tester.scrollUntilVisible(
-          find.byTooltip('List view').hitTestable(),
-          150,
-          scrollable: scrollable,
-        );
+        // Reveal the view toggle in the phone's horizontal toolbar as well
+        // as scrolling the herd back to its controls.
+        await tester.ensureVisible(find.byTooltip('List view'));
+        await tester.pumpAndSettle();
         await tester.tap(find.byTooltip('List view'));
         await tester.pumpAndSettle();
         expect(find.byType(AnimalRecordCard), findsNothing);

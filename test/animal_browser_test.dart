@@ -85,6 +85,8 @@ void main() {
       addTearDown(tester.view.resetPhysicalSize);
       addTearDown(tester.view.resetDevicePixelRatio);
       var added = false;
+      var refreshed = false;
+      var openedWhatIfs = false;
       await tester.pumpWidget(
         MaterialApp(
           home: Scaffold(
@@ -113,7 +115,8 @@ void main() {
                 },
               ],
               onAdd: () => added = true,
-              onRefresh: () {},
+              onRefresh: () => refreshed = true,
+              onWhatIfs: width == 1200 ? () => openedWhatIfs = true : null,
               onOpen: (_) {},
             ),
           ),
@@ -131,11 +134,53 @@ void main() {
       expect(find.text('No animals match your filters.'), findsOneWidget);
       await tester.tap(find.byTooltip('Clear search'));
       await tester.pumpAndSettle();
+      await tester.ensureVisible(find.byTooltip('List view'));
+      await tester.pumpAndSettle();
       await tester.tap(find.byTooltip('List view'));
       await tester.pumpAndSettle();
       expect(find.byType(AnimalRecordCard), findsNothing);
       expect(find.text('Cookie • ZC2'), findsOneWidget);
-      await tester.tap(find.byTooltip('Actions'));
+      expect(find.byTooltip('Actions'), findsNothing);
+      expect(
+        tester.getTopLeft(find.text('Add animal')).dy,
+        greaterThan(tester.getBottomLeft(find.byType(TextField)).dy),
+      );
+      for (final group in {
+        'Breeding': ['Breedings & litters', 'Record breeding'],
+        'Sales': ['Sales dashboard', 'Bulk mark For Sale'],
+        'Herd care': [
+          'Herd calendar',
+          'Bulk add weights',
+          'Bulk add health / vaccine records',
+        ],
+      }.entries) {
+        final button = find.widgetWithText(OutlinedButton, group.key);
+        await tester.ensureVisible(button);
+        await tester.pumpAndSettle();
+        await tester.tap(button);
+        await tester.pumpAndSettle();
+        for (final label in group.value) {
+          expect(find.widgetWithText(MenuItemButton, label), findsOneWidget);
+        }
+        expect(tester.takeException(), isNull);
+        await tester.tap(button);
+        await tester.pumpAndSettle();
+      }
+      if (width == 1200) {
+        await tester.tap(find.widgetWithText(OutlinedButton, 'Genetics'));
+        await tester.pumpAndSettle();
+        await tester.tap(find.widgetWithText(MenuItemButton, 'What Ifs'));
+        await tester.pumpAndSettle();
+        expect(openedWhatIfs, true);
+      } else {
+        expect(find.text('Genetics'), findsNothing);
+      }
+      await tester.ensureVisible(find.byTooltip('Refresh records'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.byTooltip('Refresh records'));
+      await tester.pumpAndSettle();
+      expect(refreshed, true);
+      await tester.ensureVisible(find.text('Add animal'));
       await tester.pumpAndSettle();
       await tester.tap(find.text('Add animal'));
       await tester.pumpAndSettle();

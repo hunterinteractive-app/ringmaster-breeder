@@ -371,125 +371,123 @@ class _AnimalBrowserState extends State<AnimalBrowser> {
     onSelectionChanged: (v) => setState(() => _cards = v.single),
   );
 
-  Widget _actionsMenu({required bool compact}) => PopupMenuButton<String>(
-    tooltip: 'Actions',
-    icon: compact ? const Icon(Icons.more_horiz) : null,
-    onSelected: (v) {
-      if (v == 'sales') _sales();
-      if (v == 'for_sale') _forSale();
-      if (v == 'add') widget.onAdd();
-      if (v == 'refresh') widget.onRefresh();
-      if (v == 'breeding') _recordBreeding();
-      if (v == 'tracking') _tracking();
-      if (v == 'calendar') _calendar();
-      if (v == 'genetics') widget.onGenetics?.call();
-      if (v == 'what_ifs') widget.onWhatIfs?.call();
-      if (v == 'weights' || v == 'health') {
-        _bulk(v == 'weights');
-      }
-    },
-    itemBuilder: (_) => [
-      if (widget.onWhatIfs != null)
-        const PopupMenuItem(
-          value: 'what_ifs',
-          child: ListTile(
-            leading: Icon(Icons.shuffle),
-            title: Text('What Ifs'),
-          ),
+  Widget _actionGroup(
+    String label,
+    IconData icon,
+    List<({String label, IconData icon, VoidCallback onPressed})> actions,
+  ) => MenuAnchor(
+    menuChildren: [
+      for (final action in actions)
+        MenuItemButton(
+          leadingIcon: Icon(action.icon),
+          onPressed: action.onPressed,
+          child: Text(action.label),
         ),
-      if (widget.onGenetics != null)
-        const PopupMenuItem(
-          value: 'genetics',
-          child: ListTile(
-            leading: Icon(Icons.science_outlined),
-            title: Text('Genetics'),
-          ),
-        ),
-      const PopupMenuItem(
-        value: 'sales',
-        child: ListTile(
-          leading: Icon(Icons.sell_outlined),
-          title: Text('Sales dashboard'),
-        ),
-      ),
-      const PopupMenuItem(
-        value: 'for_sale',
-        child: ListTile(
-          leading: Icon(Icons.checklist),
-          title: Text('Bulk mark For Sale'),
-        ),
-      ),
-      const PopupMenuItem(
-        value: 'calendar',
-        child: ListTile(
-          leading: Icon(Icons.calendar_month),
-          title: Text('Herd calendar'),
-        ),
-      ),
-      const PopupMenuItem(
-        value: 'tracking',
-        child: ListTile(
-          leading: Icon(Icons.child_care),
-          title: Text('Breedings & litters'),
-        ),
-      ),
-      const PopupMenuItem(
-        value: 'breeding',
-        child: ListTile(
-          leading: Icon(Icons.favorite_outline),
-          title: Text('Record breeding'),
-        ),
-      ),
-      const PopupMenuItem(
-        value: 'add',
-        child: ListTile(leading: Icon(Icons.add), title: Text('Add animal')),
-      ),
-      const PopupMenuItem(
-        value: 'weights',
-        child: ListTile(
-          leading: Icon(Icons.monitor_weight_outlined),
-          title: Text('Bulk add weights'),
-        ),
-      ),
-      const PopupMenuItem(
-        value: 'health',
-        child: ListTile(
-          leading: Icon(Icons.medical_services_outlined),
-          title: Text('Bulk add health / vaccine records'),
-        ),
-      ),
-      const PopupMenuItem(
-        value: 'refresh',
-        child: ListTile(
-          leading: Icon(Icons.refresh),
-          title: Text('Refresh records'),
-        ),
-      ),
     ],
-    child: compact
-        ? null
-        : Container(
-            padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 16),
-            decoration: BoxDecoration(
-              color: BreederColors.primary,
-              borderRadius: BorderRadius.circular(10),
-            ),
-            child: const Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Text(
-                  'Actions',
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-                SizedBox(width: 8),
-                Icon(Icons.expand_more, color: Colors.white),
-              ],
-            ),
-          ),
+    builder: (context, controller, child) => OutlinedButton(
+      onPressed: () =>
+          controller.isOpen ? controller.close() : controller.open(),
+      style: OutlinedButton.styleFrom(
+        minimumSize: const Size(48, 48),
+        padding: const EdgeInsets.symmetric(horizontal: 12),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 20),
+          const SizedBox(width: 8),
+          Text(label),
+          const SizedBox(width: 4),
+          const Icon(Icons.expand_more, size: 20),
+        ],
+      ),
+    ),
   );
+
+  Widget _actionButtons({bool compact = false}) {
+    final buttons = <Widget>[
+      FilledButton.icon(
+        onPressed: widget.onAdd,
+        icon: const Icon(Icons.add),
+        label: const Text('Add animal'),
+        style: FilledButton.styleFrom(minimumSize: const Size(48, 48)),
+      ),
+      _actionGroup('Breeding', Icons.favorite_outline, [
+        (
+          label: 'Breedings & litters',
+          icon: Icons.child_care,
+          onPressed: _tracking,
+        ),
+        (
+          label: 'Record breeding',
+          icon: Icons.favorite_outline,
+          onPressed: _recordBreeding,
+        ),
+      ]),
+      if (widget.onGenetics != null || widget.onWhatIfs != null)
+        _actionGroup('Genetics', Icons.science_outlined, [
+          if (widget.onGenetics != null)
+            (
+              label: 'Genetics',
+              icon: Icons.science_outlined,
+              onPressed: widget.onGenetics!,
+            ),
+          if (widget.onWhatIfs != null)
+            (
+              label: 'What Ifs',
+              icon: Icons.shuffle,
+              onPressed: widget.onWhatIfs!,
+            ),
+        ]),
+      _actionGroup('Sales', Icons.sell_outlined, [
+        (
+          label: 'Sales dashboard',
+          icon: Icons.sell_outlined,
+          onPressed: _sales,
+        ),
+        (
+          label: 'Bulk mark For Sale',
+          icon: Icons.checklist,
+          onPressed: _forSale,
+        ),
+      ]),
+      _actionGroup('Herd care', Icons.medical_services_outlined, [
+        (
+          label: 'Herd calendar',
+          icon: Icons.calendar_month,
+          onPressed: _calendar,
+        ),
+        (
+          label: 'Bulk add weights',
+          icon: Icons.monitor_weight_outlined,
+          onPressed: () => _bulk(true),
+        ),
+        (
+          label: 'Bulk add health / vaccine records',
+          icon: Icons.medical_services_outlined,
+          onPressed: () => _bulk(false),
+        ),
+      ]),
+      IconButton(
+        tooltip: 'Refresh records',
+        onPressed: widget.onRefresh,
+        icon: const Icon(Icons.refresh),
+      ),
+      _viewToggle(),
+    ];
+    if (compact) {
+      return SingleChildScrollView(
+        scrollDirection: Axis.horizontal,
+        child: Row(spacing: 8, children: buttons),
+      );
+    }
+    return Wrap(
+      spacing: 8,
+      runSpacing: 8,
+      crossAxisAlignment: WrapCrossAlignment.center,
+      children: buttons,
+    );
+  }
 
   Widget _toolbar(
     bool compact,
@@ -499,7 +497,9 @@ class _AnimalBrowserState extends State<AnimalBrowser> {
   ) => Container(
     width: double.infinity,
     color: Colors.white,
-    padding: EdgeInsets.all(compact ? 12 : 16),
+    padding: compact
+        ? const EdgeInsets.symmetric(horizontal: 12, vertical: 10)
+        : const EdgeInsets.all(16),
     child: LayoutBuilder(
       builder: (context, size) {
         final filterWidth = compact
@@ -523,16 +523,17 @@ class _AnimalBrowserState extends State<AnimalBrowser> {
           _breedFilter(compact ? size.maxWidth : 190, breeds, selectedBreed),
         ];
         if (!compact) {
-          return Wrap(
-            spacing: 12,
-            runSpacing: 16,
-            crossAxisAlignment: WrapCrossAlignment.center,
+          return Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              filters[0],
-              _searchField(240),
-              ...filters.skip(1),
-              _actionsMenu(compact: false),
-              _viewToggle(),
+              Wrap(
+                spacing: 12,
+                runSpacing: 16,
+                crossAxisAlignment: WrapCrossAlignment.center,
+                children: [filters[0], _searchField(240), ...filters.skip(1)],
+              ),
+              const SizedBox(height: 16),
+              _actionButtons(),
             ],
           );
         }
@@ -575,39 +576,37 @@ class _AnimalBrowserState extends State<AnimalBrowser> {
                 ),
               ),
             ],
-            const SizedBox(height: 4),
+            const SizedBox(height: 8),
+            _actionButtons(compact: true),
+            const SizedBox(height: 8),
             Row(
               children: [
                 Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        '$count of ${widget.animals.length} animals',
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(
-                          color: BreederColors.text,
-                          fontSize: 13,
-                        ),
-                      ),
-                      Text(
-                        [
-                          _status,
-                          if (selectedBreed != null) selectedBreed,
-                        ].join(' • '),
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(
-                          color: BreederColors.text,
-                          fontSize: 12,
-                        ),
-                      ),
-                    ],
+                  child: Text(
+                    '$count of ${widget.animals.length} animals',
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(
+                      color: BreederColors.text,
+                      fontSize: 13,
+                    ),
                   ),
                 ),
-                _actionsMenu(compact: true),
-                _viewToggle(),
+                const SizedBox(width: 8),
+                Flexible(
+                  child: Text(
+                    [
+                      _status,
+                      if (selectedBreed != null) selectedBreed,
+                    ].join(' • '),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(
+                      color: BreederColors.text,
+                      fontSize: 12,
+                    ),
+                  ),
+                ),
               ],
             ),
           ],
@@ -659,7 +658,7 @@ class _AnimalBrowserState extends State<AnimalBrowser> {
                 child: Center(
                   child: Text(
                     widget.animals.isEmpty
-                        ? 'No animals yet. Use Actions to add an animal.'
+                        ? 'No animals yet. Select Add animal to get started.'
                         : 'No animals match your filters.',
                   ),
                 ),

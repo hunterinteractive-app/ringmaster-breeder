@@ -407,7 +407,7 @@ void main() {
   );
 
   testWidgets(
-    'Actual Actions navigation returns and reacts to account change',
+    'Actual Genetics navigation returns and reacts to account change',
     (tester) async {
       await tester.pumpWidget(
         MaterialApp(
@@ -424,17 +424,15 @@ void main() {
         () => Future<void>.delayed(const Duration(milliseconds: 100)),
       );
       await tester.pumpAndSettle();
-      await tester.tap(find.byTooltip('Actions'));
+      await tester.tap(find.widgetWithText(OutlinedButton, 'Genetics'));
       await tester.pumpAndSettle();
-      await tester.tap(find.text('Genetics'));
+      await tester.tap(find.widgetWithText(MenuItemButton, 'Genetics'));
       await tester.pumpAndSettle();
       expect(find.byType(GeneticsScreen), findsOneWidget);
       await tester.tap(find.byIcon(Icons.arrow_back));
       await tester.pumpAndSettle();
       expect(find.byType(AnimalListScreen), findsOneWidget);
       await identity('other@example.com');
-      await tester.pumpAndSettle();
-      await tester.tap(find.byTooltip('Actions'));
       await tester.pumpAndSettle();
       expect(find.text('Genetics'), findsNothing);
       expect(tester.takeException(), isNull);

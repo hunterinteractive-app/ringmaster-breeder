@@ -336,7 +336,7 @@ void main() {
   );
 
   for (final allowed in [false, true]) {
-    testWidgets('Actions What Ifs visibility $allowed', (t) async {
+    testWidgets('Toolbar What Ifs visibility $allowed', (t) async {
       var opened = false;
       await t.pumpWidget(
         MaterialApp(
@@ -351,8 +351,10 @@ void main() {
           ),
         ),
       );
-      await t.tap(find.byTooltip('Actions'));
-      await t.pumpAndSettle();
+      if (allowed) {
+        await t.tap(find.widgetWithText(OutlinedButton, 'Genetics'));
+        await t.pumpAndSettle();
+      }
       expect(find.text('What Ifs'), allowed ? findsOneWidget : findsNothing);
       if (allowed) {
         await t.tap(find.text('What Ifs'));

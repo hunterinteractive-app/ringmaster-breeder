@@ -19,7 +19,7 @@ void main() {
   });
 
   for (final allowed in [false, true]) {
-    testWidgets('Actions Genetics visibility: $allowed', (tester) async {
+    testWidgets('Toolbar Genetics visibility: $allowed', (tester) async {
       var opened = false;
       await tester.pumpWidget(
         MaterialApp(
@@ -34,11 +34,11 @@ void main() {
           ),
         ),
       );
-      await tester.tap(find.byTooltip('Actions'));
-      await tester.pumpAndSettle();
       expect(find.text('Genetics'), allowed ? findsOneWidget : findsNothing);
       if (allowed) {
-        await tester.tap(find.text('Genetics'));
+        await tester.tap(find.widgetWithText(OutlinedButton, 'Genetics'));
+        await tester.pumpAndSettle();
+        await tester.tap(find.widgetWithText(MenuItemButton, 'Genetics'));
         await tester.pumpAndSettle();
         expect(opened, isTrue);
       }

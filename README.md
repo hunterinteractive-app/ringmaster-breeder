@@ -37,7 +37,7 @@ restores snapshot records while preserving newer records and current access.
 
 GitHub Actions checks analysis and tests, builds Flutter web, and uploads to Cloudflare Pages on pushes to `main`. Pull requests run checks without publishing. Configure `CLOUDFLARE_API_TOKEN` and `CLOUDFLARE_ACCOUNT_ID` as repository secrets The `ringmaster-breeder` Pages project and `breeder.ringmasterone.com` domain already exist. After the Actions credentials are configured, disable the existing direct GitHub builds in Pages so Actions controls deployment. Local Flutter is 3.38.5; CI follows Show and Club's pinned Flutter 3.41.4.
 
-Every served asset has browser/CDN `no-store` headers. Flutter's service worker is disabled; the bootstrap unregisters old root-scope workers and removes Flutter caches. Refresh fetches the currently deployed version after deployment completes. The footer displays the configured application release version (currently 0.20.1). Do not set an overriding Cloudflare cache rule that forces caching for this host.
+Every served asset has browser/CDN `no-store` headers. Flutter's service worker is disabled; the bootstrap unregisters old root-scope workers and removes Flutter caches. Refresh fetches the currently deployed version after deployment completes. The footer displays the configured application release version (currently 0.20.2). Do not set an overriding Cloudflare cache rule that forces caching for this host.
 
 ## Branding and remaining setup
 

@@ -1,8 +1,6 @@
-import 'kintraks_history_screen.dart';
-import 'rabbit_register_history_screen.dart';
+import '../widgets/animal_import_history.dart';
 import '../widgets/adaptive_layout.dart';
 import '../widgets/pedigree_email_dialog.dart';
-import 'global_pedigree_history_screen.dart';
 import '../utils/color_details.dart';
 import '../widgets/ringmaster_page_shell.dart';
 import 'package:flutter/material.dart';
@@ -294,37 +292,9 @@ class _AnimalDetailScreenState extends State<AnimalDetailScreen> {
                 child: const Text("Edit Animal"),
               ),
 
-              ElevatedButton(
-                onPressed: () => Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (_) =>
-                        GlobalPedigreeHistoryScreen(animalId: widget.animalId),
-                  ),
-                ),
-                child: const Text('Global Pedigree history'),
-              ),
-
-              ElevatedButton(
-                onPressed: () => Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (_) =>
-                        RabbitRegisterHistoryScreen(animalId: widget.animalId),
-                  ),
-                ),
-                child: const Text('Rabbit Register history'),
-              ),
-
-              ElevatedButton(
-                onPressed: () => Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (_) =>
-                        KintraksHistoryScreen(animalId: widget.animalId),
-                  ),
-                ),
-                child: const Text('Kintraks history'),
+              AnimalImportHistory(
+                key: ObjectKey(snapshot.data),
+                animalId: widget.animalId,
               ),
 
               if (animal['status'] == 'sold') ...[
