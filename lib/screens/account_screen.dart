@@ -417,7 +417,7 @@ class _AccountScreenState extends State<AccountScreen> {
                       ),
                       const AdaptiveGap(height: 12),
                       const Text(
-                        'Billing will be managed through Stripe. Plan changes and cancellation will be available once Stripe is connected.',
+                        'Open Manage membership & billing to choose a monthly or yearly plan, update payment methods, view invoices, or cancel future renewals. Plan changes take effect at your next renewal.',
                       ),
                     ]),
                     if (superAdmin)
