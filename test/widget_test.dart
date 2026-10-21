@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:ringmaster_breeder/config/app_config.dart';
 import 'package:ringmaster_breeder/screens/login_screen.dart';
 import 'package:ringmaster_breeder/services/auth_service.dart';
 import 'package:ringmaster_breeder/utils/animal_labels.dart';
@@ -145,7 +146,7 @@ void main() {
       ),
     );
     expect(find.text('RingMaster Breeder'), findsOneWidget);
-    expect(find.text('Version 0.20.2'), findsOneWidget);
+    expect(find.text('Version ${AppConfig.version}'), findsOneWidget);
     expect(tester.takeException(), isNull);
   });
 }
