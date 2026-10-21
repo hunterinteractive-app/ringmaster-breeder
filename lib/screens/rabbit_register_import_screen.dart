@@ -3,6 +3,7 @@ import 'dart:typed_data';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:url_launcher/link.dart';
 import '../imports/rabbit_register_xml.dart';
 import '../offline/offline_runtime.dart';
 import '../services/rabbit_register_import_service.dart';
@@ -180,7 +181,19 @@ class _RabbitRegisterImportScreenState
         padding: BreederLayout.pagePadding(context, normal: 24),
         children: [
           const Text(
-            'In Rabbit Register, choose Data Management → Export Data as XML File → Other. Upload that XML here, review the records, then choose whether to import. Preview and saving require an internet connection.',
+            'In Rabbit Register, choose File → Data Management → Export Data as XML File → RingMaster. The Other XML export is also supported. Upload the XML here, review the records, then choose whether to import. Preview and saving require an internet connection.',
+          ),
+          const SizedBox(height: 8),
+          Link(
+            uri: Uri.parse(
+              'https://evsoft.us/files/Exporting_to_RingMaster.pdf',
+            ),
+            target: LinkTarget.blank,
+            builder: (context, followLink) => TextButton.icon(
+              onPressed: followLink,
+              icon: const Icon(Icons.open_in_new),
+              label: const Text('Evans export instructions (PDF)'),
+            ),
           ),
           const SizedBox(height: 20),
           if (_error != null) ...[
@@ -513,7 +526,7 @@ class _RabbitRegisterImportScreenState
                 ),
                 const SizedBox(height: 20),
                 const Text(
-                  'Contacts, litters, show results, sale fields, and original rabbit fields are retained in Rabbit Register history. Imported litters and sales do not create active tracking or payment records. Existing rabbits keep their details, parents, and weights.',
+                  'Contacts, litters, show results, sales and measurements are linked to their tracking screens. Original source fields remain in Rabbit Register history. Imported sale amounts do not create payment receipts. Existing rabbits keep their core details and parent links.',
                 ),
                 const SizedBox(height: 16),
                 Text(
