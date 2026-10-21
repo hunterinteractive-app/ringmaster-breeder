@@ -6,3 +6,11 @@ verify_jwt = false
 [functions.offline-jobs]
 # Handler verifies the caller and freezes each scoped request before processing.
 verify_jwt = false
+
+[functions.billing]
+# Every request is verified with Auth getUser; admin actions also check the database.
+verify_jwt = false
+
+[functions.stripe-webhook]
+# Stripe HMAC signature over the raw body, with a five-minute replay window.
+verify_jwt = false

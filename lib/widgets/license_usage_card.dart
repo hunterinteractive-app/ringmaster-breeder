@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import '../services/license_service.dart';
+import '../screens/billing_screen.dart';
 
 class LicenseUsageCard extends StatelessWidget {
   final LicenseStatus status;
@@ -53,31 +54,11 @@ class LicenseUsageCard extends StatelessWidget {
               crossAxisAlignment: WrapCrossAlignment.center,
               children: [
                 Text(status.tierName, style: theme.textTheme.titleMedium),
-                if (status.hasActiveLicense)
-                  Text(
-                    '\$${(status.annualPriceCents / 100).toStringAsFixed(0)}/year',
-                  ),
                 TextButton(
-                  onPressed: () => showDialog<void>(
-                    context: context,
-                    builder: (context) => AlertDialog(
-                      title: const Text('Breeder plans'),
-                      content: const SingleChildScrollView(
-                        child: Text(
-                          'Hobby Breeder · \$49/year\n50 active animals · 1 herd\n\n'
-                          'Professional Breeder · \$99/year\n250 active animals · 1 herd\nBuyer pedigree emails included\n\n'
-                          'Top Tier · \$179/year\n1,000 active animals across up to 5 herds\nBuyer pedigree emails included\n\n'
-                          'All plans include core records, pedigrees, health, breeding, sales, household sharing and Show connections.\n\n'
-                          'Custom pedigree branding and saved layouts are planned for Professional and Top Tier; they are not available yet.\n\n'
-                          'Contact RingMaster support to change your plan. Online payment checkout is not available yet.',
-                        ),
-                      ),
-                      actions: [
-                        TextButton(
-                          onPressed: () => Navigator.pop(context),
-                          child: const Text('Close'),
-                        ),
-                      ],
+                  onPressed: () => Navigator.push(
+                    context,
+                    MaterialPageRoute<void>(
+                      builder: (_) => const BillingScreen(),
                     ),
                   ),
                   child: const Text('View plans'),

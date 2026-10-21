@@ -7,6 +7,7 @@ import '../offline/offline_runtime.dart';
 import 'global_pedigree_history_screen.dart';
 import '../widgets/sync_dialog.dart';
 import 'super_admin_screen.dart';
+import 'billing_screen.dart';
 import 'delete_account_screen.dart';
 import '../widgets/show_connection_panel.dart';
 import 'dart:convert';
@@ -400,6 +401,13 @@ class _AccountScreenState extends State<AccountScreen> {
                       ),
                     ]),
                     section('Subscription', Icons.credit_card_outlined, [
+                      ListTile(
+                        title: const Text('Manage membership & billing'),
+                        subtitle: const Text(
+                          'Monthly or yearly plans, payment methods and invoices',
+                        ),
+                        onTap: () => open(const BillingScreen()),
+                      ),
                       Text('Plan: ${license?.tierCode ?? 'Unavailable'}'),
                       Text(
                         license?.hasActiveLicense == true

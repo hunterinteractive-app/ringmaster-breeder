@@ -101,11 +101,8 @@ void main() {
       expect(find.textContaining('grace period has ended'), findsOneWidget);
       await tester.tap(find.text('View plans'));
       await tester.pumpAndSettle();
-      expect(
-        find.textContaining('Professional Breeder · \$99/year'),
-        findsOneWidget,
-      );
-      expect(find.textContaining('not available yet'), findsOneWidget);
+      expect(find.text('Membership & billing'), findsOneWidget);
+      expect(find.text('Retry / refresh payment status'), findsOneWidget);
     },
   );
 }

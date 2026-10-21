@@ -1,4 +1,5 @@
 import '../widgets/adaptive_layout.dart';
+import 'billing_admin_screen.dart';
 import '../offline/offline_runtime.dart';
 import 'package:flutter/material.dart';
 import '../widgets/ringmaster_page_shell.dart';
@@ -123,7 +124,17 @@ class _SuperAdminScreenState extends State<SuperAdminScreen> {
               subtitle: Text(
                 '${u['email']} • ${u['herd_count']} herds${u['is_active'] == true ? '' : ' • Inactive'}',
               ),
-              trailing: const Icon(Icons.chevron_right),
+              trailing: IconButton(
+                tooltip: 'Manage membership & billing',
+                icon: const Icon(Icons.credit_card),
+                onPressed: () => Navigator.push(
+                  context,
+                  MaterialPageRoute<void>(
+                    builder: (_) =>
+                        BillingAdminScreen(owner: u['id'], label: u['email']),
+                  ),
+                ),
+              ),
               onTap: () => Navigator.push(
                 context,
                 MaterialPageRoute<void>(

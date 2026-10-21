@@ -1,13 +1,16 @@
 import { createClient } from 'npm:@supabase/supabase-js@2.110.2';
+import {StripeClient} from '../_shared/stripe.ts';
+import {cancelOwnerSubscriptions} from '../_shared/billing-state.ts';
 const cors = {'Access-Control-Allow-Origin':'*','Access-Control-Allow-Headers':'authorization, apikey, content-type, x-client-info','Access-Control-Allow-Methods':'POST, OPTIONS'};
 const reply=(data:unknown,status=200)=>new Response(JSON.stringify(data),{status,headers:{...cors,'Content-Type':'application/json'}});
 const options={auth:{persistSession:false,autoRefreshToken:false},global:{fetch:(input:RequestInfo|URL,init?:RequestInit)=>fetch(input,{...init,signal:AbortSignal.timeout(20000)})}};
 Deno.serve(async req=>{
  if(req.method==='OPTIONS')return reply({});
  if(req.method!=='POST')return reply({error:'Method not allowed'},405);
- let started=false;
+ let started=false;let billingLease:string|undefined;let billingAdmin:any;
  try {
   const admin=createClient(Deno.env.get('SUPABASE_URL')!,Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!,options);
+  billingAdmin=admin;
   const token=(req.headers.get('Authorization')??'').replace(/^Bearer /i,'');
   const verified=await admin.auth.getUser(token);const user=verified.data.user;
   if(verified.error||!user?.email_confirmed_at||!user.email)return reply({error:'Sign in again to manage your account.'},401);
@@ -27,8 +30,16 @@ Deno.serve(async req=>{
    const auth=createClient(Deno.env.get('SUPABASE_URL')!,Deno.env.get('SUPABASE_ANON_KEY')!,options);
    const fresh=await auth.auth.verifyOtp({email:user.email,token:body.code.trim(),type:'email'});
    if(fresh.error||fresh.data.user?.id!==user.id)return reply({error:'The code is invalid or expired. Request a new code.'},403);
-   // Stripe is not connected yet. Never silently leave future paid billing active.
-   if(Deno.env.get('STRIPE_SECRET_KEY'))return reply({error:'Please contact support to close billing before deleting your account.'},409);
+   const owner=await admin.from('users').select('id').eq('auth_user_id',user.id).single();if(owner.error)throw owner.error;
+   billingLease=crypto.randomUUID();const lease=await admin.rpc('breeder_billing_lease',{p_owner:owner.data.id,p_token:billingLease,p_release:false});if(lease.error)throw lease.error;
+   const stripe=new StripeClient();await stripe.verifyAccount();
+   await cancelOwnerSubscriptions(admin,stripe,owner.data.id,true);
+   const invitations=await admin.from('breeder_lifetime_invitations').select('*').eq('owner_id',owner.data.id).eq('active',true);if(invitations.error)throw invitations.error;
+   for(const invitation of invitations.data){if(invitation.stripe_link)await stripe.request(`payment_links/${invitation.stripe_link}`,'POST',{active:false},`delete-link:${invitation.id}`);}
+   const open=await admin.from('breeder_billing_checkouts').select('*').eq('owner_id',owner.data.id).in('state',['creating','open']);if(open.error)throw open.error;
+   for(const checkout of open.data){if(!checkout.stripe_session)throw Error('Checkout creation must finish before deletion');const session=await stripe.request(`checkout/sessions/${checkout.stripe_session}`);if(session.status==='open')await stripe.request(`checkout/sessions/${session.id}/expire`,'POST',{},`delete-checkout:${checkout.id}`);}
+   // Recheck after expiring checkouts to catch a purchase completing concurrently.
+   await cancelOwnerSubscriptions(admin,stripe,owner.data.id,true);
    const begin=await admin.rpc('begin_account_deletion',{p_user:user.id});if(begin.error)throw begin.error;job=begin.data;started=true;
   }
   if(job.connection){
@@ -50,5 +61,5 @@ Deno.serve(async req=>{
   console.error('delete-account failed',{code:(error as any)?.code??'request_failed'});
   const shared=(error as any)?.message?.includes('ACCOUNT_SHARED_DATA_REVIEW');
   return reply({pending:started,error:shared?'Some records are shared with another account. Contact support to resolve ownership before deletion.':started?'Deletion has started but could not finish. Your account is locked; choose Resume deletion to finish.':'Unable to start account deletion. Your account has not been deleted. Please retry.'},503);
- }
+ } finally {if(billingLease && billingAdmin)await billingAdmin.rpc('breeder_billing_lease',{p_token:billingLease,p_release:true});}
 });
