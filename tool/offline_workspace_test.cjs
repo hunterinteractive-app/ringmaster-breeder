@@ -14,7 +14,7 @@ function tables(){return {
   animals:[{id:animal,ring_id:ring,name:'Willow',tattoo:'W1',species:'rabbit',sex:'Doe',status:'active',revision:1,pedigree_only:false,dob:null,sire_id:null,dam_id:null}],
   animal_weights:[],animal_health_records:[],breeding_settings:[],breeding_records:[],breeding_tracking:[],breeding_offspring:[],pedigree_drafts:[],
   global_pedigree_import_drafts:[],global_pedigree_animals:[],global_pedigree_history:[],
-  animal_sales:[],animal_sale_payments:[],animal_sale_history:[],breeds:[],varieties:[],user_licenses:[],license_tiers:[],account_deletions:[],breeder_legal_acceptances:[],
+  animal_sales:[],animal_sale_payments:[],animal_sale_history:[],breeds:[],varieties:[],user_licenses:[{user_id:'legacy-owner',tier_code:'FIXTURE',status:'active'}],license_tiers:[{code:'FIXTURE',max_active_animals:1000,max_rings:10,annual_price_cents:0}],breeder_license_usage:[],account_deletions:[],breeder_legal_acceptances:[],
 };}
 function memory(){const rows=new Map(),reads=[],scans=[];return{
   rows,reads,scans,
@@ -356,4 +356,30 @@ test('Kintraks preview and commit require network and refresh only after commit'
   assert.equal((await (await f.workspace.handle(request(true))).json()).status,'imported');
   assert.equal(snapshots(),before+1);
   assert.equal((await f.workspace.operations()).length,0);
+});
+
+test('license meter excludes historical and pedigree-only animals and selects highest plan',()=>{
+  const d=tables();
+  d.license_tiers=[{code:'HOBBY',max_active_animals:50,max_rings:1,annual_price_cents:4900},{code:'TOP',max_active_animals:1000,max_rings:5,annual_price_cents:17900}];
+  d.user_licenses=[{user_id:'legacy-owner',tier_code:'TOP',status:'active'},{user_id:'legacy-owner',tier_code:'HOBBY',status:'active'}];
+  d.animals.push(...['sold','deceased','archived'].map((status,i)=>({...d.animals[0],id:'history'+i,status})),{...d.animals[0],id:'ancestor',pedigree_only:true});
+  const s=A.licenseStatus(d,'legacy-owner',now);
+  assert.equal(s.active_count,1);assert.equal(s.code,'TOP');assert.equal(s.provisional,true);
+});
+test('offline grace uses server deadline and never invents or extends it',()=>{
+  const d=tables();d.license_tiers[0].max_active_animals=1;
+  assert.equal(A.licenseStatus(d,'legacy-owner',now).grace_ends_at,null);
+  d.breeder_license_usage=[{owner_id:'legacy-owner',active_count:1,limit_reached_at:'2026-09-17T10:00:00Z'}];
+  const s=A.licenseStatus(d,'legacy-owner',now);
+  assert.equal(s.grace_ends_at,'2026-10-17T10:00:00.000Z');assert.equal(s.growth_blocked,true);
+});
+test('expired offline grace blocks growth but permits sold and historical records',async()=>{
+  const d=tables();d.license_tiers[0].max_active_animals=1;
+  d.breeder_license_usage=[{owner_id:'legacy-owner',active_count:1,limit_reached_at:'2026-09-01T00:00:00Z'}];
+  const base={type:'table',target:'animals',method:'POST',body:{id:crypto.randomUUID(),ring_id:ring,name:'New',species:'rabbit',status:'active'}};
+  await assert.rejects(A.prepare(d,base,crypto.randomUUID(),'2026-10-17T10:00:00Z',actor),/Upgrade your Breeder plan/);
+  const archived=await A.prepare(d,{...base,body:{...base.body,status:'archived'}},crypto.randomUUID(),'2026-10-17T10:00:00Z',actor);
+  assert.equal(archived.mutations.length,1);
+  const sold=await A.prepare(d,{type:'table',target:'animals',method:'PATCH',query:[['id','eq.'+animal]],body:{status:'sold'}},crypto.randomUUID(),'2026-10-17T10:00:00Z',actor);
+  assert.ok(sold.mutations.some(m=>m.row.status==='sold'));
 });

@@ -72,6 +72,13 @@ Deno.serve(async (req) => {
     if (farm.error) {
       return reply({ error: "Family access is unavailable." }, 403);
     }
+    const entitlement = await client.rpc('breeder_require_feature', {
+      p_owner: farm.data.owner_id,
+      p_feature: 'buyer_pedigree_email',
+    });
+    if (entitlement.error || entitlement.data !== true) {
+      return reply({error: 'Emailing pedigrees to buyers requires Professional Breeder or Top Tier. Your sale remains saved.'}, 403);
+    }
     const admin = createClient(
       url,
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,

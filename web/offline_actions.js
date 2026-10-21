@@ -124,6 +124,7 @@
         pedigree_only: false,
         revision: 1,
         color_details: {},
+        genotype: {},
         leg_details: "",
         sire_id: null,
         dam_id: null,
@@ -715,9 +716,49 @@
       key: Object.fromEntries(Q.keyFields(m.table).map((k) => [k, m.row[k]])),
       before: m.before,
     }));
+    if (changes.some(m => m.table === "animals")) {
+      const projected = Q.project(tables, [{mutations:changes}]);
+      const owners = new Set(Q.tableRows(tables,"farms").filter(f => !f.is_demo).map(f => f.owner_id));
+      for (const owner of owners) {
+        const ids = new Set(Q.tableRows(tables,"farms").filter(f => f.owner_id === owner && !f.is_demo).map(f => f.id));
+        const count = data => Q.tableRows(data,"animals").filter(a => ids.has(a.ring_id) && a.status === "active" && !a.pedigree_only).length;
+        if (count(projected) > count(tables) && licenseStatus(tables, owner, Date.parse(now)).growth_blocked) {
+          throw new Error("Upgrade your Breeder plan or mark animals sold or deceased before adding active animals. Sync to confirm current access. Your records remain saved.");
+        }
+      }
+    }
     return { mutations: changes, result, expects };
   }
+  // Local display/preflight only. Server triggers own the count and grace clock
+  // on replay, including operations saved by older clients.
+  function licenseStatus(tables, owner, now = Date.now()) {
+    const tiers = Q.tableRows(tables, "license_tiers");
+    const licenses = Q.tableRows(tables, "user_licenses").filter(l =>
+      l.user_id === owner && l.status === "active" &&
+      (!l.started_at || Date.parse(l.started_at) <= now) &&
+      (!l.expires_at || Date.parse(l.expires_at) > now)
+    ).map(l => tiers.find(t => t.code === l.tier_code)).filter(Boolean)
+      .sort((a,b) => (b.max_active_animals - a.max_active_animals) ||
+        (b.max_rings - a.max_rings) || (b.annual_price_cents - a.annual_price_cents));
+    const plan = licenses[0] || {code:"FREE",name:"No active license",max_rings:0,
+      max_active_animals:0,annual_price_cents:0,buyer_pedigree_email:false,
+      custom_pedigree_branding:false,saved_pedigree_layouts:false};
+    if (plan.max_active_animals == null) throw new Error("Sync to download current Breeder plans before adding active animals.");
+    const farms = Q.tableRows(tables, "farms").filter(f => f.owner_id === owner && !f.is_demo);
+    const ids = new Set(farms.map(f => f.id));
+    const count = Q.tableRows(tables, "animals").filter(a => ids.has(a.ring_id) && a.status === "active" && !a.pedigree_only).length;
+    const saved = Q.tableRows(tables, "breeder_license_usage").find(u => u.owner_id === owner);
+    const cap = plan.max_active_animals;
+    const reached = cap > 0 && count >= cap ? saved?.limit_reached_at || null : null;
+    const due = reached ? new Date(Date.parse(reached) + 30*86400000).toISOString() : null;
+    return {...plan,active:licenses.length > 0,owner_id:owner,active_count:count,
+      current_rings:farms.length,limit_reached_at:reached,grace_ends_at:due,
+      growth_blocked:!licenses.length || cap === 0 || !!(count >= cap && due && Date.parse(due) <= now),
+      warning_level:cap > 0 ? [100,95,85,75].find(n => count*100 >= cap*n) || 0 : 0,
+      provisional:true};
+  }
   const api = {
+    licenseStatus,
     writable,
     rpcs,
     related,

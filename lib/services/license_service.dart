@@ -1,76 +1,73 @@
 import '../offline/offline_runtime.dart';
 
-final supabase = OfflineRuntime.client;
-
 class LicenseStatus {
   final bool hasActiveLicense;
-  final String tierCode;
-  final int maxRings;
-  final int currentRings;
+  final String tierCode, tierName;
+  final int maxRings, currentRings, maxActiveAnimals, activeAnimals;
+  final int annualPriceCents;
+  final bool buyerPedigreeEmail, customPedigreeBranding, savedPedigreeLayouts;
+  final bool growthBlocked, provisional;
+  final DateTime? graceEndsAt;
 
-  LicenseStatus({
+  const LicenseStatus({
     required this.hasActiveLicense,
     required this.tierCode,
     required this.maxRings,
     required this.currentRings,
+    this.tierName = 'Breeder',
+    this.maxActiveAnimals = 0,
+    this.activeAnimals = 0,
+    this.annualPriceCents = 0,
+    this.buyerPedigreeEmail = false,
+    this.customPedigreeBranding = false,
+    this.savedPedigreeLayouts = false,
+    this.growthBlocked = false,
+    this.provisional = false,
+    this.graceEndsAt,
   });
+
+  factory LicenseStatus.fromJson(Map<String, dynamic> data) => LicenseStatus(
+    hasActiveLicense: data['active'] == true,
+    tierCode: data['code'] as String? ?? 'FREE',
+    tierName: data['name'] as String? ?? 'No active license',
+    maxRings: (data['max_rings'] as num?)?.toInt() ?? 0,
+    currentRings: (data['current_rings'] as num?)?.toInt() ?? 0,
+    maxActiveAnimals: (data['max_active_animals'] as num?)?.toInt() ?? 0,
+    activeAnimals: (data['active_count'] as num?)?.toInt() ?? 0,
+    annualPriceCents: (data['annual_price_cents'] as num?)?.toInt() ?? 0,
+    buyerPedigreeEmail: data['buyer_pedigree_email'] == true,
+    customPedigreeBranding: data['custom_pedigree_branding'] == true,
+    savedPedigreeLayouts: data['saved_pedigree_layouts'] == true,
+    growthBlocked: data['growth_blocked'] == true,
+    provisional: data['provisional'] == true,
+    graceEndsAt: DateTime.tryParse(data['grace_ends_at'] as String? ?? ''),
+  );
+
+  double get fraction =>
+      maxActiveAnimals > 0 ? activeAnimals / maxActiveAnimals : 0;
+  int get warningLevel {
+    if (maxActiveAnimals <= 0) return 0;
+    for (final level in [100, 95, 85, 75]) {
+      if (activeAnimals * 100 >= maxActiveAnimals * level) return level;
+    }
+    return 0;
+  }
 }
 
 Future<LicenseStatus> fetchLicenseStatus(String userId) async {
-  final data = await OfflineRuntime.readThrough('license:$userId', () async {
-    final status = await _fetchLicenseStatus(userId);
-    return {
-      'active': status.hasActiveLicense,
-      'tier': status.tierCode,
-      'max': status.maxRings,
-      'current': status.currentRings,
-    };
-  });
-  return LicenseStatus(
-    hasActiveLicense: data['active'] == true,
-    tierCode: data['tier'],
-    maxRings: data['max'],
-    currentRings: data['current'],
+  // The server owns counts, plan selection, and the 30-day clock. Full offline
+  // workspaces project the same response from their private downloaded tables.
+  final data = await OfflineRuntime.readThrough(
+    'license-usage:$userId',
+    () async {
+      return Map<String, dynamic>.from(
+        await OfflineRuntime.client.rpc(
+              'breeder_license_status',
+              params: {'p_owner': userId},
+            )
+            as Map,
+      );
+    },
   );
-}
-
-Future<LicenseStatus> _fetchLicenseStatus(String userId) async {
-  // 1. Get active license
-  final license = await supabase
-      .from('user_licenses')
-      .select('tier_code, license_tiers(max_rings)')
-      .eq('user_id', userId)
-      .eq('status', 'active')
-      .or(
-        'expires_at.is.null,expires_at.gt.${DateTime.now().toUtc().toIso8601String()}',
-      )
-      .order('started_at', ascending: false)
-      .limit(1)
-      .maybeSingle();
-
-  if (license == null) {
-    return LicenseStatus(
-      hasActiveLicense: false,
-      tierCode: 'FREE',
-      maxRings: 0,
-      currentRings: 0,
-    );
-  }
-
-  final String tierCode = license['tier_code'];
-  final int maxRings = license['license_tiers']['max_rings'];
-
-  // 2. Count how many Herds the user owns
-  final ringCount = await supabase
-      .from('farms')
-      .select()
-      .eq('owner_id', userId)
-      .eq('is_demo', false);
-
-  return LicenseStatus(
-    hasActiveLicense: true,
-    tierCode: tierCode,
-    maxRings: maxRings,
-    currentRings: ringCount.length,
-  );
+  return LicenseStatus.fromJson(data);
 }

@@ -107,6 +107,8 @@ class SupabaseSyncRemote implements SyncRemote, RequestSyncRemote {
         throw SyncFailure(
           error.code == '23505'
               ? 'A record with this identity already exists. Review your saved change.'
+              : error.code == 'P0001' && error.message.contains('animal')
+              ? error.message
               : 'The server could not accept this change. Check current access and record rules.',
         );
       }

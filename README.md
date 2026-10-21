@@ -37,7 +37,7 @@ restores snapshot records while preserving newer records and current access.
 
 GitHub Actions checks analysis and tests, builds Flutter web, and uploads to Cloudflare Pages on pushes to `main`. Pull requests run checks without publishing. Configure `CLOUDFLARE_API_TOKEN` and `CLOUDFLARE_ACCOUNT_ID` as repository secrets The `ringmaster-breeder` Pages project and `breeder.ringmasterone.com` domain already exist. After the Actions credentials are configured, disable the existing direct GitHub builds in Pages so Actions controls deployment. Local Flutter is 3.38.5; CI follows Show and Club's pinned Flutter 3.41.4.
 
-Every served asset has browser/CDN `no-store` headers. Flutter's service worker is disabled; the bootstrap unregisters old root-scope workers and removes Flutter caches. Refresh fetches the currently deployed version after deployment completes. The footer displays the configured application release version (currently 0.20.2). Do not set an overriding Cloudflare cache rule that forces caching for this host.
+Every served asset has browser/CDN `no-store` headers. Flutter's service worker is disabled; the bootstrap unregisters old root-scope workers and removes Flutter caches. Refresh fetches the currently deployed version after deployment completes. The footer displays the configured application release version (currently 0.21.0). Do not set an overriding Cloudflare cache rule that forces caching for this host.
 
 ## Branding and remaining setup
 
@@ -86,3 +86,7 @@ Account Settings → Import & export → Import from Rabbit Register previews Ev
 ## Kintraks CSV import
 
 Account → Import & export → Import from Kintraks previews All records CSV exports. It preserves source IDs, pedigrees, pounds-and-ounces weight snapshots, and all custom fields. Current herd membership requires explicit selection; ancestors default to archived pedigree records. Apply the Kintraks migration before releasing the client. See [Kintraks import](docs/kintraks-import.md) for supported fields, review behavior, setup, and verification.
+
+## License plans and usage
+
+Annual catalogue: Hobby $49 / 50 active animals / 1 herd; Professional $99 / 250 / 1 herd; Top $179 / 1,000 total / 5 herds. Prices are USD configuration, not payment collection. My Herds displays account-wide usage and warnings at 75%, 85%, 95%, and 100%. See [license entitlements](docs/license-entitlements.md) for grace, enforcement, feature gates, offline behavior, recovery and verification.

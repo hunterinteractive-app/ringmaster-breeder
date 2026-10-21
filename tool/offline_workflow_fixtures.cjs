@@ -6,6 +6,8 @@ const ring='aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa',actor='11111111-1111-4111-8111
 (async()=>{
  let tables=Object.fromEntries(['users','farms','animals','animal_weights','animal_health_records','breeding_records','breeding_tracking','breeding_settings','breeding_offspring','pedigree_drafts','animal_sales','animal_sale_payments','animal_sale_history','global_pedigree_import_drafts','global_pedigree_animals','global_pedigree_history'].map(t=>[t,[]]));
  tables.users=[{id:'legacy-owner',auth_user_id:actor,display_name:null}];tables.farms=[{id:ring,name:'Fixture herd',owner_id:'legacy-owner',is_demo:false}];
+ tables.license_tiers=[{code:'FIXTURE',max_active_animals:1000,max_rings:10,annual_price_cents:0}];
+ tables.user_licenses=[{user_id:'legacy-owner',tier_code:'FIXTURE',status:'active'}];tables.breeder_license_usage=[];
  const workflows=[];
  async function apply(request,label){
   const id=crypto.randomUUID(),prepared=await A.prepare(tables,request,id,'2026-03-01T10:00:00Z',actor);

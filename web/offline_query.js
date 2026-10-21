@@ -62,6 +62,7 @@
     breeding_tracking: ["breeding_id"],
     breeding_offspring: ["animal_id"],
     license_tiers: ["code"],
+    breeder_license_usage: ["owner_id"],
   };
   const keyFields = (table) => keys[table] || ["id"];
   const identity = (table, row) =>

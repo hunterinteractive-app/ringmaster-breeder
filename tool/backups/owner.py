@@ -23,6 +23,7 @@ TABLES = [
 ]
 PRESERVED = [
     'public.users', 'public.user_licenses', 'public.license_tiers',
+    'public.breeder_license_usage',
     'public.species', 'public.breeds', 'public.varieties',
     'public.show_connections', 'public.connected_show_reports',
     'public.account_deletions', 'public.breeder_legal_acceptances',
@@ -196,6 +197,14 @@ def make_plan(db, data, commit=False):
         sql.append('INSERT INTO breeder_private.offline_versions(name,version) '
                    f'VALUES({literal(table)},1) ON CONFLICT(name) DO UPDATE '
                    'SET version=breeder_private.offline_versions.version+1;')
+    # Recovery deliberately bypasses animal triggers. Reconcile the derived
+    # current count without restoring an old plan or rewinding the grace clock.
+    sql.append('INSERT INTO public.breeder_license_usage(owner_id,active_count) '
+               f'SELECT {literal(owner)},count(*) FROM public.animals a JOIN public.farms f ON f.id=a.ring_id '
+               f'WHERE f.owner_id={literal(owner)} AND NOT coalesce(f.is_demo,false) '
+               "AND a.status='active' AND NOT a.pedigree_only "
+               'ON CONFLICT(owner_id) DO UPDATE SET active_count=excluded.active_count;')
+    sql.append(f'SELECT breeder_private.adjust_animal_usage({literal(owner)},0);')
     sql.append('COMMIT;' if commit else 'ROLLBACK;')
     return '\n'.join(sql) + '\n'
 

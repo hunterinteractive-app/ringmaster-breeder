@@ -652,6 +652,12 @@
               if (response.ok) await refresh({ skipFiles: true });
               return response;
             }
+            if (name === "breeder_license_status") {
+              if (!(await meta()).membership.households.some(h => h.owner_user_id === body.p_owner)) {
+                return json({message:"Family access required",code:"42501"},403);
+              }
+              return json(A.licenseStatus(await tables(["license_tiers","user_licenses","farms","animals","breeder_license_usage"]),body.p_owner,clock()));
+            }
             if (name === "breeder_is_super_admin") {
               return json((await meta()).admin === true);
             }

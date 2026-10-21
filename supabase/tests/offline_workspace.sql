@@ -5,7 +5,7 @@ insert into auth.users(id,email,email_confirmed_at) values
  ('11111111-1111-4111-8111-111111111111','owner@example.test',now()),
  ('33333333-3333-4333-8333-333333333333','outsider@example.test',now());
 insert into public.users(id,username,email) values('legacy-owner','fixture_owner','owner@example.test'),('other-owner','fixture_other','outsider@example.test');
-insert into public.license_tiers(code,name,max_rings) values('OFFLINE_TEST','Fixture',10);
+insert into public.license_tiers(code,name,max_rings,max_active_animals) values('OFFLINE_TEST','Fixture',10,1000);
 insert into public.user_licenses(user_id,tier_code,status) values('legacy-owner','OFFLINE_TEST','active');
 insert into public.farms(id,name,owner_id) values
  ('aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa','Fixture herd','legacy-owner'),

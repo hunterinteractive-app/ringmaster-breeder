@@ -5,6 +5,7 @@ import 'sales_service.dart';
 import 'pedigree_pdf_service.dart';
 import 'pedigree_service.dart';
 import 'family_service.dart';
+import 'license_service.dart';
 import '../offline/offline_runtime.dart';
 
 class PedigreeEmailDraft {
@@ -67,6 +68,12 @@ class PedigreeEmailService implements PedigreeEmailGateway {
     String animalId,
     String? saleId,
   ) async {
+    final license = await fetchLicenseStatus(FamilyService.ownerId!);
+    if (!license.buyerPedigreeEmail) {
+      throw StateError(
+        'Emailing pedigrees to buyers requires Professional Breeder or Top Tier. Your sale remains saved.',
+      );
+    }
     if (OfflineRuntime.workspaceReady) {
       final client = OfflineRuntime.client;
       final owner = await client

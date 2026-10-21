@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../services/family_service.dart';
 import '../services/license_service.dart';
+import '../widgets/license_usage_card.dart';
 import '../widgets/name_dialog.dart';
 import '../offline/offline_runtime.dart';
 
@@ -211,6 +212,8 @@ class _RingDashboardState extends State<RingDashboard> {
                 },
               ),
             const AdaptiveGap(height: 16),
+            LicenseUsageCard(status: _license!),
+            const AdaptiveGap(height: 12),
             if (!_license!.hasActiveLicense)
               const Card(
                 child: AdaptivePadding(
@@ -228,7 +231,10 @@ class _RingDashboardState extends State<RingDashboard> {
                   'Listings, buyers, payments and sale history',
                 ),
                 trailing: const Icon(Icons.chevron_right),
-                onTap: () => Navigator.pushNamed(context, '/sales'),
+                onTap: () async {
+                  await Navigator.pushNamed(context, '/sales');
+                  if (mounted) _refresh();
+                },
               ),
             ),
             if (rings.isEmpty)
@@ -254,14 +260,17 @@ class _RingDashboardState extends State<RingDashboard> {
                               ? 'Your Herd'
                               : 'Shared family Herd',
                         ),
-                        onTap: () => Navigator.pushNamed(
-                          context,
-                          '/animals',
-                          arguments: {
-                            'ringId': ring['id'],
-                            'ringName': ring['name'],
-                          },
-                        ),
+                        onTap: () async {
+                          await Navigator.pushNamed(
+                            context,
+                            '/animals',
+                            arguments: {
+                              'ringId': ring['id'],
+                              'ringName': ring['name'],
+                            },
+                          );
+                          if (mounted) _refresh();
+                        },
                       ),
                     ),
                     PopupMenuButton<String>(
