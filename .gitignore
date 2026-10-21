@@ -58,3 +58,28 @@ supabase/.temp/
 # Private backup/recovery working copies
 .backups/
 __pycache__/
+
+# Private reference captures and breeding audits retained on this workstation.
+/docs/genetics/
+/docs/genetics-catalog-coverage.json
+/docs/genetics-predictions.md
+/docs/genetics-source-coverage-audit.json
+# Local validation harnesses that depend on those private captures.
+/test/controlled_percentage_comparison_test.dart
+/test/english_spot_color_families_test.dart
+/test/genetics_coverage_checklist_test.dart
+/test/genetics_group_details_test.dart
+/test/rabbit_register_comparison_test.dart
+/test/recorded_breeding_check_test.dart
+/test/recorded_tan_check_test.dart
+/test/silvered_breed_prediction_test.dart
+/test/silvered_lop_group_test.dart
+/test/special_percentage_math_test.dart
+/test/vm_final_validation_test.dart
+/tool/audit_genetics_coverage.dart
+/tool/benchmark_genetics.dart
+/tool/check_controlled_percentages.dart
+/tool/check_dutch_gene_pool.dart
+/tool/check_recorded_genetics.dart
+/tool/check_vm_final_validation.dart
+/tool/compare_rabbit_register.dart
