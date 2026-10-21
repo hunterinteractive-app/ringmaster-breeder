@@ -91,6 +91,10 @@ String placingLabel(String? value) {
 
 List<String> pedigreeWins(Map<String, dynamic> row) {
   if (row['source_available'] == false) return [];
+  if ((row['record'] as Map?)?['pedigree_rank']?.toString().toLowerCase() ==
+      'hide') {
+    return [];
+  }
   final r = Map<String, dynamic>.from(row['record'] as Map);
   final status = (r['result_status'] ?? '').toString().toLowerCase();
   if (r['is_disqualified'] == true ||

@@ -1,3 +1,5 @@
+import '../widgets/managed_record_dialogs.dart';
+import '../services/sales_service.dart';
 import '../widgets/adaptive_layout.dart';
 import '../offline/offline_runtime.dart';
 import 'package:flutter/material.dart';
@@ -136,6 +138,70 @@ class _ShowReportsScreenState extends State<ShowReportsScreen> {
     }
   }
 
+  Future<void> editResult([Map<String, dynamic>? row]) async {
+    if (ownerId == null) return;
+    try {
+      final herds = await OfflineRuntime.client
+          .from('farms')
+          .select('id')
+          .eq('owner_id', ownerId!)
+          .eq('is_demo', false);
+      final animals = <Map<String, dynamic>>[];
+      if (herds.isNotEmpty) {
+        for (var from = 0; ; from += 500) {
+          var query = OfflineRuntime.client
+              .from('animals')
+              .select('id,name,tattoo')
+              .inFilter('ring_id', herds.map((h) => h['id']).toList());
+          if (widget.animalId != null) query = query.eq('id', widget.animalId!);
+          final page = await query
+              .order('name')
+              .order('id')
+              .range(from, from + 499);
+          animals.addAll(List<Map<String, dynamic>>.from(page));
+          if (page.length < 500) break;
+        }
+      }
+      if (animals.isEmpty && row == null) {
+        throw StateError('Add an animal before recording a show result.');
+      }
+      final id = row?['id'] as String? ?? SalesService.newId();
+      if (!mounted) return;
+      final saved = await showDialog<bool>(
+        context: context,
+        barrierDismissible: false,
+        builder: (_) => ShowResultEditorDialog(
+          initial: row ?? {},
+          animals: animals,
+          writer: (animal, data) async {
+            await OfflineRuntime.client.rpc(
+              'save_managed_show_result',
+              params: {
+                'p_id': id,
+                'p_animal': animal,
+                'p_data': data,
+                'p_revision': row?['revision'] ?? 0,
+              },
+            );
+          },
+        ),
+      );
+      if (saved == true) await load();
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              e is StateError
+                  ? e.message.toString()
+                  : 'Unable to open the show editor. Reconnect and retry.',
+            ),
+          ),
+        );
+      }
+    }
+  }
+
   Future<void> openReport(String id) async {
     try {
       final data = await ShowReportService.request(
@@ -171,6 +237,13 @@ class _ShowReportsScreenState extends State<ShowReportsScreen> {
   Widget build(BuildContext context) => RingMasterPageShell(
     title: widget.animalId == null ? 'Show reports' : 'Animal show history',
     onRefresh: busy ? null : load,
+    floatingActionButton: busy
+        ? null
+        : FloatingActionButton(
+            onPressed: () => editResult(),
+            tooltip: 'Add show result',
+            child: const Icon(Icons.add),
+          ),
     body: ListView(
       padding: BreederLayout.pagePadding(context, normal: 24),
       children: [
@@ -244,6 +317,13 @@ class _ShowReportsScreenState extends State<ShowReportsScreen> {
         for (final row in results)
           ShowResultCard(
             row: row,
+            onEdit:
+                [
+                  'rabbit_register',
+                  'breeder_manual',
+                ].contains(row['source_app'])
+                ? () => editResult(row)
+                : null,
             onAnimal: row['animal_id'] == null || widget.animalId != null
                 ? null
                 : () => Navigator.push(
@@ -331,8 +411,13 @@ class _ShowReportsScreenState extends State<ShowReportsScreen> {
 
 class ShowResultCard extends StatelessWidget {
   final Map<String, dynamic> row;
-  final VoidCallback? onAnimal;
-  const ShowResultCard({super.key, required this.row, this.onAnimal});
+  final VoidCallback? onAnimal, onEdit;
+  const ShowResultCard({
+    super.key,
+    required this.row,
+    this.onAnimal,
+    this.onEdit,
+  });
   @override
   Widget build(BuildContext context) {
     final r = Map<String, dynamic>.from(row['record'] as Map);
@@ -477,6 +562,19 @@ class ShowResultCard extends StatelessWidget {
                     'Show has not supplied a placing or award for this entry.',
                     style: TextStyle(color: Color(0xFF647086)),
                   ),
+                if (r['judge'] != null) Text('Judge: ${r['judge']}'),
+                if (r['is_leg'] == true) const Text('ARBA leg recorded'),
+                if (r['is_youth'] == true) const Text('Youth show'),
+                if (r['number_in_class'] != null)
+                  Text('In class: ${r['number_in_class']}'),
+                if (r['number_of_exhibitors'] != null)
+                  Text('Exhibitors: ${r['number_of_exhibitors']}'),
+                if (r['total_shown'] != null)
+                  Text('Total shown: ${r['total_shown']}'),
+                if (r['other_winnings'] != null)
+                  Text('Other winnings: ${r['other_winnings']}'),
+                if (r['comments'] != null) Text(r['comments'].toString()),
+                if (r['source'] != null) Text('Source: ${r['source']}'),
                 if (r['result_status'] != null)
                   Text('Result: ${r['result_status']}'),
                 if (r['is_disqualified'] == true)
@@ -502,6 +600,12 @@ class ShowResultCard extends StatelessWidget {
                 if (row['animal_id'] == null)
                   const Text(
                     'Not linked to an animal. The result is retained here.',
+                  ),
+                if (onEdit != null)
+                  TextButton.icon(
+                    onPressed: onEdit,
+                    icon: const Icon(Icons.edit_outlined),
+                    label: const Text('Edit show result'),
                   ),
                 if (onAnimal != null)
                   TextButton.icon(

@@ -37,7 +37,7 @@ restores snapshot records while preserving newer records and current access.
 
 GitHub Actions checks analysis and tests, builds Flutter web, and uploads to Cloudflare Pages on pushes to `main`. Pull requests run checks without publishing. Configure `CLOUDFLARE_API_TOKEN` and `CLOUDFLARE_ACCOUNT_ID` as repository secrets The `ringmaster-breeder` Pages project and `breeder.ringmasterone.com` domain already exist. After the Actions credentials are configured, disable the existing direct GitHub builds in Pages so Actions controls deployment. Local Flutter is 3.38.5; CI follows Show and Club's pinned Flutter 3.41.4.
 
-Every served asset has browser/CDN `no-store` headers. Flutter's service worker is disabled; the bootstrap unregisters old root-scope workers and removes Flutter caches. Refresh fetches the currently deployed version after deployment completes. The footer displays the configured application release version (currently 0.21.0). Do not set an overriding Cloudflare cache rule that forces caching for this host.
+Every served asset has browser/CDN `no-store` headers. Flutter's service worker is disabled; the bootstrap unregisters old root-scope workers and removes Flutter caches. Refresh fetches the currently deployed version after deployment completes. The footer displays the configured application release version (0.24.0 for this release). Do not set an overriding Cloudflare cache rule that forces caching for this host.
 
 ## Branding and remaining setup
 
@@ -81,7 +81,7 @@ Weight-entry dialogs and bulk weight/health saves retain their record IDs and pa
 
 ## Rabbit Register XML import
 
-Account Settings → Import & export → Import from Rabbit Register previews Evans Rabbit Register's Other XML exports. It supports rabbit/pedigree records, dated weights and retained source contacts, litters and show results, with explicit review for unknown sex, missing parents, cycles and existing-animal matches. Apply the new migration before releasing the client. See `docs/rabbit-register-import.md` for behavior, setup, limits and verification.
+Account Settings → Import & export → Import from Rabbit Register previews Evans Rabbit Register's Other XML exports. Contacts, animal management, sales, litters, feed/weight readings, wool production and show results connect to their normal tracking screens. Source records remain preserved, and new imports also archive the original XML. Review unknown sex, missing parents, cycles and existing-animal matches before saving. Existing imports can link their retained history from Rabbit Register history. Apply the integration migration before releasing the client. See `docs/rabbit-register-import.md` for behavior, setup, limits and verification.
 
 ## Kintraks CSV import
 

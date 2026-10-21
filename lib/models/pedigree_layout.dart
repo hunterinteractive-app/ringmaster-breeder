@@ -12,7 +12,11 @@ class PedigreeLayout {
     details = [
       for (final key in PedigreeEntry.snapshotSlots)
         wrap(
-          [pedigree[key]?['leg_details'], pedigree[key]?['synced_show_details']]
+          [
+                pedigree[key]?['leg_details'],
+                pedigree[key]?['synced_show_details'],
+                pedigree[key]?['wool_summary'],
+              ]
               .where((v) => v != null && v.toString().trim().isNotEmpty)
               .join('\n'),
         ),

@@ -83,7 +83,7 @@ class HerdCalendarService {
             .select('breeding:breeding_records!inner($breedingColumns)')
             .eq('breeding.dam.ring_id', ringId)
             .or(
-              'and(check_date.gte.$start,check_date.lt.$end),and(wean_date.gte.$start,wean_date.lt.$end),and(birth_date.gte.$birthStart,birth_date.lt.$end)',
+              'and(check_date.gte.$start,check_date.lt.$end),and(wean_date.gte.$start,wean_date.lt.$end),and(birth_date.gte.$birthStart,birth_date.lt.$end),and(paired_date.gte.$start,paired_date.lt.$end),and(split_date.gte.$start,split_date.lt.$end),and(scheduled_breeding_date.gte.$start,scheduled_breeding_date.lt.$end)',
             )
             .order('breeding_id', ascending: true)
             .range(a, b),

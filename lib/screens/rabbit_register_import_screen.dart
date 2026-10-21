@@ -1,3 +1,4 @@
+import 'herd_contacts_screen.dart';
 import 'dart:typed_data';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
@@ -126,6 +127,7 @@ class _RabbitRegisterImportScreenState
   }
 
   Map<String, dynamic> _payload() => _export!.payload(
+    filename: _filename,
     sexes: _sexes,
     matches: _matches,
     acknowledged: _ack,
@@ -197,6 +199,11 @@ class _RabbitRegisterImportScreenState
               Text(
                 '${_result!['animals_added']} new rabbits, ${_result!['animals_existing']} existing rabbits preserved, ${_result!['history_added']} new source history records.',
               ),
+              for (final warning in _result!['warnings'] as List? ?? [])
+                Padding(
+                  padding: const EdgeInsets.only(top: 12),
+                  child: Text(warning.toString()),
+                ),
               const SizedBox(height: 16),
               TextButton(
                 onPressed: () => Navigator.push(
@@ -206,6 +213,16 @@ class _RabbitRegisterImportScreenState
                   ),
                 ),
                 child: const Text('View Rabbit Register history'),
+              ),
+              TextButton.icon(
+                onPressed: () => Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => HerdContactsScreen(ringId: _herd),
+                  ),
+                ),
+                icon: const Icon(Icons.contacts_outlined),
+                label: const Text('Review contacts & account setup'),
               ),
             ])
           else ...[
@@ -309,7 +326,11 @@ class _RabbitRegisterImportScreenState
                       'Contacts': 'Contacts',
                       'Winnings': 'Show results',
                       'Litters': 'Litters',
-                      'CritterWeights': 'Dated weights',
+                      'CritterWeights': 'Animal weights',
+                      'LitterWeights': 'Litter weights',
+                      'Wool': 'Wool harvests',
+                      'PictureMap': 'Picture references',
+                      'Mileage': 'Mileage',
                     }.entries)
                       Chip(
                         label: Text(
@@ -324,7 +345,7 @@ class _RabbitRegisterImportScreenState
                 ),
                 const SizedBox(height: 12),
                 const Text(
-                  'Different Rabbit Register IDs remain separate unless you explicitly link them to an existing rabbit. Missing parents are not invented.',
+                  'Rabbits, contacts, litters, show results, sales and valid measurements are linked to their normal screens. Missing dates and zero-weight rows remain in source history. Account details change only after you choose a contact. Different source IDs remain separate unless you explicitly link them to an existing rabbit.',
                 ),
                 const SizedBox(height: 20),
                 ExpansionTile(

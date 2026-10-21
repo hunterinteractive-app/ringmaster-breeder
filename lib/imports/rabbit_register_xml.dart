@@ -11,12 +11,22 @@ class RabbitRegisterExport {
     'Winnings': 'show',
     'Litters': 'litter',
     'CritterWeights': 'weight',
+    'LitterWeights': 'litter_weight',
+    'Wool': 'wool',
+    'Mileage': 'mileage',
+    'PictureMap': 'picture',
+    'GrowthData': 'growth',
+    'Finances': 'finance',
+    'Journal': 'journal',
+    'SweepsPoints': 'sweep',
   };
   final List<Map<String, dynamic>> animals;
   final List<Map<String, dynamic>> records;
   final List<String> warnings;
   final bool recovered;
   final Map<String, int> counts;
+  final String originalFileBase64;
+  final Map<String, String> header;
 
   RabbitRegisterExport._(
     this.animals,
@@ -24,6 +34,8 @@ class RabbitRegisterExport {
     this.warnings,
     this.recovered,
     this.counts,
+    this.originalFileBase64,
+    this.header,
   );
 
   factory RabbitRegisterExport.parse(List<int> bytes) {
@@ -31,8 +43,10 @@ class RabbitRegisterExport {
       throw const FormatException('Select an XML file smaller than 10 MB.');
     }
     String source;
+    String originalXml;
     try {
-      source = utf8.decode(bytes).replaceFirst('\uFEFF', '').trim();
+      originalXml = utf8.decode(bytes);
+      source = originalXml.replaceFirst('\uFEFF', '').trim();
     } on FormatException {
       throw const FormatException('The export must use UTF-8 text encoding.');
     }
@@ -50,7 +64,7 @@ class RabbitRegisterExport {
       // section have closed, but ExportedData has no closing tag. Never salvage
       // incomplete records or silently return a partial parse.
       if (!RegExp(
-            r'</(Animals|Contacts|Winnings|Litters|CritterWeights)>$',
+            r'</(Animals|Contacts|Winnings|Litters|CritterWeights|LitterWeights|Wool|Mileage|PictureMap|GrowthData|Finances|Journal|SweepsPoints)>$',
           ).hasMatch(source) ||
           source.contains('</ExportedData>')) {
         throw const FormatException(
@@ -79,6 +93,7 @@ class RabbitRegisterExport {
     final animals = <Map<String, dynamic>>[];
     final records = <Map<String, dynamic>>[];
     final counts = <String, int>{};
+    final header = <String, String>{};
     final seen = <String>{};
     for (final section in root.childElements) {
       final sectionName = section.name.toString();
@@ -86,7 +101,12 @@ class RabbitRegisterExport {
         throw FormatException('Duplicate XML section: $sectionName.');
       }
       counts[sectionName] = 0;
-      if (sectionName == 'Header') continue;
+      if (sectionName == 'Header') {
+        for (final field in section.childElements) {
+          header[field.name.toString()] = field.innerXml;
+        }
+        continue;
+      }
       final kind = sections[sectionName];
       if (kind == null) {
         throw FormatException(
@@ -107,7 +127,17 @@ class RabbitRegisterExport {
               ? field.innerText.trim()
               : field.innerXml;
         }
-        final id = raw[kind == 'animal' ? 'CID' : 'ID'] ?? '';
+        final id =
+            raw[switch (kind) {
+              'animal' => 'CID',
+              'wool' => 'WID',
+              'picture' => 'PID',
+              'mileage' => 'MIID',
+              'growth' => 'GID',
+              'sweep' => 'SDID',
+              _ => 'ID',
+            }] ??
+            '';
         if (!RegExp(r'^[1-9]\d{0,9}$').hasMatch(id)) {
           throw FormatException(
             'Missing or invalid record ID in $sectionName.',
@@ -181,13 +211,16 @@ class RabbitRegisterExport {
             'animal_source_id': _reference(
               raw[switch (kind) {
                 'show' => 'CID',
-                'weight' => 'CRITTERKEY',
+                'weight' || 'picture' => 'CRITTERKEY',
+                'wool' => 'CID',
                 'litter' => 'DAMIDKEY',
                 _ => '',
               }],
             ),
             if (kind == 'litter')
               'sire_source_id': _reference(raw['SIREIDKEY']),
+            if (kind == 'litter_weight')
+              'litter_source_id': _reference(raw['LITTERKEY']),
             if (kind == 'weight') ...{
               'weight': _weight(raw['CRITTERWT'], 'Weight $id'),
               'recorded_date': _date(raw['WEIGHINGDATE'], 'Weight $id date'),
@@ -202,6 +235,13 @@ class RabbitRegisterExport {
       );
     }
     final ids = animals.map((a) => a['source_id']).toSet();
+    for (final r in records.where((r) => r['kind'] == 'weight')) {
+      if (r['weight'] == null || r['recorded_date'] == null) {
+        warnings.add(
+          'Weight ${r['source_id']} has no positive weight or recorded date; keep it in source history only.',
+        );
+      }
+    }
     for (final a in animals) {
       for (final side in ['sire_id', 'dam_id']) {
         final parent = a[side];
@@ -237,6 +277,8 @@ class RabbitRegisterExport {
       warnings,
       recovered,
       counts,
+      base64Encode(bytes),
+      header,
     );
   }
 
@@ -305,11 +347,15 @@ class RabbitRegisterExport {
   }
 
   Map<String, dynamic> payload({
+    String? filename,
     Map<String, String> sexes = const {},
     Map<String, String> matches = const {},
     bool acknowledged = false,
     Set<String> omittedParents = const {},
   }) => {
+    'original_file_base64': originalFileBase64,
+    'header': header,
+    if (filename != null) 'filename': filename,
     'recovered': recovered,
     'warnings_acknowledged': acknowledged,
     'animals': [
@@ -334,8 +380,17 @@ class RabbitRegisterExport {
       value == '0' ? null : _text(value);
   static String? _date(String? value, String label) {
     value = _text(value);
-    // Access's empty-date sentinel is not an actual event in year 100.
-    if (value == null || value == '0100-01-01') return null;
+    // Export placeholders are missing dates, not actual events. Original
+    // values remain in source history, including approved sample variants.
+    if (value == null ||
+        const {
+          '0100-01-01',
+          '0100-01-02',
+          '0100-01-03',
+          '2100-12-12',
+        }.contains(value)) {
+      return null;
+    }
     final parsed = DateTime.tryParse(value);
     if (!RegExp(r'^\d{4}-\d{2}-\d{2}$').hasMatch(value) ||
         parsed == null ||

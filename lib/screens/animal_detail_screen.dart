@@ -1,3 +1,5 @@
+import '../widgets/animal_management_section.dart';
+import 'production_measurements_screen.dart';
 import '../widgets/animal_import_history.dart';
 import '../widgets/adaptive_layout.dart';
 import '../widgets/pedigree_email_dialog.dart';
@@ -292,6 +294,21 @@ class _AnimalDetailScreenState extends State<AnimalDetailScreen> {
                 child: const Text("Edit Animal"),
               ),
 
+              AnimalManagementSection(animalId: widget.animalId),
+              if (animal['species']?.toString().toLowerCase() == 'rabbit')
+                ElevatedButton.icon(
+                  onPressed: () => Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => ProductionMeasurementsScreen(
+                        recordId: widget.animalId,
+                        wool: true,
+                      ),
+                    ),
+                  ),
+                  icon: const Icon(Icons.grass),
+                  label: const Text('Wool harvest history'),
+                ),
               AnimalImportHistory(
                 key: ObjectKey(snapshot.data),
                 animalId: widget.animalId,
@@ -319,6 +336,20 @@ class _AnimalDetailScreenState extends State<AnimalDetailScreen> {
                   );
                 },
                 child: const Text("View Weight History"),
+              ),
+
+              ElevatedButton.icon(
+                onPressed: () => Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => ProductionMeasurementsScreen(
+                      recordId: widget.animalId,
+                      animalFeed: true,
+                    ),
+                  ),
+                ),
+                icon: const Icon(Icons.restaurant_outlined),
+                label: const Text('Feed & weight history'),
               ),
 
               /// Health & Vaccine Records

@@ -1,6 +1,7 @@
 import '../offline/offline_runtime.dart';
 import 'family_service.dart';
 import '../utils/show_results.dart';
+import '../utils/production_measurements.dart';
 
 class PedigreeService {
   static Future<Map<String, dynamic>> seller() async {
@@ -13,7 +14,10 @@ class PedigreeService {
         .eq('id', FamilyService.ownerId ?? user.id)
         .single();
     return {
-      'name': profile['display_name'],
+      'name': [
+        profile['rabbitry_name'],
+        profile['display_name'],
+      ].whereType<String>().where((v) => v.trim().isNotEmpty).join(' · '),
       'address': profile['address'],
       'city': profile['city'],
       'state': profile['state'],
@@ -63,6 +67,45 @@ class PedigreeService {
           .compareTo((a['record']['shows']?['start_date'] ?? '').toString()),
     );
     attachPedigreeWins(pedigree, rows);
+    try {
+      final animals = await OfflineRuntime.client
+          .from('animals')
+          .select('id,ring_id')
+          .inFilter('id', ids);
+      final herds = animals
+          .map((a) => a['ring_id'])
+          .whereType<String>()
+          .toSet()
+          .toList();
+      if (herds.isNotEmpty) {
+        final settings = await OfflineRuntime.client
+            .from('wool_settings')
+            .select()
+            .inFilter('ring_id', herds)
+            .eq('show_on_pedigree', true);
+        if (settings.isNotEmpty) {
+          final wool = <Map<String, dynamic>>[];
+          for (var start = 0; ; start += 500) {
+            final page = await OfflineRuntime.client
+                .from('animal_wool_records')
+                .select(
+                  'animal_id,recorded_date,fleece_grams,measurements,voided',
+                )
+                .inFilter('animal_id', ids)
+                .eq('voided', false)
+                .order('id')
+                .range(start, start + 499);
+            wool.addAll(page);
+            if (page.length < 500) break;
+          }
+          attachWoolPedigreeSummary(pedigree, animals, settings, wool);
+        }
+      }
+    } catch (e) {
+      if (!isOfflineTransportError(e)) rethrow;
+      // Optional production summaries do not block an otherwise usable pedigree
+      // when their online-only records are unavailable.
+    }
     return pedigree;
   }
 }

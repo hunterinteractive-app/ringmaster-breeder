@@ -307,7 +307,7 @@ class _SalesDashboardScreenState extends State<SalesDashboardScreen> {
                       ),
                       if (sale.imported)
                         Text(
-                          'Imported from Global Pedigree • Sale ${sale.data['import_source_id']}',
+                          'Imported from ${sale.data['import_source'] == 'rabbit_register' ? 'Rabbit Register' : 'Global Pedigree'} • Sale ${sale.data['import_source_id']}',
                         ),
                       if ((sale.data['buyer_name'] as String).isNotEmpty)
                         Text('Buyer: ${sale.data['buyer_name']}'),
@@ -439,6 +439,36 @@ class _SaleEditDialogState extends State<SaleEditDialog> {
   late bool paymentComplete = widget.sale.paymentHistoryComplete;
   bool saving = false;
   String? error;
+  List<Map<String, dynamic>> buyerContacts = [];
+  late String? buyerContact = widget.sale.data['buyer_contact_id'];
+  @override
+  void initState() {
+    super.initState();
+    loadBuyerContacts();
+  }
+
+  Future<void> loadBuyerContacts() async {
+    final ring = widget.sale.data['ring_id'];
+    if (ring == null) return;
+    try {
+      final rows = <Map<String, dynamic>>[];
+      for (var from = 0; ; from += 500) {
+        final page = await SalesService.client
+            .from('herd_contacts')
+            .select()
+            .eq('ring_id', ring)
+            .order('name')
+            .order('id')
+            .range(from, from + 499);
+        rows.addAll(List<Map<String, dynamic>>.from(page));
+        if (page.length < 500) break;
+      }
+      if (mounted) setState(() => buyerContacts = rows);
+    } catch (_) {
+      /* Existing typed buyer details remain editable without a contact download. */
+    }
+  }
+
   @override
   void dispose() {
     for (final c in [...fields.values, asking, agreed]) {
@@ -490,6 +520,7 @@ class _SaleEditDialogState extends State<SaleEditDialog> {
       });
       final savedStatus = await SalesService.update(widget.sale, {
         'status': status,
+        'buyer_contact_id': buyerContact,
         if (widget.sale.imported) 'payment_history_complete': paymentComplete,
         'asking_cents': askingCents,
         'sale_cents': saleCents,
@@ -566,6 +597,51 @@ class _SaleEditDialogState extends State<SaleEditDialog> {
                   ),
                 field(asking, 'Asking price (USD)', money: true),
                 field(agreed, 'Agreed sale price (USD)', money: true),
+                if (buyerContacts.isNotEmpty) ...[
+                  const SizedBox(height: 16),
+                  DropdownButtonFormField<String>(
+                    key: ValueKey(buyerContact),
+                    initialValue:
+                        buyerContacts.any((c) => c['id'] == buyerContact)
+                        ? buyerContact
+                        : null,
+                    isExpanded: true,
+                    decoration: const InputDecoration(
+                      labelText: 'Buyer contact',
+                    ),
+                    items: [
+                      const DropdownMenuItem<String>(
+                        value: null,
+                        child: Text('Enter buyer details manually'),
+                      ),
+                      for (final c in buyerContacts)
+                        DropdownMenuItem(
+                          value: c['id'] as String,
+                          child: Text('${c['name']} · ${c['rabbitry']}'),
+                        ),
+                    ],
+                    onChanged: (id) => setState(() {
+                      buyerContact = id;
+                      if (id != null) {
+                        final c = buyerContacts.firstWhere(
+                          (c) => c['id'] == id,
+                        );
+                        fields['buyer_name']!.text =
+                            (c['name'] as String).isEmpty
+                            ? c['rabbitry']
+                            : c['name'];
+                        fields['buyer_email']!.text = c['email'];
+                        fields['buyer_phone']!.text = c['phone'];
+                        fields['buyer_address']!.text = [
+                          c['address'],
+                          c['city'],
+                          c['state'],
+                          c['zip'],
+                        ].where((v) => v != null && v != '').join(', ');
+                      }
+                    }),
+                  ),
+                ],
                 for (final e in fields.entries)
                   field(e.value, switch (e.key) {
                     'buyer_name' => 'Buyer name',

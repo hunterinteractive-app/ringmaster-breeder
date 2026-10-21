@@ -110,12 +110,67 @@ void main() {
       expect(e.records[2]['raw']['DATEWEANED'], '0100-01-01');
     },
   );
+  test(
+    'reads expanded sections without turning blank or zero weights into chart values',
+    () {
+      final e = parse(
+        xml(
+          animal(),
+          history:
+              '<CritterWeights><Record><ID>1</ID><CRITTERKEY>1</CRITTERKEY><CRITTERWT>0</CRITTERWT><WEIGHINGDATE>0100-01-02</WEIGHINGDATE><FEEDWT>-1.5</FEEDWT></Record></CritterWeights>'
+              '<LitterWeights><Record><ID>2</ID><LITTERKEY>3</LITTERKEY><LITTERWT>24</LITTERWT></Record></LitterWeights>'
+              '<Wool><Record><WID>4</WID><CID>1</CID><PRIME>20</PRIME></Record></Wool>'
+              '<PictureMap><Record><PID>5</PID><CRITTERKEY>1</CRITTERKEY><FILENAME>photo.jpg</FILENAME></Record></PictureMap>'
+              '<Mileage><Record><MIID>6</MIID><MILEAGEIN>12.3</MILEAGEIN></Record></Mileage>',
+        ),
+      );
+      expect(e.records.map((r) => r['kind']), [
+        'weight',
+        'litter_weight',
+        'wool',
+        'picture',
+        'mileage',
+      ]);
+      expect(e.records.first['weight'], isNull);
+      expect(e.records.first['recorded_date'], isNull);
+      expect(e.records.first['raw']['FEEDWT'], '-1.5');
+      expect(e.records[1]['litter_source_id'], '3');
+      expect(e.records[2]['animal_source_id'], '1');
+      expect(e.warnings.any((w) => w.contains('source history only')), isTrue);
+    },
+  );
   test('empty date sentinel stays missing and dates cannot roll over', () {
-    expect(
-      parse(xml(animal(extra: '<DOB>0100-01-01</DOB>'))).animals.single['dob'],
-      isNull,
-    );
-    for (final date in ['2014-02-30', '2999-01-01', 'garbage']) {
+    for (final date in [
+      '0100-01-01',
+      '0100-01-02',
+      '0100-01-03',
+      '2100-12-12',
+    ]) {
+      final e = parse(
+        xml(
+          animal(
+            extra: '<DOB>$date</DOB><DOD>$date</DOD><DateSold>$date</DateSold>',
+          ),
+          history:
+              '<CritterWeights><Record><ID>1</ID><CRITTERKEY>1</CRITTERKEY><CRITTERWT>1814.368</CRITTERWT><WEIGHINGDATE>$date</WEIGHINGDATE></Record></CritterWeights>',
+        ),
+      );
+      expect(e.animals.single['dob'], isNull);
+      for (final field in ['DOB', 'DOD', 'DateSold']) {
+        expect(e.animals.single['raw'][field], date);
+      }
+      expect(e.records.single['recorded_date'], isNull);
+      expect(e.records.single['raw']['WEIGHINGDATE'], date);
+      final archived = parse(
+        xml(
+          animal(
+            extra: '<DOD>$date</DOD><DateSold>$date</DateSold>',
+          ).replaceAll('Active_I:Active', 'Arch._I:Archive'),
+        ),
+      );
+      expect(archived.animals.single['status'], 'archived');
+    }
+    for (final date in ['0100-01-04', '2014-02-30', '2999-01-01', 'garbage']) {
       expect(
         () => parse(xml(animal(extra: '<DOB>$date</DOB>'))),
         throwsFormatException,

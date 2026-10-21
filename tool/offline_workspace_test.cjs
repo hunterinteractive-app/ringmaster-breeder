@@ -200,7 +200,8 @@ test('breeding, tracking, and offspring project a complete local family',async()
   let d=tables();d.animals.push({...d.animals[0],id:'sire',name:'Sire',sex:'Buck'});
   const breeding=await A.prepare(d,{type:'rpc',target:'record_breeding_with_parents',body:{p_ring:ring,p_parents:[],p_records:[{sire_id:'sire',dam_id:animal,breeding_date:'2026-08-01',notes:''}]}},W.uuid(),new Date(now).toISOString());d=Q.project(d,[breeding]);
   const bid=d.breeding_records[0].id;
-  const tracking=await A.prepare(d,{type:'rpc',target:'save_breeding_tracking',body:{p_id:bid,p_revision:0,p_data:{birth_date:'2026-09-01',wean_date:'2026-10-15',weaned:1,born_alive:1,born_dead:0,status:'active',notes:''}}},W.uuid(),new Date(now).toISOString());d=Q.project(d,[tracking]);
+  const tracking=await A.prepare(d,{type:'rpc',target:'save_breeding_tracking',body:{p_id:bid,p_revision:0,p_data:{actual_breeding_date:'2026-08-02',cage:'L1',nest_installed:true,added:1,birth_date:'2026-09-01',wean_date:'2026-10-15',weaned:1,born_alive:1,born_dead:0,status:'active',notes:''}}},W.uuid(),new Date(now).toISOString());d=Q.project(d,[tracking]);
+  assert.equal(d.breeding_records[0].breeding_date,'2026-08-02');assert.equal(d.breeding_tracking[0].cage,'L1');assert.equal(d.breeding_tracking[0].nest_installed,true);
   const offspring=await A.prepare(d,{type:'rpc',target:'create_litter_animals',body:{p_id:bid,p_young:[{name:'Kit',tattoo:'K1',sex:'F',breed:'Dutch',variety:'Black'}]}},W.uuid(),new Date(now).toISOString());d=Q.project(d,[offspring]);
   const kit=d.animals.find(a=>a.name==='Kit');assert.equal(kit.dam_id,animal);assert.equal(kit.sire_id,'sire');assert.equal(kit.sex,'Doe');assert.equal(d.breeding_tracking[0].status,'completed');
 });
@@ -382,4 +383,29 @@ test('expired offline grace blocks growth but permits sold and historical record
   assert.equal(archived.mutations.length,1);
   const sold=await A.prepare(d,{type:'table',target:'animals',method:'PATCH',query:[['id','eq.'+animal]],body:{status:'sold'}},crypto.randomUUID(),'2026-10-17T10:00:00Z',actor);
   assert.ok(sold.mutations.some(m=>m.row.status==='sold'));
+});
+
+test('offspring projection creates only the remainder after imported kits are linked',async()=>{
+  let d=tables();d.animals.push({...d.animals[0],id:'sire',sex:'Buck'},{...d.animals[0],id:'existing-kit',tattoo:'E1',sex:'Doe',dam_id:animal,sire_id:'sire',dob:'2026-09-01'});
+  d.breeding_records=[{id:'partial-litter',dam_id:animal,sire_id:'sire',breeding_date:'2026-08-01',status:'active',import_source:'fixture'}];
+  d.breeding_tracking=[{breeding_id:'partial-litter',revision:1,birth_date:'2026-09-01',wean_date:'2026-10-15',weaned:2,weaned_males:1,weaned_females:1,status:'active'}];
+  d.breeding_offspring=[{breeding_id:'partial-litter',animal_id:'existing-kit'}];
+  const op=await A.prepare(d,{type:'rpc',target:'create_litter_animals',body:{p_id:'partial-litter',p_young:[{name:'Missing kit',tattoo:'E2',sex:'M',breed:'Dutch'}]}},W.uuid(),new Date(now).toISOString());
+  d=Q.project(d,[op]);assert.equal(d.breeding_offspring.length,2);assert.equal(d.animals.filter(a=>a.name==='Missing kit').length,1);assert.equal(d.animals.filter(a=>a.id==='existing-kit').length,1);
+});
+
+
+test('wool settings and reviewed wool links stay online and refresh the local herd', async()=>{
+  const f=await fixture({fetch:async(input)=>{
+    const url=typeof input==='string'?input:input.url;
+    if(url.includes('/rpc/save_wool_settings'))return Response.json(null);
+    if(url.includes('/rpc/link_rabbit_register_wool'))return Response.json('linked-wool-id');
+  }});
+  for(const name of ['save_wool_settings','link_rabbit_register_wool']) {
+    const before=f.calls.filter(c=>typeof c.url==='string'&&c.url.includes('breeder_offline_snapshot')).length;
+    const response=await f.workspace.handle(new Request('https://fixture.invalid/rest/v1/rpc/'+name,{method:'POST',headers:{Authorization:'Bearer '+f.token,'Content-Type':'application/json'},body:JSON.stringify({p_animal:animal})}));
+    assert.equal(response.ok,true);
+    assert.equal(f.calls.filter(c=>typeof c.url==='string'&&c.url.includes('breeder_offline_snapshot')).length,before+1);
+  }
+  assert.equal((await f.workspace.operations()).length,0);
 });

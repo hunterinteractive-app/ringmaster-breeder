@@ -5,7 +5,7 @@
   const Q = root.BreederOfflineQuery || require("./offline_query.js");
   const writable = {
     farms: ["name"],
-    users: ["display_name", "address", "city", "state", "zip", "phone"],
+    users: ["display_name", "rabbitry_name", "address", "city", "state", "zip", "phone"],
     animals: [
       "ring_id",
       "name",
@@ -62,6 +62,7 @@
       "animal_name",
       "asking_cents",
       "buyer_name",
+      "buyer_contact_id",
       "buyer_email",
       "buyer_phone",
       "buyer_address",
@@ -500,6 +501,7 @@
           else add("breeding_tracking", data);
           update("breeding_records", row(tables, "breeding_records", p.p_id), {
             status: data.status,
+            ...(Object.hasOwn(p.p_data, "actual_breeding_date") ? { breeding_date: p.p_data.actual_breeding_date } : {}),
           });
           result = "";
           break;
@@ -507,19 +509,20 @@
         case "create_litter_animals": {
           const b = row(tables, "breeding_records", p.p_id),
             t = row(tables, "breeding_tracking", p.p_id, "breeding_id");
+          const linked = Q.tableRows(tables, "breeding_offspring").filter(v => v.breeding_id === p.p_id);
           if (
-            !b || !t || !t.weaned || t.weaned !== p.p_young.length ||
+            !b || !t || !t.weaned || !b.sire_id || !t.birth_date || !t.wean_date || t.weaned - linked.length !== p.p_young.length ||
             t.status === "cancelled"
           ) {
             throw new Error(
               "Record the matching weaning count before creating offspring",
             );
           }
-          if (
-            Q.tableRows(tables, "breeding_offspring").some((v) =>
-              v.breeding_id === p.p_id
-            )
-          ) throw new Error("Offspring records already exist");
+          if (linked.length >= t.weaned) throw new Error("Offspring records already exist");
+          if (t.weaned_males != null) {
+            const males = linked.filter(o => ["Buck", "Boar"].includes(row(tables, "animals", o.animal_id)?.sex)).length;
+            if (p.p_young.filter(y => y.sex === "M").length !== t.weaned_males - males || p.p_young.filter(y => y.sex === "F").length !== t.weaned_females - (linked.length - males)) throw new Error("Offspring sexes must match the remaining weaning counts");
+          }
           const dam = row(tables, "animals", b.dam_id);
           for (const y of p.p_young) {
             const sex = dam.species === "cavy"

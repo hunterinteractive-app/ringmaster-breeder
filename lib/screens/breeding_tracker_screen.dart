@@ -1,3 +1,4 @@
+import '../widgets/link_litter_offspring_dialog.dart';
 import 'rabbit_register_history_screen.dart';
 import '../widgets/adaptive_layout.dart';
 import '../offline/offline_runtime.dart';
@@ -21,6 +22,7 @@ String breedingStage(Map<String, dynamic> row) {
   if ((t['status'] ?? row['status']) == 'completed') return 'Completed';
   if (t['wean_date'] != null) return 'Weaned';
   if (t['birth_date'] != null) return 'Nursing litter';
+  if (t['breeding_occurred'] == false) return 'Scheduled breeding';
   return t['check_result'] == 'Positive'
       ? 'Confirmed pregnant'
       : 'Awaiting birth';
@@ -28,7 +30,8 @@ String breedingStage(Map<String, dynamic> row) {
 
 bool needsOffspring(Map<String, dynamic> row) {
   final t = (row['tracking'] as Map?) ?? {};
-  return t['wean_date'] != null &&
+  return row['import_source'] == null &&
+      t['wean_date'] != null &&
       (t['weaned'] ?? 0) > 0 &&
       t['status'] != 'cancelled' &&
       ((row['offspring'] as List?) ?? []).isEmpty;
@@ -104,6 +107,91 @@ class _BreedingTrackerScreenState extends State<BreedingTrackerScreen> {
   }
 
   Future<void> offspring(Map<String, dynamic> row) async {
+    if (row['import_source'] != null) {
+      final t = row['tracking'] as Map? ?? {};
+      final canCreate =
+          row['sire'] != null &&
+          t['birth_date'] != null &&
+          t['wean_date'] != null &&
+          (t['weaned'] ?? 0) > (row['offspring'] as List? ?? []).length;
+      final choice = await showDialog<String>(
+        context: context,
+        builder: (ctx) => AlertDialog(
+          title: const Text('Manage imported litter offspring'),
+          content: const Text(
+            'Link rabbits that were already imported before creating any missing offspring. New records require the sire, birth date, weaning date and weaned count.',
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx),
+              child: const Text('Cancel'),
+            ),
+            TextButton(
+              onPressed: () => Navigator.pop(ctx, 'link'),
+              child: const Text('Link existing rabbits'),
+            ),
+            FilledButton(
+              onPressed: canCreate ? () => Navigator.pop(ctx, 'new') : null,
+              child: const Text('Create missing offspring'),
+            ),
+          ],
+        ),
+      );
+      if (choice == null || !mounted) return;
+      if (choice == 'link') {
+        try {
+          final candidates = await fetchAllPages(
+            (from, to) => client
+                .from('animals')
+                .select('id,name,tattoo,sex,dob,sire_id')
+                .eq('ring_id', row['dam']['ring_id'])
+                .eq('dam_id', row['dam_id'])
+                .order('id')
+                .range(from, to),
+          );
+          final matching = candidates
+              .where(
+                (a) =>
+                    (row['sire_id'] == null ||
+                        a['sire_id'] == row['sire_id']) &&
+                    (t['birth_date'] == null ||
+                        a['dob'] == null ||
+                        a['dob'] == t['birth_date']),
+              )
+              .toList();
+          if (!mounted) return;
+          final saved = await showDialog<bool>(
+            context: context,
+            barrierDismissible: false,
+            builder: (_) => LinkLitterOffspringDialog(
+              animals: matching,
+              linked: {
+                for (final a in row['offspring'] as List? ?? [])
+                  a['animal_id'] as String,
+              },
+              limit: t['weaned'] as int?,
+              writer: (ids) async {
+                await client.rpc(
+                  'link_litter_offspring',
+                  params: {'p_id': row['id'], 'p_animals': ids},
+                );
+              },
+            ),
+          );
+          if (saved == true && mounted) refresh();
+        } catch (_) {
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text('Unable to load offspring. Reconnect and retry.'),
+              ),
+            );
+          }
+        }
+        return;
+      }
+    }
+    if (!mounted) return;
     final saved = await showDialog<bool>(
       context: context,
       barrierDismissible: false,
@@ -211,13 +299,17 @@ class _LitterTrackingDialogState extends State<LitterTrackingDialog> {
   void initState() {
     super.initState();
     data = {
+      'actual_breeding_date': widget.record['breeding_date'],
+      'custom_fields': <String, dynamic>{},
       'due_date': null,
       'check_result': 'Not checked',
       'status': widget.record['status'],
       'notes': '',
       ...Map<String, dynamic>.from(widget.record['tracking'] ?? {}),
     };
-    if (locked && data['weaned_males'] == null) {
+    if (locked &&
+        data['weaned_males'] == null &&
+        (widget.record['offspring'] as List).length == data['weaned']) {
       final children = widget.record['offspring'] as List;
       data['weaned_males'] = children
           .where((c) => ['M', 'Buck', 'Boar'].contains(c['animal']?['sex']))
@@ -228,22 +320,34 @@ class _LitterTrackingDialogState extends State<LitterTrackingDialog> {
 
   Future<void> save() async {
     if (!form.currentState!.validate()) return;
-    data['weaned'] =
-        data['weaned_males'] == null || data['weaned_females'] == null
-        ? null
-        : data['weaned_males'] + data['weaned_females'];
+    final imported = widget.record['import_source'] != null;
+    if (!imported ||
+        data['weaned_males'] != null ||
+        data['weaned_females'] != null) {
+      data['weaned'] =
+          data['weaned_males'] == null || data['weaned_females'] == null
+          ? null
+          : data['weaned_males'] + data['weaned_females'];
+    }
     final birth = data['birth_date'];
     final wean = data['wean_date'];
     String? problem;
-    if (birth != null &&
+    if ((data['weaned_males'] == null) != (data['weaned_females'] == null)) {
+      problem = 'Enter both sex counts, or leave both unknown.';
+    }
+    if (!imported &&
+        birth != null &&
         (data['born_alive'] == null || data['born_dead'] == null)) {
       problem = 'Enter alive and stillborn counts (use 0 when none).';
     }
-    if (birth == null &&
+    if (!imported &&
+        birth == null &&
         (data['born_alive'] != null || data['born_dead'] != null)) {
       problem = 'Enter the birth date.';
     }
-    if (wean != null && (birth == null || data['weaned'] == null)) {
+    if (!imported &&
+        wean != null &&
+        (birth == null || data['weaned'] == null)) {
       problem =
           'Enter birth details and both weaning sex counts (use 0 when none).';
     }
@@ -256,15 +360,23 @@ class _LitterTrackingDialogState extends State<LitterTrackingDialog> {
         wean.toString().compareTo(birth.toString()) < 0) {
       problem = 'Weaning cannot be before birth.';
     }
-    if ((data['weaned'] ?? 0) > (data['born_alive'] ?? 0)) {
-      problem = 'Number weaned cannot exceed number born alive.';
+    if (data['weaned'] != null &&
+        (data['born_alive'] ?? data['born_total']) != null &&
+        data['weaned'] >
+            (data['born_alive'] ?? data['born_total']) + (data['added'] ?? 0)) {
+      problem = (data['added'] ?? 0) == 0
+          ? 'Number weaned cannot exceed number born alive.'
+          : 'Number weaned cannot exceed born plus added.';
     }
-    if (data['check_result'] != 'Not checked' && data['check_date'] == null) {
+    if (!imported &&
+        data['check_result'] != 'Not checked' &&
+        data['check_date'] == null) {
       problem = 'Enter the palpation date.';
     }
     for (final key in ['check_date', 'birth_date', 'wean_date']) {
       if (data[key] != null &&
-          data[key].toString().compareTo(widget.record['breeding_date']) < 0) {
+          data['actual_breeding_date'] != null &&
+          data[key].toString().compareTo(data['actual_breeding_date']) < 0) {
         problem = 'Dates cannot be before the breeding date.';
       }
     }
@@ -361,6 +473,77 @@ class _LitterTrackingDialogState extends State<LitterTrackingDialog> {
               : 'Enter a whole number from 0 to 100',
         ),
       );
+  Widget flag(String key, String label) => Padding(
+    padding: const EdgeInsets.symmetric(vertical: 8),
+    child: DropdownButtonFormField<String>(
+      initialValue: data[key] == null
+          ? 'unknown'
+          : data[key] == true
+          ? 'yes'
+          : 'no',
+      isExpanded: true,
+      decoration: InputDecoration(labelText: label),
+      items: const [
+        DropdownMenuItem(value: 'unknown', child: Text('Not recorded')),
+        DropdownMenuItem(value: 'yes', child: Text('Yes')),
+        DropdownMenuItem(value: 'no', child: Text('No')),
+      ],
+      onChanged: (v) =>
+          setState(() => data[key] = v == 'unknown' ? null : v == 'yes'),
+    ),
+  );
+  Widget textValue(String key, String label) => Padding(
+    padding: const EdgeInsets.symmetric(vertical: 8),
+    child: TextFormField(
+      initialValue: data[key]?.toString() ?? '',
+      decoration: InputDecoration(labelText: label),
+      maxLength: 100,
+      onChanged: (v) => data[key] = v,
+    ),
+  );
+  Widget extraDetails() => ExpansionTile(
+    tilePadding: EdgeInsets.zero,
+    title: const Text('Additional litter details'),
+    maintainState: true,
+    children: [
+      date('paired_date', 'Paired'),
+      date('split_date', 'Separated / split'),
+      date('scheduled_breeding_date', 'Scheduled rebreeding', future: true),
+      flag('rebreeding_enabled', 'Rebreeding enabled'),
+      flag('rebreeding_overridden', 'Rebreeding schedule overridden'),
+      textValue('cage', 'Litter cage / housing'),
+      textValue('breed_label', 'Litter breed'),
+      const Text(
+        'Litter totals',
+        style: TextStyle(fontWeight: FontWeight.bold),
+      ),
+      const Text(
+        'Keep source totals separate from born-alive, stillborn and weaning counts. Added animals can increase the number weaned.',
+      ),
+      count('born_total', 'Total born'),
+      count('recorded_deaths', 'Total deaths'),
+      count('added', 'Added / fostered in'),
+      count('raised', 'Raised'),
+      count('bucks', 'Bucks in litter'),
+      count('does', 'Does in litter'),
+      count('kept', 'Kept'),
+      count('sold', 'Sold'),
+      count('show_quality', 'Show quality'),
+      for (final e in (data['custom_fields'] as Map? ?? {}).entries)
+        Padding(
+          padding: const EdgeInsets.symmetric(vertical: 8),
+          child: TextFormField(
+            initialValue: e.value.toString(),
+            decoration: InputDecoration(labelText: e.key.toString()),
+            onChanged: (v) => data['custom_fields'] = {
+              ...data['custom_fields'] as Map,
+              e.key: v,
+            },
+          ),
+        ),
+      const SizedBox(height: 12),
+    ],
+  );
   @override
   Widget build(BuildContext context) => PopScope(
     canPop: !saving,
@@ -382,7 +565,17 @@ class _LitterTrackingDialogState extends State<LitterTrackingDialog> {
                     style: TextStyle(fontWeight: FontWeight.bold),
                   ),
                   const Text('Estimated windows use your breeding settings.'),
+                  date(
+                    'actual_breeding_date',
+                    'Date bred',
+                    future: data['breeding_occurred'] == false,
+                  ),
+                  flag('breeding_occurred', 'Breeding occurred'),
                   date('check_date', 'Palpation date'),
+                  if (data['palpation_source'] != null)
+                    Text(
+                      'Previous palpation result: ${data['palpation_source']}',
+                    ),
                   DropdownButtonFormField<String>(
                     initialValue: data['check_result'],
                     decoration: const InputDecoration(
@@ -400,6 +593,10 @@ class _LitterTrackingDialogState extends State<LitterTrackingDialog> {
                     onChanged: (v) => data['check_result'] = v,
                   ),
                   const AdaptiveGap(height: 16),
+                  if (widget.record['dam']['species'] != 'cavy') ...[
+                    flag('nest_installed', 'Nest box installed'),
+                    flag('nest_removed', 'Nest box removed'),
+                  ],
                   const Text(
                     'Birth & weaning',
                     style: TextStyle(fontWeight: FontWeight.bold),
@@ -409,7 +606,9 @@ class _LitterTrackingDialogState extends State<LitterTrackingDialog> {
                     widget.record['dam']['species'] == 'cavy'
                         ? 'Date born'
                         : 'Date kindled',
-                    disabled: locked,
+                    disabled:
+                        locked &&
+                        widget.record['tracking']?['birth_date'] != null,
                   ),
                   count(
                     'born_alive',
@@ -418,25 +617,37 @@ class _LitterTrackingDialogState extends State<LitterTrackingDialog> {
                         : 'Kits born alive',
                   ),
                   count('born_dead', 'Stillborn'),
-                  date('wean_date', 'Weaning date', disabled: locked),
+                  date(
+                    'wean_date',
+                    'Weaning date',
+                    disabled:
+                        locked &&
+                        widget.record['tracking']?['wean_date'] != null,
+                  ),
                   count(
                     'weaned_males',
                     widget.record['dam']['species'] == 'cavy'
                         ? 'Number of boars'
                         : 'Number of bucks',
-                    disabled: locked,
+                    disabled:
+                        locked &&
+                        widget.record['tracking']?['weaned_males'] != null,
                   ),
                   count(
                     'weaned_females',
                     widget.record['dam']['species'] == 'cavy'
                         ? 'Number of sows'
                         : 'Number of does',
-                    disabled: locked,
+                    disabled:
+                        locked &&
+                        widget.record['tracking']?['weaned_females'] != null,
                   ),
                   if (locked)
                     const Text(
-                      'Offspring records are already linked. Edit individual animals from your herd.',
+                      'Existing dates and totals stay locked after linking offspring. You can fill missing historical details.',
                     ),
+                  const AdaptiveGap(height: 12),
+                  extraDetails(),
                   const AdaptiveGap(height: 12),
                   DropdownButtonFormField<String>(
                     initialValue: data['status'],
@@ -528,13 +739,26 @@ class _LitterOffspringDialogState extends State<LitterOffspringDialog> {
     final dam = widget.record['dam'];
     final sire = widget.record['sire'];
     young = List.generate(
-      widget.record['tracking']['weaned'],
+      (widget.record['tracking']['weaned'] as int) -
+          (widget.record['offspring'] as List? ?? []).length,
       (i) => {
         'name': '',
         'tattoo': '',
         'sex': widget.record['tracking']['weaned_males'] == null
             ? null
-            : (i < widget.record['tracking']['weaned_males'] ? 'M' : 'F'),
+            : (i <
+                      (widget.record['tracking']['weaned_males'] as int) -
+                          (widget.record['offspring'] as List? ?? [])
+                              .where(
+                                (a) => [
+                                  'M',
+                                  'Buck',
+                                  'Boar',
+                                ].contains(a['animal']?['sex']),
+                              )
+                              .length
+                  ? 'M'
+                  : 'F'),
         'breed': dam['breed'] == sire['breed'] ? dam['breed'] ?? '' : '',
         'variety': '',
       },

@@ -669,13 +669,14 @@
                 ),
               );
             }
-            if (name === "import_rabbit_register" || name === "import_kintraks") {
+            if (name === "import_rabbit_register" || name === "import_kintraks" || name === "link_rabbit_register_history" || name === "use_herd_contact" || ["link_litter_offspring", "save_managed_show_result", "save_production_measurement", "save_herd_contact", "save_wool_settings", "link_rabbit_register_wool"].includes(name)) {
               // Import review/commit requires the authoritative server. Never
               // queue a potentially partial export or reuse an old preview.
               const response = await boundedFetch(request.clone());
-              if (response.ok && body.p_commit === true) {
-                const result = await response.clone().json();
-                if (result.status === "imported") {
+              const directWrite = ["use_herd_contact", "link_litter_offspring", "save_managed_show_result", "save_production_measurement", "save_herd_contact", "save_wool_settings", "link_rabbit_register_wool"].includes(name);
+              if (response.ok && (body.p_commit === true || directWrite)) {
+                const result = await response.clone().json().catch(() => null);
+                if (result?.status === "imported" || result?.status === "linked" || directWrite) {
                   await refresh({ skipFiles: true }).catch(() => {});
                 }
               }

@@ -1,3 +1,4 @@
+import 'herd_contacts_screen.dart';
 import 'kintraks_import_screen.dart';
 import 'kintraks_history_screen.dart';
 import 'rabbit_register_import_screen.dart';
@@ -33,6 +34,7 @@ class _AccountScreenState extends State<AccountScreen> {
   final fields = <String, TextEditingController>{
     for (final key in [
       'display_name',
+      'rabbitry_name',
       'phone',
       'address',
       'city',
@@ -69,7 +71,9 @@ class _AccountScreenState extends State<AccountScreen> {
       )['owner_user_id'];
       final profile = await client
           .from('users')
-          .select('display_name,email,phone,address,city,state,zip')
+          .select(
+            'display_name,rabbitry_name,email,phone,address,city,state,zip',
+          )
           .eq('id', owner!)
           .single();
       final plan = await fetchLicenseStatus(owner!);
@@ -207,6 +211,7 @@ class _AccountScreenState extends State<AccountScreen> {
       context,
       MaterialPageRoute<void>(builder: (_) => screen),
     );
+    if (mounted && !dirty && (screen is HerdContactsScreen || screen is RabbitRegisterImportScreen)) await load();
   }
 
   Widget section(String title, IconData icon, List<Widget> children) => Card(
@@ -282,7 +287,8 @@ class _AccountScreenState extends State<AccountScreen> {
                         child: Column(
                           children: [
                             for (final e in {
-                              'display_name': 'Name / rabbitry or caviary name',
+                              'display_name': 'Name',
+                              'rabbitry_name': 'Rabbitry / caviary name',
                               'phone': 'Phone',
                               'address': 'Street address',
                               'city': 'City',
@@ -370,6 +376,16 @@ class _AccountScreenState extends State<AccountScreen> {
                               ? 'Preparing export…'
                               : 'Export animals (CSV)',
                         ),
+                      ),
+                    ]),
+                    section('Contacts & rabbitries', Icons.contacts_outlined, [
+                      ListTile(
+                        title: const Text('Contacts & account setup'),
+                        subtitle: const Text(
+                          'Review imported people and choose account or show details.',
+                        ),
+                        trailing: const Icon(Icons.chevron_right),
+                        onTap: () => open(const HerdContactsScreen()),
                       ),
                     ]),
                     section('Imported history', Icons.history, [

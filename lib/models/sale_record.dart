@@ -12,7 +12,8 @@ class SaleRecord {
         sum +
         (p['kind'] == 'refund' ? -1 : 1) * (p['amount_cents'] as num).toInt(),
   );
-  bool get imported => data['import_source'] == 'global_pedigree';
+  bool get imported =>
+      ['global_pedigree', 'rabbit_register'].contains(data['import_source']);
   bool get paymentHistoryComplete => data['payment_history_complete'] != false;
   int? get balance =>
       !paymentHistoryComplete || price == null ? null : price! - paid;

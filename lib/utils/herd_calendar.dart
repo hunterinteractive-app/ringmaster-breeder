@@ -44,7 +44,9 @@ List<HerdCalendarEvent> herdCalendarEvents(
       ...breedingDefaults(dam['species']),
       ...?settings[dam['species']],
     };
-    final base = calendarDate(r['breeding_date']);
+    final base = r['breeding_date'] == null
+        ? null
+        : calendarDate(r['breeding_date']);
     void add(
       String title,
       String category,
@@ -76,7 +78,27 @@ List<HerdCalendarEvent> herdCalendarEvents(
       }
     }
 
-    add('Breeding recorded', 'Breeding', base);
+    if (base != null && t['breeding_occurred'] != false) {
+      add('Breeding recorded', 'Breeding', base);
+    }
+    if (t['paired_date'] != null) {
+      add('Paired', 'Breeding', calendarDate(t['paired_date']));
+    }
+    if (t['split_date'] != null) {
+      add('Separated / split', 'Breeding', calendarDate(t['split_date']));
+    }
+    if (t['scheduled_breeding_date'] != null &&
+        t['rebreeding_enabled'] != false &&
+        status == 'active') {
+      add(
+        'Scheduled rebreeding',
+        'Breeding',
+        calendarDate(t['scheduled_breeding_date']),
+      );
+    }
+    if (t['breeding_occurred'] == false && base != null && status == 'active') {
+      add('Scheduled breeding', 'Breeding', base);
+    }
     if (t['check_date'] != null) {
       add(
         'Palpation • ${t['check_result'] ?? 'Recorded'}',
@@ -96,7 +118,10 @@ List<HerdCalendarEvent> herdCalendarEvents(
           true,
         );
       }
-    } else if (status == 'active' && t['check_result'] != 'Negative') {
+    } else if (base != null &&
+        t['breeding_occurred'] != false &&
+        status == 'active' &&
+        t['check_result'] != 'Negative') {
       if (t['check_date'] == null) {
         add(
           'Palpation window',
@@ -106,7 +131,7 @@ List<HerdCalendarEvent> herdCalendarEvents(
           true,
         );
       }
-      if (c['nesting_day'] != null) {
+      if (c['nesting_day'] != null && t['nest_installed'] != true) {
         add(
           'Add nesting box',
           'Nesting',

@@ -1,3 +1,4 @@
+import '../screens/production_measurements_screen.dart';
 import 'adaptive_layout.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
@@ -37,8 +38,10 @@ class BreedingDashboard extends StatelessWidget {
       : '${date(breedingDay(base, a))} – ${date(breedingDay(base, b))}';
   bool dueSoon(Map<String, dynamic> r) {
     final c = config(r);
-    final start = DateTime.parse(r['breeding_date']);
-    return r['status'] == 'active' &&
+    final start = DateTime.tryParse(r['breeding_date']?.toString() ?? '');
+    if (start == null) return false;
+    return tracking(r)['breeding_occurred'] != false &&
+        r['status'] == 'active' &&
         tracking(r)['birth_date'] == null &&
         !breedingDay(start, c['gestation_max']).isBefore(today) &&
         !breedingDay(start, c['gestation_min']).isAfter(breedingDay(today, 7));
@@ -103,15 +106,11 @@ class BreedingDashboard extends StatelessWidget {
                   : r['status'] != 'active'),
         )
         .toList();
-    rows.sort((a, b) {
-      final ac = config(a), bc = config(b);
-      return breedingDay(
-        DateTime.parse(a['breeding_date']),
-        ac['gestation_min'],
-      ).compareTo(
-        breedingDay(DateTime.parse(b['breeding_date']), bc['gestation_min']),
-      );
-    });
+    rows.sort(
+      (a, b) => (a['breeding_date'] ?? '9999').toString().compareTo(
+        (b['breeding_date'] ?? '9999').toString(),
+      ),
+    );
     return LayoutBuilder(
       builder: (context, box) {
         final compact = BreederLayout.compact(context);
@@ -289,25 +288,29 @@ class BreedingDashboard extends StatelessWidget {
   Widget card(BuildContext context, Map<String, dynamic> r) {
     final t = tracking(r),
         dam = r['dam'] as Map,
-        sire = r['sire'] as Map,
+        sire = r['sire'] as Map? ?? {},
         c = config(r);
-    final start = DateTime.parse(r['breeding_date']);
+    final start = DateTime.tryParse(r['breeding_date']?.toString() ?? '');
     final born = t['birth_date'] != null;
     final weaned = t['wean_date'] != null;
     final isActive = r['status'] == 'active';
     final cavy = dam['species'] == 'cavy';
     final children = r['offspring'] as List? ?? [];
-    final elapsed = DateTime.utc(
-      today.year,
-      today.month,
-      today.day,
-    ).difference(DateTime.utc(start.year, start.month, start.day)).inDays;
+    final elapsed = start == null
+        ? 0
+        : DateTime.utc(
+            today.year,
+            today.month,
+            today.day,
+          ).difference(DateTime.utc(start.year, start.month, start.day)).inDays;
     final stage = !isActive
         ? (r['status'] == 'cancelled' ? 'Cancelled' : 'Completed')
         : weaned
         ? 'Weaned'
         : born
         ? 'Nursing litter'
+        : t['breeding_occurred'] == false
+        ? 'Scheduled breeding'
         : t['check_result'] == 'Positive'
         ? 'Confirmed pregnant'
         : 'Awaiting birth';
@@ -390,11 +393,16 @@ class BreedingDashboard extends StatelessWidget {
                   ),
                 ),
                 Text(
-                  animalTitle(sire['name'], sire['tattoo']),
+                  sire.isEmpty
+                      ? 'Unknown sire'
+                      : animalTitle(sire['name'], sire['tattoo']),
                   style: const TextStyle(fontSize: 13),
                 ),
                 const AdaptiveGap(height: 16),
-                if (!born && isActive) ...[
+                if (!born &&
+                    isActive &&
+                    start != null &&
+                    t['breeding_occurred'] != false) ...[
                   Row(
                     children: [
                       Expanded(
@@ -430,6 +438,76 @@ class BreedingDashboard extends StatelessWidget {
                       backgroundColor: const Color(0xFFF0E6E9),
                     ),
                   ),
+                  if (t['cage'] != null && t['cage'] != '')
+                    Text('Litter cage: ${t['cage']}'),
+                  if ([
+                        'paired_date',
+                        'split_date',
+                        'scheduled_breeding_date',
+                        'nest_installed',
+                        'nest_removed',
+                        'rebreeding_enabled',
+                        'rebreeding_overridden',
+                        'added',
+                        'raised',
+                        'bucks',
+                        'does',
+                        'kept',
+                        'sold',
+                        'show_quality',
+                      ].any((k) => t[k] != null) ||
+                      (t['custom_fields'] as Map? ?? {}).isNotEmpty)
+                    ExpansionTile(
+                      tilePadding: EdgeInsets.zero,
+                      title: const Text('Litter details'),
+                      children: [
+                        for (final e in const {
+                          'paired_date': 'Paired',
+                          'split_date': 'Separated / split',
+                          'scheduled_breeding_date': 'Scheduled rebreeding',
+                        }.entries)
+                          if (t[e.key] != null)
+                            ListTile(
+                              dense: true,
+                              title: Text(e.value),
+                              trailing: Text(date(t[e.key])),
+                            ),
+                        for (final e in const {
+                          'nest_installed': 'Nest box installed',
+                          'nest_removed': 'Nest box removed',
+                          'rebreeding_enabled': 'Rebreeding enabled',
+                          'rebreeding_overridden':
+                              'Rebreeding schedule overridden',
+                        }.entries)
+                          if (t[e.key] != null)
+                            ListTile(
+                              dense: true,
+                              title: Text(e.value),
+                              trailing: Text(t[e.key] == true ? 'Yes' : 'No'),
+                            ),
+                        for (final e in const {
+                          'added': 'Added / fostered in',
+                          'raised': 'Raised',
+                          'bucks': 'Bucks in litter',
+                          'does': 'Does in litter',
+                          'kept': 'Kept',
+                          'sold': 'Sold',
+                          'show_quality': 'Show quality',
+                        }.entries)
+                          if (t[e.key] != null)
+                            ListTile(
+                              dense: true,
+                              title: Text(e.value),
+                              trailing: Text('${t[e.key]}'),
+                            ),
+                        for (final e
+                            in (t['custom_fields'] as Map? ?? {}).entries)
+                          ListTile(
+                            title: Text(e.key.toString()),
+                            subtitle: Text(e.value.toString()),
+                          ),
+                      ],
+                    ),
                   const SizedBox(height: 10),
                   if (elapsed > c['gestation_max'])
                     const Text(
@@ -440,9 +518,13 @@ class BreedingDashboard extends StatelessWidget {
                 event(
                   Icons.favorite_outline,
                   'Bred',
-                  DateFormat('MMM d, yyyy').format(start),
+                  start == null
+                      ? 'Not recorded'
+                      : DateFormat('MMM d, yyyy').format(start),
                 ),
-                if (!born) ...[
+                if (!born &&
+                    start != null &&
+                    t['breeding_occurred'] != false) ...[
                   event(
                     Icons.event_available,
                     'Expected birth window',
@@ -454,7 +536,7 @@ class BreedingDashboard extends StatelessWidget {
                     'Palpation window',
                     window(start, c['palpation_min'], c['palpation_max']),
                   ),
-                  if (c['nesting_day'] != null)
+                  if (c['nesting_day'] != null && t['nest_installed'] != true)
                     event(
                       Icons.home_outlined,
                       'Nesting box',
@@ -464,20 +546,20 @@ class BreedingDashboard extends StatelessWidget {
                 event(
                   Icons.fact_check_outlined,
                   'Palpation result',
-                  '${t['check_result'] ?? 'Not checked'}${t['check_date'] == null ? '' : ' • ${date(t['check_date'])}'}',
+                  '${t['palpation_source'] != null && (t['check_result'] ?? 'Not checked') == 'Not checked' ? 'Previous result: ${t['palpation_source']}' : t['check_result'] ?? 'Not checked'}${t['check_date'] == null ? '' : ' • ${date(t['check_date'])}'}',
                 ),
                 if (born) ...[
                   event(
                     Icons.child_care,
                     cavy ? 'Pups born' : 'Kits kindled',
-                    '${date(t['birth_date'])} • ${t['born_alive']} alive • ${t['born_dead']} stillborn',
+                    '${date(t['birth_date'])} • ${(r['import_source'] == null ? t['born_alive'] : t['born_total']) ?? 'Unknown'} ${r['import_source'] == null ? 'alive' : 'born (source)'} • ${t['born_dead'] ?? 'Unknown'} stillborn',
                     emphasize: true,
                   ),
                   event(
                     Icons.event_note,
                     weaned ? 'Weaned' : 'Expected weaning',
                     weaned
-                        ? '${date(t['wean_date'])} • ${t['weaned']} ${cavy ? 'pups' : 'kits'}'
+                        ? '${date(t['wean_date'])} • ${t['weaned'] ?? 'Unknown'} ${cavy ? 'pups' : 'kits'}'
                         : window(
                             DateTime.parse(t['birth_date']),
                             c['weaning_min'] * 7,
@@ -485,6 +567,10 @@ class BreedingDashboard extends StatelessWidget {
                           ),
                   ),
                 ],
+                if (t['recorded_deaths'] != null)
+                  Text(
+                    'Recorded deaths: ${t['recorded_deaths']} (litter total)',
+                  ),
                 if (t['weaned_males'] != null)
                   Text(
                     '${t['weaned_males']} ${cavy ? 'boars' : 'bucks'} • ${t['weaned_females']} ${cavy ? 'sows' : 'does'}',
@@ -506,19 +592,48 @@ class BreedingDashboard extends StatelessWidget {
                 const SizedBox(height: 10),
                 SizedBox(
                   width: double.infinity,
+                  child: OutlinedButton.icon(
+                    onPressed: () => Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) =>
+                            ProductionMeasurementsScreen(recordId: r['id']),
+                      ),
+                    ),
+                    icon: const Icon(Icons.monitor_weight_outlined),
+                    label: const Text('Litter weights & feed'),
+                  ),
+                ),
+                if (r['import_record'] is Map)
+                  ExpansionTile(
+                    title: const Text('Original litter details'),
+                    children: [
+                      for (final e in (r['import_record'] as Map).entries)
+                        Padding(
+                          padding: const EdgeInsets.all(6),
+                          child: SelectableText('${e.key}: ${e.value}'),
+                        ),
+                    ],
+                  ),
+                SizedBox(
+                  width: double.infinity,
                   child: FilledButton.icon(
                     onPressed: () => onEdit(r),
                     icon: const Icon(Icons.edit_outlined, size: 16),
                     label: const Text('Update tracking'),
                   ),
                 ),
-                if ((t['weaned'] ?? 0) > 0 &&
-                    children.isEmpty &&
-                    r['status'] != 'cancelled')
+                if (r['status'] != 'cancelled' &&
+                    (r['import_source'] != null ||
+                        (t['weaned'] ?? 0) > children.length))
                   TextButton.icon(
                     onPressed: () => onOffspring(r),
                     icon: const Icon(Icons.add),
-                    label: const Text('Create offspring records'),
+                    label: Text(
+                      r['import_source'] == null
+                          ? 'Create offspring records'
+                          : 'Manage offspring',
+                    ),
                   ),
                 if (children.isNotEmpty) ...[
                   const AdaptiveGap(height: 12),
