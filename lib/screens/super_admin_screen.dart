@@ -1,5 +1,6 @@
 import '../widgets/adaptive_layout.dart';
 import 'billing_admin_screen.dart';
+import 'global_billing_settings_screen.dart';
 import '../offline/offline_runtime.dart';
 import 'package:flutter/material.dart';
 import '../widgets/ringmaster_page_shell.dart';
@@ -87,6 +88,23 @@ class _SuperAdminScreenState extends State<SuperAdminScreen> {
     body: ListView(
       padding: BreederLayout.pagePadding(context, normal: 24),
       children: [
+        Card(
+          child: ListTile(
+            leading: const Icon(Icons.settings_outlined),
+            title: const Text('Global billing settings'),
+            subtitle: const Text(
+              'Early-adopter limits and monthly/yearly prices for all accounts.',
+            ),
+            trailing: const Icon(Icons.chevron_right),
+            onTap: () => Navigator.push(
+              context,
+              MaterialPageRoute<void>(
+                builder: (_) => const GlobalBillingSettingsScreen(),
+              ),
+            ),
+          ),
+        ),
+        const AdaptiveGap(height: 20),
         Text('View As User', style: Theme.of(context).textTheme.headlineSmall),
         const Text(
           'Find an account to inspect its herds and records. Support access is read-only and logged.',

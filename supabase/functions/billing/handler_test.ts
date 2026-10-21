@@ -23,7 +23,7 @@ const user = {
   aud: "authenticated",
   created_at: "2026-01-01T00:00:00Z",
 };
-async function run(input: any, valid = true) {
+async function run(input: any, valid = true, admin = false) {
   const requests: string[] = [];
   globalThis.fetch = (async (url: any) => {
     const target = String(url);
@@ -34,7 +34,7 @@ async function run(input: any, valid = true) {
       });
     }
     if (target.includes("/rpc/breeder_is_super_admin")) {
-      return Response.json(false);
+      return Response.json(admin);
     }
     if (target.includes("/rest/v1/users")) {
       return Response.json({
@@ -93,5 +93,35 @@ Deno.test("admin grants require database-backed super-admin permission", async (
   assert(
     !r.requests.some((x) => x.includes("breeder_billing_transaction")),
     "grant attempted",
+  );
+});
+
+Deno.test("global billing settings require admin access and do not target an account", async () => {
+  const denied = await run({ action: "admin-global-status" });
+  assert(denied.response.status === 403, "non-admin read global settings");
+  const allowed = await run(
+    { action: "admin-global-status", owner: "unrelated-account" },
+    true,
+    true,
+  );
+  assert(
+    allowed.response.status === 200,
+    "administrator could not read global settings",
+  );
+  assert(
+    Array.isArray(allowed.data.offers) && Array.isArray(allowed.data.rules),
+    "global settings unavailable",
+  );
+  assert(
+    !("owner" in allowed.data) && !("subscriptions" in allowed.data),
+    "global response included account data",
+  );
+  assert(
+    !allowed.requests.some((url) =>
+      url.includes("unrelated-account") ||
+      url.includes("breeder_billing_subscriptions") ||
+      url.includes("breeder_membership_grants")
+    ),
+    "global settings queried an individual membership",
   );
 });

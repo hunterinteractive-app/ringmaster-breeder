@@ -205,9 +205,17 @@ Deno.serve(async (req) => {
         return reply({ error: "Administrator access required." }, 403);
       }
     }
-    const owner = isAdminAction && input.owner ? String(input.owner) : own.id;
+    const isGlobalAction = [
+      "admin-global-status",
+      "admin-rule",
+      "admin-publish-price",
+    ].includes(action);
+    const owner = isAdminAction && !isGlobalAction && input.owner
+      ? String(input.owner)
+      : own.id;
     if (
-      isAdminAction && input.owner && !await row(database, "users", "id", owner)
+      isAdminAction && !isGlobalAction && input.owner &&
+      !await row(database, "users", "id", owner)
     ) throw Error("Account not found");
     const settings = await row(
       database,
@@ -215,6 +223,19 @@ Deno.serve(async (req) => {
       "id",
       true,
     );
+    if (action === "admin-global-status") {
+      return reply({
+        offers: checked(
+          await database.from("breeder_billing_prices").select("*").eq(
+            "available",
+            true,
+          ).in("interval", ["month", "year"]).order("amount_cents"),
+        ),
+        rules: checked(
+          await database.from("breeder_early_adopter_rules").select("*"),
+        ),
+      });
+    }
     if (action === "status" || action === "admin-status") {
       const prices = checked<any[]>(
         await database.from("breeder_billing_prices").select("*").order(
@@ -276,6 +297,8 @@ Deno.serve(async (req) => {
       await database.rpc("breeder_billing_lease", {
         p_owner: action === "admin-publish-price"
           ? "catalogue:" + input.tier + ":" + input.interval
+          : action === "admin-rule"
+          ? "early-adopters:" + input.tier
           : owner,
         p_token: lease,
         p_release: false,

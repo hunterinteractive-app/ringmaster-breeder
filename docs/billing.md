@@ -20,7 +20,9 @@ Returning from Checkout does not grant access. Stripe events are signed and chec
 
 ## Administrator controls
 
-Account → **Super Admin** → search for the intended person → the **credit-card icon** beside that account opens **Membership administration**. Clicking the account itself still opens the separate read-only support view.
+Account → **Super Admin** → **Global billing settings** contains the early-adopter limits and recurring prices for all accounts. These controls do not select or target an individual account.
+
+For personal membership changes: Account → **Super Admin** → search for the intended person → the **credit-card icon** beside that account opens **Membership administration**. Clicking the account itself still opens the separate read-only support view.
 
 - Grant Professional or Top Tier lifetime access with a reason; revoke a particular grant with a reason. Grants are audited. Future recurring renewals are stopped, without issuing automatic refunds. Pending purchases must first be closed, and private purchase links are disabled during manual grants.
 - Grant/remove a price lock for an existing continuous subscription or its next initial subscription. A card update preserves a lock. Changing tier or billing interval removes it after explicit customer confirmation. Ending a subscription ends its lock. A consumed manual grant is not automatically reused on a later subscription.

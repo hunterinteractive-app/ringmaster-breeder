@@ -19,10 +19,8 @@ class _BillingAdminScreenState extends State<BillingAdminScreen> {
   Map<String, dynamic>? data;
   bool busy = false;
   String? message;
-  String tier = 'PRO', interval = 'year';
-  final note = TextEditingController(),
-      amount = TextEditingController(),
-      quota = TextEditingController();
+  String tier = 'PRO';
+  final note = TextEditingController(), amount = TextEditingController();
   String operation = SalesService.newId();
   @override
   void initState() {
@@ -34,7 +32,6 @@ class _BillingAdminScreenState extends State<BillingAdminScreen> {
   void dispose() {
     note.dispose();
     amount.dispose();
-    quota.dispose();
     super.dispose();
   }
 
@@ -91,8 +88,6 @@ class _BillingAdminScreenState extends State<BillingAdminScreen> {
         setState(
           () => message = result['url'] != null
               ? 'Private link copied. It grants access only to this account.'
-              : result['results'] != null
-              ? 'Price published. Renewal scheduling: ${result['results']}'
               : 'Change saved.',
         );
       }
@@ -134,9 +129,10 @@ class _BillingAdminScreenState extends State<BillingAdminScreen> {
           ),
         DropdownButtonFormField<String>(
           initialValue: tier,
-          decoration: const InputDecoration(labelText: 'Tier'),
+          decoration: const InputDecoration(
+            labelText: 'Lifetime membership tier',
+          ),
           items: const [
-            DropdownMenuItem(value: 'HOBBY', child: Text('Hobby Breeder')),
             DropdownMenuItem(value: 'PRO', child: Text('Professional Breeder')),
             DropdownMenuItem(value: 'TOP', child: Text('Top Tier')),
           ],
@@ -203,37 +199,14 @@ class _BillingAdminScreenState extends State<BillingAdminScreen> {
         ),
         const Divider(),
         const Text(
-          'Early-adopter offer — applies to the selected tier for all accounts',
-        ),
-        for (final r in data?['rules'] as List? ?? [])
-          Text(
-            '${billingTier(r['tier_code'])}: ${r['enabled'] == true ? 'first ${r['quota']} paid customers' : 'disabled'}',
-          ),
-        TextField(
-          controller: quota,
-          keyboardType: TextInputType.number,
-          decoration: const InputDecoration(
-            labelText: 'First-customer count (0 disables new locks)',
-          ),
-        ),
-        OutlinedButton(
-          onPressed: busy
-              ? null
-              : () => run(
-                  'admin-rule',
-                  {'tier': tier, 'quota': int.tryParse(quota.text)},
-                  'Offer a continuous price lock to the first ${quota.text} eligible customers in ${billingTier(tier)}? Existing awards and pending reservations count toward this total.',
-                ),
-          child: const Text('Save early-adopter count'),
-        ),
-        const Divider(),
-        const Text(
           'Private lifetime purchase — grants access only to this account',
         ),
         TextField(
           controller: amount,
           keyboardType: const TextInputType.numberWithOptions(decimal: true),
-          decoration: const InputDecoration(labelText: 'Price in USD'),
+          decoration: const InputDecoration(
+            labelText: 'One-time lifetime price (USD)',
+          ),
         ),
         FilledButton(
           onPressed: busy || tier == 'HOBBY'
@@ -270,31 +243,6 @@ class _BillingAdminScreenState extends State<BillingAdminScreen> {
                 child: const Text('Disable'),
               ),
             ),
-        const Divider(),
-        const Text('Publish a new recurring price for the selected tier'),
-        DropdownButtonFormField<String>(
-          initialValue: interval,
-          items: const [
-            DropdownMenuItem(value: 'month', child: Text('Monthly')),
-            DropdownMenuItem(value: 'year', child: Text('Yearly')),
-          ],
-          onChanged: busy ? null : (v) => setState(() => interval = v!),
-        ),
-        OutlinedButton(
-          onPressed: busy
-              ? null
-              : () => run(
-                  'admin-publish-price',
-                  {
-                    'tier': tier,
-                    'interval': interval,
-                    'amount_cents': cents(),
-                    'confirm_notice': true,
-                  },
-                  'Publish \$${amount.text}/$interval for ${billingTier(tier)}? Confirm that you have handled required renewal notices. Eligible unlocked subscribers change at their next renewal. Locked prices and already scheduled customer plan choices are preserved. Review the scheduling results and retry the same price if any fail.',
-                ),
-          child: const Text('Confirm notices handled & publish price'),
-        ),
       ],
     ),
   );
