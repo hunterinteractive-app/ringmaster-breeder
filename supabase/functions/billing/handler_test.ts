@@ -125,3 +125,24 @@ Deno.test("global billing settings require admin access and do not target an acc
     "global settings queried an individual membership",
   );
 });
+
+Deno.test("individual billing history requires super-admin permission before reading account data", async () => {
+  for (const action of ["admin-billing-details", "admin-billing-history"]) {
+    const result = await run({
+      action,
+      owner: "other-account",
+      kind: "transactions",
+    });
+    assert(
+      result.response.status === 403,
+      "account history allowed a non-admin",
+    );
+    assert(
+      !result.requests.some((url) =>
+        url.includes("breeder_billing_customers") ||
+        url.includes("api.stripe.com")
+      ),
+      "unauthorized history was queried",
+    );
+  }
+});

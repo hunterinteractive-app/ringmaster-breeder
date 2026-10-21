@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import '../services/sales_service.dart';
 import '../services/billing_service.dart';
 import '../widgets/ringmaster_page_shell.dart';
+import '../widgets/account_billing_overview.dart';
 
 class BillingAdminScreen extends StatefulWidget {
   final String owner, label;
@@ -16,7 +17,8 @@ class BillingAdminScreen extends StatefulWidget {
 }
 
 class _BillingAdminScreenState extends State<BillingAdminScreen> {
-  Map<String, dynamic>? data;
+  Map<String, dynamic>? data, billingDetails;
+  String? detailsError;
   bool busy = false;
   String? message;
   String tier = 'PRO';
@@ -36,12 +38,28 @@ class _BillingAdminScreenState extends State<BillingAdminScreen> {
   }
 
   Future<void> load() async {
-    setState(() => busy = true);
+    setState(() {
+      busy = true;
+      detailsError = null;
+    });
     try {
       final value = await BillingService.call('admin-status', {
         'owner': widget.owner,
       });
       if (mounted) setState(() => data = value);
+      try {
+        final details = await BillingService.call('admin-billing-details', {
+          'owner': widget.owner,
+        });
+        if (mounted) setState(() => billingDetails = details);
+      } catch (_) {
+        if (mounted) {
+          setState(
+            () => detailsError =
+                'Unable to load billing history. Refresh to try again.',
+          );
+        }
+      }
     } catch (e) {
       if (mounted) {
         setState(() => message = e.toString().replaceFirst('Exception: ', ''));
@@ -101,6 +119,57 @@ class _BillingAdminScreenState extends State<BillingAdminScreen> {
     }
   }
 
+  Future<void> loadHistory(String kind) async {
+    final cursor = billingDetails?['${kind}_next'];
+    if (cursor == null || busy) return;
+    setState(() {
+      busy = true;
+      detailsError = null;
+    });
+    try {
+      final page = await BillingService.call('admin-billing-history', {
+        'owner': widget.owner,
+        'kind': kind,
+        'after': cursor,
+      });
+      if (mounted) {
+        setState(() {
+          final combined = <String, dynamic>{
+            for (final row in billingDetails![kind]) row['id']: row,
+            for (final row in page[kind]) row['id']: row,
+          };
+          final rows = combined.values.toList()
+            ..sort(
+              (a, b) => (b['created_at'] as String? ?? '').compareTo(
+                a['created_at'] as String? ?? '',
+              ),
+            );
+          billingDetails = {
+            ...billingDetails!,
+            kind: rows,
+            '${kind}_next': page['${kind}_available'] == true
+                ? page['${kind}_next']
+                : cursor,
+            '${kind}_available': page['${kind}_available'],
+            'warnings': <String>{
+              ...List<String>.from(billingDetails!['warnings']),
+              ...List<String>.from(page['warnings']),
+            }.toList(),
+          };
+        });
+      }
+    } catch (_) {
+      if (mounted) {
+        setState(
+          () => detailsError =
+              'Unable to load older billing history. Please try again.',
+        );
+      }
+    } finally {
+      if (mounted) setState(() => busy = false);
+    }
+  }
+
   int? cents() {
     final value = num.tryParse(amount.text.trim());
     return value == null ? null : (value * 100).round();
@@ -123,10 +192,20 @@ class _BillingAdminScreenState extends State<BillingAdminScreen> {
           const Text(
             'A price lock is reserved for this account’s next initial subscription.',
           ),
-        for (final sub in data?['subscriptions'] as List? ?? [])
-          Text(
-            'Subscription: ${sub['status']} · Price locked: ${sub['price_locked'] == true ? 'Yes' : 'No'} · Renewal: ${sub['period_end'] ?? 'Pending'}',
+        if (detailsError != null) Text(detailsError!),
+        if (billingDetails != null)
+          AccountBillingOverview(
+            data: billingDetails!,
+            busy: busy,
+            onRefresh: load,
+            onMoreTransactions: () => loadHistory('transactions'),
+            onMoreInvoices: () => loadHistory('invoices'),
           ),
+        const SizedBox(height: 16),
+        Text(
+          'Membership controls',
+          style: Theme.of(context).textTheme.titleLarge,
+        ),
         DropdownButtonFormField<String>(
           initialValue: tier,
           decoration: const InputDecoration(

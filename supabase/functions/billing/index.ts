@@ -12,6 +12,7 @@ import {
   syncSubscription,
   transaction,
 } from "../_shared/billing-state.ts";
+import { readAccountBilling } from "../_shared/billing-overview.ts";
 const cors = {
   "Access-Control-Allow-Origin": "https://breeder.ringmasterone.com",
   "Access-Control-Allow-Headers":
@@ -223,6 +224,25 @@ Deno.serve(async (req) => {
       "id",
       true,
     );
+    if (
+      action === "admin-billing-details" || action === "admin-billing-history"
+    ) {
+      if (
+        action === "admin-billing-history" &&
+        !["transactions", "invoices"].includes(input.kind)
+      ) throw Error("Choose a history section.");
+      const details = await readAccountBilling(
+        database,
+        owner,
+        action === "admin-billing-history"
+          ? { kind: input.kind, after: input.after }
+          : {},
+      );
+      await audit(database, user.id, owner, action, {
+        kind: input.kind ?? "overview",
+      });
+      return reply(details);
+    }
     if (action === "admin-global-status") {
       return reply({
         offers: checked(

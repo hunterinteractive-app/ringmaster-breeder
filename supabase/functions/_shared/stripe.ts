@@ -55,9 +55,12 @@ export class StripeClient {
     }
     return result;
   }
-  async verifyAccount() {
+  async verifyAccount(requirePayments = true) {
     const account = await this.request("account");
-    if (account.id !== STRIPE_ACCOUNT || !account.charges_enabled) {
+    if (
+      account.id !== STRIPE_ACCOUNT ||
+      (requirePayments && !account.charges_enabled)
+    ) {
       throw Error("Live billing account is not ready");
     }
   }
