@@ -7,6 +7,7 @@ import '../offline/offline_runtime.dart';
 import 'global_pedigree_history_screen.dart';
 import '../widgets/sync_dialog.dart';
 import 'super_admin_screen.dart';
+import 'global_billing_settings_screen.dart';
 import 'billing_screen.dart';
 import 'delete_account_screen.dart';
 import '../widgets/show_connection_panel.dart';
@@ -420,20 +421,25 @@ class _AccountScreenState extends State<AccountScreen> {
                       ),
                     ]),
                     if (superAdmin)
-                      section(
-                        'Super Admin',
-                        Icons.admin_panel_settings_outlined,
-                        [
-                          ListTile(
-                            title: const Text('View As User'),
-                            subtitle: const Text(
-                              'Inspect user accounts, herds, and animal records.',
-                            ),
-                            trailing: const Icon(Icons.chevron_right),
-                            onTap: () => open(const SuperAdminScreen()),
+                      section('Super Admin', Icons.admin_panel_settings_outlined, [
+                        ListTile(
+                          title: const Text('Global billing settings'),
+                          subtitle: const Text(
+                            'Early-adopter limits and monthly/yearly prices for all accounts.',
                           ),
-                        ],
-                      ),
+                          trailing: const Icon(Icons.chevron_right),
+                          onTap: () =>
+                              open(const GlobalBillingSettingsScreen()),
+                        ),
+                        ListTile(
+                          title: const Text('View As User'),
+                          subtitle: const Text(
+                            'Inspect user accounts, herds, and animal records.',
+                          ),
+                          trailing: const Icon(Icons.chevron_right),
+                          onTap: () => open(const SuperAdminScreen()),
+                        ),
+                      ]),
                     section('Family access', Icons.group_outlined, [
                       ListTile(
                         contentPadding: EdgeInsets.zero,
