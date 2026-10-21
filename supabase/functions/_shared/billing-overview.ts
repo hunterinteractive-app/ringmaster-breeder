@@ -118,7 +118,10 @@ export async function readAccountBilling(
             effective_at: iso(future.start_date),
           }
           : pending
-          ? { ...plan(null, pending), effective_at: saved.period_end }
+          ? {
+            ...plan(null, pending),
+            effective_at: saved.pending_effective_at ?? saved.period_end,
+          }
           : null,
       verified_live: !!live,
       saved_at: saved.observed_at,

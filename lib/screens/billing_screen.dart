@@ -180,7 +180,7 @@ class _BillingScreenState extends State<BillingScreen>
                     if (sub['pending_offer_id'] != null &&
                         price(sub['pending_offer_id']) != null)
                       Text(
-                        'At renewal: ${billingTier(price(sub['pending_offer_id'])!['tier_code'])} · ${billingPrice(price(sub['pending_offer_id'])!)}',
+                        'At renewal: ${billingTier(price(sub['pending_offer_id'])!['tier_code'])} · ${billingPrice(price(sub['pending_offer_id'])!)} on ${date(sub['pending_effective_at'] ?? sub['period_end'])}',
                       ),
                   ],
                 ),

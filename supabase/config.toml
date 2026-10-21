@@ -14,3 +14,7 @@ verify_jwt = false
 [functions.stripe-webhook]
 # Stripe HMAC signature over the raw body, with a five-minute replay window.
 verify_jwt = false
+
+[functions.billing-price-worker]
+# Private Vault token checked via service-only RPC before any work.
+verify_jwt = false

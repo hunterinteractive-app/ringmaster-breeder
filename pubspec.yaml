@@ -2,7 +2,7 @@ name: ringmaster_breeder
 description: Herd management software for Rabbits and Cavies.
 publish_to: 'none'
 
-version: 0.24.1+241
+version: 0.25.0+250
 
 environment:
   sdk: ^3.9.2

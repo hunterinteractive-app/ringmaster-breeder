@@ -1,9 +1,15 @@
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 import '../services/billing_service.dart';
 import '../widgets/ringmaster_page_shell.dart';
 
 class GlobalBillingSettingsScreen extends StatefulWidget {
-  const GlobalBillingSettingsScreen({super.key});
+  final Future<Map<String, dynamic>> Function(String, Map<String, dynamic>)
+  request;
+  const GlobalBillingSettingsScreen({
+    super.key,
+    this.request = BillingService.call,
+  });
   @override
   State<GlobalBillingSettingsScreen> createState() =>
       _GlobalBillingSettingsScreenState();
@@ -14,6 +20,7 @@ class _GlobalBillingSettingsScreenState
   Map<String, dynamic>? data;
   String tier = 'HOBBY', interval = 'year';
   bool busy = false;
+  DateTime startsAt = DateTime.now().add(const Duration(days: 30));
   String? message;
   final quota = TextEditingController(), amount = TextEditingController();
 
@@ -51,7 +58,7 @@ class _GlobalBillingSettingsScreenState
   Future<void> load() async {
     setState(() => busy = true);
     try {
-      final value = await BillingService.call('admin-global-status');
+      final value = await widget.request('admin-global-status', {});
       if (mounted) {
         setState(() {
           data = value;
@@ -95,12 +102,14 @@ class _GlobalBillingSettingsScreenState
       message = null;
     });
     try {
-      final result = await BillingService.call(action, args);
+      final result = await widget.request(action, args);
       final results = result['results'] as List?;
       final failed = results?.where((r) => r['error'] != null).length ?? 0;
       if (mounted) {
         setState(
-          () => message = results == null
+          () => message = result['scheduled'] == true
+              ? 'Price change scheduled. Automatic emails will name each affected member’s renewal date. Refresh to check delivery and scheduling.'
+              : results == null
               ? 'Early-adopter limit saved for ${billingTier(args['tier'])}.'
               : 'Price saved. ${results.length - failed} memberships scheduled for renewal.${failed > 0 ? ' $failed could not be updated. Publish the same price again to retry.' : ''}',
         );
@@ -222,7 +231,40 @@ class _GlobalBillingSettingsScreenState
           ),
           const SizedBox(height: 12),
           const Text(
-            'Price changes apply at renewal. Locked prices and customer plan changes already scheduled are preserved.',
+            'New purchases use the new price from the start date. Existing members change at their first renewal on or after that date, with at least 30 days’ email notice. Locked prices, lifetime memberships, and scheduled customer plan changes are preserved.',
+          ),
+          const SizedBox(height: 12),
+          Wrap(
+            spacing: 8,
+            children: [
+              for (final days in [30, 60, 90])
+                ActionChip(
+                  label: Text('In $days days'),
+                  onPressed: busy
+                      ? null
+                      : () => setState(() {
+                          startsAt = DateTime.now().add(Duration(days: days));
+                        }),
+                ),
+            ],
+          ),
+          OutlinedButton.icon(
+            icon: const Icon(Icons.calendar_month_outlined),
+            label: Text('Start date: ${DateFormat.yMMMd().format(startsAt)}'),
+            onPressed: busy
+                ? null
+                : () async {
+                    final now = DateTime.now();
+                    final chosen = await showDatePicker(
+                      context: context,
+                      initialDate: startsAt,
+                      firstDate: now.add(const Duration(days: 2)),
+                      lastDate: now.add(const Duration(days: 730)),
+                    );
+                    if (chosen != null && mounted) {
+                      setState(() => startsAt = chosen);
+                    }
+                  },
           ),
           OutlinedButton(
             onPressed: busy || data == null
@@ -246,12 +288,58 @@ class _GlobalBillingSettingsScreenState
                         'tier': tier,
                         'interval': interval,
                         'amount_cents': (value * 100).round(),
-                        'confirm_notice': true,
+                        'starts_at': startsAt.toUtc().toIso8601String(),
                       },
-                      'Publish \$$text/$interval USD for ${billingTier(tier)} across all accounts? Confirm that you have handled required renewal notices. Eligible unlocked subscribers change at their next renewal. Review the scheduling results and retry this same price if any memberships could not be updated.',
+                      'Schedule \$$text/$interval USD for ${billingTier(tier)} starting ${DateFormat.yMMMd().format(startsAt)}? Affected members will automatically receive an email with their old price, new price and exact renewal date. Their change happens at a regular renewal on or after the start date, with at least 30 days’ notice. New purchases use this price from the start date.',
                     );
                   },
-            child: const Text('Confirm notices handled & publish price'),
+            child: const Text('Schedule price change & notify members'),
+          ),
+        ]),
+        section('Scheduled changes & email status', [
+          if ((data?['changes'] as List? ?? []).isEmpty)
+            const Text('No price changes scheduled.'),
+          for (final change in data?['changes'] as List? ?? []) ...[
+            Text(
+              '${billingTier(change['offer']['tier_code'])} · ${billingPrice(change['offer'])}',
+            ),
+            Text(
+              'Start: ${DateFormat.yMMMd().format(DateTime.parse(change['starts_at']).toLocal())} · ${change['state']}',
+            ),
+            Builder(
+              builder: (context) {
+                final notices = (data?['notices'] as List? ?? [])
+                    .where((n) => n['change_id'] == change['id'])
+                    .toList();
+                final accepted = notices
+                    .where((n) => n['email_accepted_at'] != null)
+                    .length;
+                final complete = notices
+                    .where((n) => n['scheduled_at'] != null)
+                    .length;
+                final review = notices
+                    .where(
+                      (n) =>
+                          n['state'] == 'review' ||
+                          n['state'] == 'queued' && n['last_error'] != null,
+                    )
+                    .length;
+                return Text(
+                  'Recent notices: $accepted accepted · $complete renewals scheduled · $review need attention',
+                );
+              },
+            ),
+            for (final n in (data?['notices'] as List? ?? []).where(
+              (n) =>
+                  n['change_id'] == change['id'] &&
+                  n['last_error'] != null &&
+                  n['state'] != 'skipped',
+            ))
+              Text('Notice ${n['id']}: ${n['last_error']}'),
+            const SizedBox(height: 12),
+          ],
+          const Text(
+            'Email acceptance confirms handoff to the email service, not delivery to an inbox. Refresh to see progress. A late or unconfirmed notice never triggers an earlier charge.',
           ),
         ]),
       ],

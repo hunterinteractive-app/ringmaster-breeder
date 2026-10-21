@@ -118,6 +118,10 @@ async function scheduleChange(
     await database.from("breeder_billing_subscriptions").update({
       schedule_id: schedule.id,
       pending_offer_id: offer.id,
+      pending_effective_at: new Date(
+        (current.items.data[0].current_period_end ??
+          current.current_period_end) * 1000,
+      ).toISOString(),
       ...(loseLock ? { price_locked: false, lock_reason: "changed_plan" } : {}),
     }).eq("stripe_subscription", current.id),
   );
@@ -253,6 +257,16 @@ Deno.serve(async (req) => {
         ),
         rules: checked(
           await database.from("breeder_early_adopter_rules").select("*"),
+        ),
+        changes: checked(
+          await database.from("breeder_price_changes").select(
+            "*,offer:breeder_billing_prices!offer_id(tier_code,interval,amount_cents)",
+          ).order("created_at", { ascending: false }).limit(30),
+        ),
+        notices: checked(
+          await database.from("breeder_price_notices").select(
+            "id,change_id,state,email_accepted_at,scheduled_at,last_error",
+          ).order("created_at", { ascending: false }).limit(500),
         ),
       });
     }
@@ -816,96 +830,58 @@ Deno.serve(async (req) => {
         !["HOBBY", "PRO", "TOP"].includes(input.tier) ||
         !["month", "year"].includes(input.interval) ||
         !Number.isInteger(input.amount_cents) || input.amount_cents < 100 ||
-        input.amount_cents > 99999999 || input.confirm_notice !== true
+        input.amount_cents > 99999999 || !input.starts_at ||
+        !Number.isFinite(Date.parse(input.starts_at)) ||
+        Date.parse(input.starts_at) < Date.now() + 86400000 ||
+        Date.parse(input.starts_at) > Date.now() + 732 * 86400000
       ) {
         throw Error(
-          "Enter a valid price and confirm renewal notices have been handled.",
+          "Choose a valid price and start date at least one day ahead, within two years.",
         );
       }
       const existing = checked<any>(
-        await database.from("breeder_billing_prices").select("*").eq(
-          "tier_code",
-          input.tier,
-        ).eq("interval", input.interval).eq("available", true).single(),
+        await database.from("breeder_billing_prices").select("*")
+          .eq("tier_code", input.tier).eq("interval", input.interval).eq(
+            "available",
+            true,
+          ).single(),
       );
-      let offer = existing;
-      if (existing.amount_cents !== input.amount_cents) {
-        const price = await stripe.request("prices", "POST", {
+      if (existing.amount_cents === input.amount_cents) {
+        throw Error("Enter a different price.");
+      }
+      const pending = checked<any[]>(
+        await database.from("breeder_price_changes").select(
+          "*,offer:breeder_billing_prices!offer_id(tier_code,interval)",
+        ).eq("state", "scheduled"),
+      );
+      if (
+        pending.some((c) =>
+          c.offer.tier_code === input.tier &&
+          c.offer.interval === input.interval
+        )
+      ) throw Error("This tier already has a scheduled change.");
+      const price = await stripe.request(
+        "prices",
+        "POST",
+        {
           product: existing.stripe_product,
           currency: "usd",
           unit_amount: input.amount_cents,
           recurring: { interval: input.interval },
           metadata: { application: APP },
-        }, `price:${existing.id}:${input.amount_cents}`);
-        offer = checked(
-          await database.rpc("breeder_publish_price", {
-            p_previous: existing.id,
-            p_price: price.id,
-            p_amount: input.amount_cents,
-            p_actor: user.id,
-          }),
-        );
-      }
-      const subscriptions = checked<any[]>(
-        await database.from("breeder_billing_subscriptions").select("*").eq(
-          "status",
-          "active",
-        ).eq("price_locked", false).eq("cancel_at_period_end", false),
+        },
+        `future-price:${existing.id}:${input.amount_cents}:${input.starts_at}`,
       );
-      const results = [];
-      for (const s of subscriptions) {
-        const old = await row(
-          database,
-          "breeder_billing_prices",
-          "id",
-          s.offer_id,
-        );
-        if (
-          old.tier_code !== input.tier || old.interval !== input.interval ||
-          s.offer_id === offer.id ||
-          s.pending_offer_id && s.pending_offer_id !== offer.id
-        ) continue;
-        const subLease = crypto.randomUUID();
-        try {
-          checked(
-            await database.rpc("breeder_billing_lease", {
-              p_owner: s.owner_id,
-              p_token: subLease,
-              p_release: false,
-            }),
-          );
-          const fresh = await row(
-            database,
-            "breeder_billing_subscriptions",
-            "stripe_subscription",
-            s.stripe_subscription,
-          );
-          if (
-            fresh.price_locked ||
-            fresh.pending_offer_id && fresh.pending_offer_id !== offer.id
-          ) continue;
-          results.push({
-            subscription: s.stripe_subscription,
-            ...await scheduleChange(database, stripe, fresh, offer, false),
-          });
-        } catch {
-          results.push({
-            subscription: s.stripe_subscription,
-            error: "Retry publishing this same price to finish scheduling.",
-          });
-        } finally {
-          await database.rpc("breeder_billing_lease", {
-            p_token: subLease,
-            p_release: true,
-          });
-        }
-      }
-      await audit(database, user.id, null, action, {
-        offer: offer.id,
-        notice_confirmed: true,
-        results,
-      });
-      return reply({ updated: true, results });
+      const campaign = checked(
+        await database.rpc("breeder_schedule_price", {
+          p_previous: existing.id,
+          p_price: price.id,
+          p_amount: input.amount_cents,
+          p_start: input.starts_at,
+          p_actor: user.id,
+        }),
+      );
+      return reply({ scheduled: true, campaign });
     }
     if (action === "refresh") {
       const subs = checked<any[]>(
