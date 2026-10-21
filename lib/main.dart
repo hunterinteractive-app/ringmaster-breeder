@@ -6,6 +6,7 @@ import 'screens/legal/legal_gate.dart';
 import 'services/legal_service.dart';
 import 'services/record_import_service.dart';
 import 'screens/profile_onboarding_gate.dart';
+import 'screens/registration_feedback_screen.dart';
 import 'offline/offline_runtime.dart';
 import 'dart:async';
 import 'package:flutter/material.dart';
@@ -61,7 +62,10 @@ class MyApp extends StatelessWidget {
                       OfflineRuntime.client,
                       requireServerConfirmation: true,
                     ),
-                    child: child ?? const SizedBox.shrink(),
+                    child: RegistrationFeedbackGate(
+                      key: ValueKey(OfflineRuntime.client.auth.currentUser!.id),
+                      child: child ?? const SizedBox.shrink(),
+                    ),
                   ),
                 ),
               ),

@@ -9,6 +9,8 @@ import 'global_pedigree_history_screen.dart';
 import '../widgets/sync_dialog.dart';
 import 'super_admin_screen.dart';
 import 'global_billing_settings_screen.dart';
+import 'registration_feedback_screen.dart';
+import 'registration_insights_screen.dart';
 import 'billing_screen.dart';
 import 'delete_account_screen.dart';
 import '../widgets/show_connection_panel.dart';
@@ -211,7 +213,12 @@ class _AccountScreenState extends State<AccountScreen> {
       context,
       MaterialPageRoute<void>(builder: (_) => screen),
     );
-    if (mounted && !dirty && (screen is HerdContactsScreen || screen is RabbitRegisterImportScreen)) await load();
+    if (mounted &&
+        !dirty &&
+        (screen is HerdContactsScreen ||
+            screen is RabbitRegisterImportScreen)) {
+      await load();
+    }
   }
 
   Widget section(String title, IconData icon, List<Widget> children) => Card(
@@ -448,6 +455,14 @@ class _AccountScreenState extends State<AccountScreen> {
                               open(const GlobalBillingSettingsScreen()),
                         ),
                         ListTile(
+                          title: const Text('Registration insights'),
+                          subtitle: const Text(
+                            'Herd tracking, referrals, and feature requests.',
+                          ),
+                          trailing: const Icon(Icons.chevron_right),
+                          onTap: () => open(const RegistrationInsightsScreen()),
+                        ),
+                        ListTile(
                           title: const Text('View As User'),
                           subtitle: const Text(
                             'Inspect user accounts, herds, and animal records.',
@@ -456,6 +471,16 @@ class _AccountScreenState extends State<AccountScreen> {
                           onTap: () => open(const SuperAdminScreen()),
                         ),
                       ]),
+                    section('Feedback & referrals', Icons.feedback_outlined, [
+                      ListTile(
+                        title: const Text('Your feedback & referral code'),
+                        subtitle: const Text(
+                          'Share feature ideas, update your answers, and view referred signups.',
+                        ),
+                        trailing: const Icon(Icons.chevron_right),
+                        onTap: () => open(const RegistrationFeedbackScreen()),
+                      ),
+                    ]),
                     section('Family access', Icons.group_outlined, [
                       ListTile(
                         contentPadding: EdgeInsets.zero,
