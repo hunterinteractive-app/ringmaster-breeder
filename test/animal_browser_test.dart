@@ -146,7 +146,11 @@ void main() {
         greaterThan(tester.getBottomLeft(find.byType(TextField)).dy),
       );
       for (final group in {
-        'Breeding': ['Breedings & litters', 'Record breeding'],
+        'Breeding': [
+          'Breedings & litters',
+          'Grow-out dashboard',
+          'Record breeding',
+        ],
         'Sales': ['Sales dashboard', 'Bulk mark For Sale'],
         'Herd care': [
           'Herd calendar',

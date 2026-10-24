@@ -9,7 +9,7 @@ import '../widgets/ringmaster_page_shell.dart';
 /// Dated feed/live-weight readings and wool harvest/evaluation records.
 class ProductionMeasurementsScreen extends StatefulWidget {
   final String recordId;
-  final bool wool, animalFeed;
+  final bool wool, animalFeed, growOut;
   final Future<List<Map<String, dynamic>>> Function()? loader;
   final Future<void> Function(Map<String, dynamic>)? writer;
   const ProductionMeasurementsScreen({
@@ -17,6 +17,7 @@ class ProductionMeasurementsScreen extends StatefulWidget {
     required this.recordId,
     this.wool = false,
     this.animalFeed = false,
+    this.growOut = false,
     this.loader,
     this.writer,
   });
@@ -46,6 +47,8 @@ class _ProductionMeasurementsScreenState
       ? 'Wool harvest history'
       : widget.animalFeed
       ? 'Feed & weight history'
+      : widget.growOut
+      ? 'Grow-out weights & feed'
       : 'Litter weights & feed';
   @override
   void initState() {
@@ -86,7 +89,9 @@ class _ProductionMeasurementsScreenState
     }
   }
 
-  void refresh() => setState(() => records = load());
+  void refresh() => setState(() {
+    records = load();
+  });
   Future<void> write(Map<String, dynamic> row, int revision) async {
     if (widget.writer != null) {
       await widget.writer!(row);
@@ -290,6 +295,8 @@ class _ProductionMeasurementsScreenState
                         ? 'Total fleece weight (${entryUnit == 'lb_oz' ? 'lb & oz' : entryUnit}) · optional'
                         : widget.animalFeed
                         ? 'Animal weight (lb) · optional'
+                        : widget.growOut
+                        ? 'Total group weight (lb) · optional'
                         : 'Total litter weight (lb) · optional',
                     numeric: !widget.wool || entryUnit != 'lb_oz',
                     enabled: !bodyLocked || widget.wool,
@@ -315,6 +322,8 @@ class _ProductionMeasurementsScreenState
                       feed,
                       widget.animalFeed
                           ? 'Cumulative feed (lb) · optional'
+                          : widget.growOut
+                          ? 'Cumulative group feed (lb) · optional'
                           : 'Cumulative feed to dam (lb) · optional',
                       numeric: true,
                     ),

@@ -3,8 +3,13 @@ import 'rabbit_register_history_screen.dart';
 import '../widgets/adaptive_layout.dart';
 import '../offline/offline_runtime.dart';
 import '../services/pagination.dart';
+import '../services/grow_out_service.dart';
+import '../widgets/grow_out_dashboard.dart';
+import 'production_measurements_screen.dart';
 import 'global_pedigree_history_screen.dart';
 import '../utils/offspring_names.dart';
+import '../utils/litter_lifecycle.dart';
+export '../utils/litter_lifecycle.dart' show breedingStage, needsOffspring;
 import '../widgets/catalog_field.dart';
 import '../widgets/breeding_dashboard.dart';
 import '../widgets/breeding_settings_dialog.dart';
@@ -16,38 +21,28 @@ import '../widgets/ringmaster_page_shell.dart';
 String breedingDate(dynamic value) => value == null
     ? 'Not recorded'
     : DateFormat('MM/dd/yyyy').format(DateTime.parse(value.toString()));
-String breedingStage(Map<String, dynamic> row) {
-  final t = (row['tracking'] as Map?) ?? {};
-  if ((t['status'] ?? row['status']) == 'cancelled') return 'Cancelled';
-  if ((t['status'] ?? row['status']) == 'completed') return 'Completed';
-  if (t['wean_date'] != null) return 'Weaned';
-  if (t['birth_date'] != null) return 'Nursing litter';
-  if (t['breeding_occurred'] == false) return 'Scheduled breeding';
-  return t['check_result'] == 'Positive'
-      ? 'Confirmed pregnant'
-      : 'Awaiting birth';
-}
-
-bool needsOffspring(Map<String, dynamic> row) {
-  final t = (row['tracking'] as Map?) ?? {};
-  return row['import_source'] == null &&
-      t['wean_date'] != null &&
-      (t['weaned'] ?? 0) > 0 &&
-      t['status'] != 'cancelled' &&
-      ((row['offspring'] as List?) ?? []).isEmpty;
-}
 
 class BreedingTrackerScreen extends StatefulWidget {
   final String ringId;
-  const BreedingTrackerScreen({super.key, required this.ringId});
+  final bool growOut;
+  const BreedingTrackerScreen({
+    super.key,
+    required this.ringId,
+    this.growOut = false,
+  });
   @override
   State<BreedingTrackerScreen> createState() => _BreedingTrackerScreenState();
 }
 
+class _BreedingData {
+  final List<Map<String, dynamic>> rows, measurements;
+  final Map<String, Map<String, dynamic>> settings;
+  _BreedingData(this.rows, this.settings, this.measurements);
+}
+
 class _BreedingTrackerScreenState extends State<BreedingTrackerScreen> {
-  late Future<List<Map<String, dynamic>>> records;
+  late Future<_BreedingData> records;
   String filter = 'Active';
-  Map<String, Map<String, dynamic>> settings = {};
   final client = OfflineRuntime.client;
   @override
   void initState() {
@@ -56,15 +51,17 @@ class _BreedingTrackerScreenState extends State<BreedingTrackerScreen> {
   }
 
   void refresh() {
-    setState(() => records = load());
+    setState(() {
+      records = load();
+    });
   }
 
-  Future<List<Map<String, dynamic>>> load() async {
+  Future<_BreedingData> load() async {
     final savedSettings = await client
         .from('breeding_settings')
         .select()
         .eq('ring_id', widget.ringId);
-    settings = {
+    final settings = <String, Map<String, dynamic>>{
       for (final row in savedSettings)
         row['species'] as String: Map<String, dynamic>.from(row),
     };
@@ -79,7 +76,10 @@ class _BreedingTrackerScreenState extends State<BreedingTrackerScreen> {
           .order('id')
           .range(from, to),
     );
-    return List<Map<String, dynamic>>.from(rows);
+    final measurements = widget.growOut
+        ? await loadGrowOutMeasurements(rows)
+        : <Map<String, dynamic>>[];
+    return _BreedingData(rows, settings, measurements);
   }
 
   Future<void> edit(Map<String, dynamic> row) async {
@@ -91,7 +91,9 @@ class _BreedingTrackerScreenState extends State<BreedingTrackerScreen> {
     if (saved != true || !mounted) return;
     refresh();
     try {
-      final updated = (await records).firstWhere((r) => r['id'] == row['id']);
+      final updated = (await records).rows.firstWhere(
+        (r) => r['id'] == row['id'],
+      );
       if (mounted && needsOffspring(updated)) await offspring(updated);
     } catch (_) {
       if (mounted) {
@@ -104,6 +106,17 @@ class _BreedingTrackerScreenState extends State<BreedingTrackerScreen> {
         );
       }
     }
+  }
+
+  Future<void> measurements(Map<String, dynamic> row) async {
+    await Navigator.push(
+      context,
+      MaterialPageRoute<void>(
+        builder: (_) =>
+            ProductionMeasurementsScreen(recordId: row['id'], growOut: true),
+      ),
+    );
+    if (mounted) refresh();
   }
 
   Future<void> offspring(Map<String, dynamic> row) async {
@@ -202,9 +215,25 @@ class _BreedingTrackerScreenState extends State<BreedingTrackerScreen> {
 
   @override
   Widget build(BuildContext context) => RingMasterPageShell(
-    title: 'Breedings & litters',
+    title: widget.growOut ? 'Grow-out dashboard' : 'Breedings & litters',
     onRefresh: refresh,
     actions: [
+      IconButton(
+        tooltip: widget.growOut ? 'Breedings & litters' : 'Grow-out dashboard',
+        icon: Icon(widget.growOut ? Icons.child_care : Icons.grass_outlined),
+        onPressed: () async {
+          await Navigator.push(
+            context,
+            MaterialPageRoute<void>(
+              builder: (_) => BreedingTrackerScreen(
+                ringId: widget.ringId,
+                growOut: !widget.growOut,
+              ),
+            ),
+          );
+          if (mounted) refresh();
+        },
+      ),
       IconButton(
         tooltip: 'Rabbit Register litter history',
         icon: const Icon(Icons.inventory_2_outlined),
@@ -229,8 +258,9 @@ class _BreedingTrackerScreenState extends State<BreedingTrackerScreen> {
         tooltip: 'Breeding settings',
         icon: const Icon(Icons.settings_outlined),
         onPressed: () async {
+          late final _BreedingData loaded;
           try {
-            await records;
+            loaded = await records;
           } catch (_) {
             return;
           }
@@ -240,14 +270,14 @@ class _BreedingTrackerScreenState extends State<BreedingTrackerScreen> {
             barrierDismissible: false,
             builder: (_) => BreedingSettingsDialog(
               ringId: widget.ringId,
-              settings: settings,
+              settings: loaded.settings,
             ),
           );
           if (saved == true && mounted) refresh();
         },
       ),
     ],
-    body: FutureBuilder<List<Map<String, dynamic>>>(
+    body: FutureBuilder<_BreedingData>(
       future: records,
       builder: (context, snapshot) {
         if (snapshot.hasError) {
@@ -264,9 +294,18 @@ class _BreedingTrackerScreenState extends State<BreedingTrackerScreen> {
         if (!snapshot.hasData) {
           return const Center(child: CircularProgressIndicator());
         }
+        if (widget.growOut) {
+          return GrowOutDashboard(
+            records: snapshot.data!.rows,
+            measurements: snapshot.data!.measurements,
+            onMeasurements: measurements,
+            onOffspring: offspring,
+            onEdit: edit,
+          );
+        }
         return BreedingDashboard(
-          records: snapshot.data!,
-          settings: settings,
+          records: snapshot.data!.rows,
+          settings: snapshot.data!.settings,
           filter: filter,
           onFilter: (v) => setState(() => filter = v),
           onEdit: edit,
@@ -304,6 +343,7 @@ class _LitterTrackingDialogState extends State<LitterTrackingDialog> {
       'due_date': null,
       'check_result': 'Not checked',
       'status': widget.record['status'],
+      'weaning_destination': 'individual',
       'notes': '',
       ...Map<String, dynamic>.from(widget.record['tracking'] ?? {}),
     };
@@ -332,6 +372,10 @@ class _LitterTrackingDialogState extends State<LitterTrackingDialog> {
     final birth = data['birth_date'];
     final wean = data['wean_date'];
     String? problem;
+    if (data['weaning_destination'] == 'grow_out' &&
+        (birth == null || wean == null || (data['weaned'] ?? 0) == 0)) {
+      problem = 'Record birth, weaning date and a positive count for grow out.';
+    }
     if ((data['weaned_males'] == null) != (data['weaned_females'] == null)) {
       problem = 'Enter both sex counts, or leave both unknown.';
     }
@@ -642,6 +686,42 @@ class _LitterTrackingDialogState extends State<LitterTrackingDialog> {
                         locked &&
                         widget.record['tracking']?['weaned_females'] != null,
                   ),
+                  const AdaptiveGap(height: 12),
+                  DropdownButtonFormField<String>(
+                    key: const ValueKey('weaning-destination'),
+                    initialValue: data['weaning_destination'],
+                    isExpanded: true,
+                    decoration: const InputDecoration(
+                      labelText: 'After weaning',
+                    ),
+                    items: const [
+                      DropdownMenuItem(
+                        value: 'individual',
+                        child: Text('Individual records'),
+                      ),
+                      DropdownMenuItem(
+                        value: 'grow_out',
+                        child: Text('Grow out'),
+                      ),
+                    ],
+                    onChanged: (v) => setState(() {
+                      data['weaning_destination'] = v;
+                      if (v == 'grow_out' &&
+                          data['status'] == 'completed' &&
+                          litterUnrecordedCount({
+                                ...widget.record,
+                                'tracking': data,
+                              }) >
+                              0) {
+                        data['status'] = 'active';
+                      }
+                    }),
+                  ),
+                  Text(
+                    data['weaning_destination'] == 'grow_out'
+                        ? 'Keep unrecorded youngsters together as a grow-out litter. You can give selected animals their own records later.'
+                        : 'Create a separate herd record for each weaned animal.',
+                  ),
                   if (locked)
                     const Text(
                       'Existing dates and totals stay locked after linking offspring. You can fill missing historical details.',
@@ -650,6 +730,7 @@ class _LitterTrackingDialogState extends State<LitterTrackingDialog> {
                   extraDetails(),
                   const AdaptiveGap(height: 12),
                   DropdownButtonFormField<String>(
+                    key: ValueKey('breeding-status-${data['status']}'),
                     initialValue: data['status'],
                     decoration: const InputDecoration(
                       labelText: 'Breeding status',
@@ -721,13 +802,27 @@ class _LitterTrackingDialogState extends State<LitterTrackingDialog> {
 
 class LitterOffspringDialog extends StatefulWidget {
   final Map<String, dynamic> record;
-  const LitterOffspringDialog({super.key, required this.record});
+  final Future<void> Function(List<Map<String, dynamic>>)? writer;
+  final Future<List<Map<String, dynamic>>> Function()? herdReader;
+  const LitterOffspringDialog({
+    super.key,
+    required this.record,
+    this.writer,
+    this.herdReader,
+  });
   @override
   State<LitterOffspringDialog> createState() => _LitterOffspringDialogState();
 }
 
 class _LitterOffspringDialogState extends State<LitterOffspringDialog> {
   late List<Map<String, dynamic>> young;
+  late List<bool> selected;
+  bool get growOut =>
+      widget.record['tracking']['weaning_destination'] == 'grow_out';
+  List<Map<String, dynamic>> get chosen => [
+    for (var i = 0; i < young.length; i++)
+      if (selected[i]) young[i],
+  ];
   final form = GlobalKey<FormState>();
   bool saving = false, generating = false;
   int generation = 0;
@@ -738,6 +833,7 @@ class _LitterOffspringDialogState extends State<LitterOffspringDialog> {
     super.initState();
     final dam = widget.record['dam'];
     final sire = widget.record['sire'];
+    selected = List.filled(litterUnrecordedCount(widget.record), !growOut);
     young = List.generate(
       (widget.record['tracking']['weaned'] as int) -
           (widget.record['offspring'] as List? ?? []).length,
@@ -759,13 +855,14 @@ class _LitterOffspringDialogState extends State<LitterOffspringDialog> {
                               .length
                   ? 'M'
                   : 'F'),
-        'breed': dam['breed'] == sire['breed'] ? dam['breed'] ?? '' : '',
+        'breed': dam['breed'] == sire?['breed'] ? dam['breed'] ?? '' : '',
         'variety': '',
       },
     );
   }
 
   Future<List<Map<String, dynamic>>> herdAnimals() async {
+    if (widget.herdReader != null) return widget.herdReader!();
     final rows = <Map<String, dynamic>>[];
     for (var offset = 0; ; offset += 500) {
       final page = await OfflineRuntime.client
@@ -788,7 +885,11 @@ class _LitterOffspringDialogState extends State<LitterOffspringDialog> {
       final herd = await herdAnimals();
       if (!mounted) return;
       setState(() {
-        young = generateOffspringNames(young, herd);
+        final generated = generateOffspringNames(chosen, herd);
+        var index = 0;
+        for (var i = 0; i < young.length; i++) {
+          if (selected[i]) young[i] = generated[index++];
+        }
         generation++;
       });
     } catch (_) {
@@ -803,11 +904,16 @@ class _LitterOffspringDialogState extends State<LitterOffspringDialog> {
   }
 
   Future<void> save() async {
+    final offspring = chosen;
+    if (offspring.isEmpty) {
+      setState(() => error = 'Select at least one animal for its own record.');
+      return;
+    }
     if (!form.currentState!.validate()) return;
-    final ears = young
+    final ears = offspring
         .map((y) => y['tattoo'].toString().trim().toLowerCase())
         .toSet();
-    if (ears.length != young.length) {
+    if (ears.length != offspring.length) {
       setState(() => error = 'Each offspring needs a different ear number.');
       return;
     }
@@ -819,7 +925,7 @@ class _LitterOffspringDialogState extends State<LitterOffspringDialog> {
       final existing = (await herdAnimals())
           .map((a) => normalizedTattoo(a['tattoo']))
           .toSet();
-      final duplicates = young
+      final duplicates = offspring
           .where((a) => existing.contains(normalizedTattoo(a['tattoo'])))
           .map((a) => a['tattoo'])
           .join(', ');
@@ -833,10 +939,14 @@ class _LitterOffspringDialogState extends State<LitterOffspringDialog> {
         }
         return;
       }
-      await OfflineRuntime.client.rpc(
-        'create_litter_animals',
-        params: {'p_id': widget.record['id'], 'p_young': young},
-      );
+      if (widget.writer != null) {
+        await widget.writer!(offspring);
+      } else {
+        await OfflineRuntime.client.rpc(
+          'create_litter_animals',
+          params: {'p_id': widget.record['id'], 'p_young': offspring},
+        );
+      }
       if (mounted) Navigator.pop(context, true);
     } catch (e) {
       if (mounted) {
@@ -870,11 +980,13 @@ class _LitterOffspringDialogState extends State<LitterOffspringDialog> {
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     Text(
-                      'Create ${young.length} ${cavy ? 'pups' : 'kits'} in your active herd. Birth date and both parents are filled from this litter. Review breed and enter each variety; leave unknown details blank.',
+                      growOut
+                          ? 'Choose youngsters for individual records. ${young.length - chosen.length} will remain in grow out. Birth date and parents are filled from this litter.'
+                          : 'Create ${young.length} ${cavy ? 'pups' : 'kits'} in your active herd. Birth date and both parents are filled from this litter. Review breed and enter each variety; leave unknown details blank.',
                     ),
                     const AdaptiveGap(height: 16),
                     OutlinedButton.icon(
-                      onPressed: busy ? null : generate,
+                      onPressed: busy || chosen.isEmpty ? null : generate,
                       icon: const Icon(Icons.auto_awesome),
                       label: Text(
                         generating ? 'Generating…' : 'Generate names & tattoos',
@@ -889,70 +1001,86 @@ class _LitterOffspringDialogState extends State<LitterOffspringDialog> {
                           padding: const EdgeInsets.all(12),
                           child: Column(
                             children: [
-                              Text('Offspring ${i + 1}'),
-                              for (final key in ['name', 'tattoo'])
-                                AdaptivePadding(
-                                  padding: const EdgeInsets.only(top: 16),
-                                  child: TextFormField(
-                                    key: ValueKey(
-                                      'offspring-$generation-$i-$key',
+                              if (growOut)
+                                CheckboxListTile(
+                                  key: ValueKey('offspring-select-$i'),
+                                  contentPadding: EdgeInsets.zero,
+                                  title: Text('Offspring ${i + 1}'),
+                                  subtitle: const Text(
+                                    'Create individual record',
+                                  ),
+                                  value: selected[i],
+                                  onChanged: (v) =>
+                                      setState(() => selected[i] = v ?? false),
+                                )
+                              else
+                                Text('Offspring ${i + 1}'),
+                              if (selected[i]) ...[
+                                for (final key in ['name', 'tattoo'])
+                                  AdaptivePadding(
+                                    padding: const EdgeInsets.only(top: 16),
+                                    child: TextFormField(
+                                      key: ValueKey(
+                                        'offspring-$generation-$i-$key',
+                                      ),
+                                      initialValue: young[i][key],
+                                      decoration: InputDecoration(
+                                        labelText: {
+                                          'name': 'Name (optional)',
+                                          'tattoo': 'Ear number / tag',
+                                          'breed': 'Breed',
+                                          'variety': 'Variety',
+                                        }[key],
+                                      ),
+                                      onChanged: (v) =>
+                                          young[i][key] = v.trim(),
+                                      validator: (v) =>
+                                          key == 'tattoo' &&
+                                              (v ?? '').trim().isEmpty
+                                          ? 'Enter an ear number'
+                                          : null,
                                     ),
-                                    initialValue: young[i][key],
-                                    decoration: InputDecoration(
-                                      labelText: {
-                                        'name': 'Name (optional)',
-                                        'tattoo': 'Ear number / tag',
-                                        'breed': 'Breed',
-                                        'variety': 'Variety',
-                                      }[key],
+                                  ),
+                                const AdaptiveGap(height: 16),
+                                CatalogField(
+                                  species: widget.record['dam']['species'],
+                                  value: young[i]['breed'] ?? '',
+                                  onChanged: (v) => setState(() {
+                                    young[i]['breed'] = v;
+                                    young[i]['variety'] = '';
+                                  }),
+                                ),
+                                const AdaptiveGap(height: 16),
+                                CatalogField(
+                                  key: ValueKey(
+                                    'variety-$i-${young[i]['breed']}',
+                                  ),
+                                  species: widget.record['dam']['species'],
+                                  breed: young[i]['breed'] ?? '',
+                                  value: young[i]['variety'] ?? '',
+                                  onChanged: (v) => young[i]['variety'] = v,
+                                ),
+                                const AdaptiveGap(height: 16),
+                                DropdownButtonFormField<String>(
+                                  initialValue: young[i]['sex'],
+                                  validator: (v) =>
+                                      v == null ? 'Choose the sex' : null,
+                                  decoration: const InputDecoration(
+                                    labelText: 'Sex',
+                                  ),
+                                  items: [
+                                    DropdownMenuItem(
+                                      value: 'M',
+                                      child: Text(cavy ? 'Boar' : 'Buck'),
                                     ),
-                                    onChanged: (v) => young[i][key] = v.trim(),
-                                    validator: (v) =>
-                                        key == 'tattoo' &&
-                                            (v ?? '').trim().isEmpty
-                                        ? 'Enter an ear number'
-                                        : null,
-                                  ),
+                                    DropdownMenuItem(
+                                      value: 'F',
+                                      child: Text(cavy ? 'Sow' : 'Doe'),
+                                    ),
+                                  ],
+                                  onChanged: (v) => young[i]['sex'] = v,
                                 ),
-                              const AdaptiveGap(height: 16),
-                              CatalogField(
-                                species: widget.record['dam']['species'],
-                                value: young[i]['breed'] ?? '',
-                                onChanged: (v) => setState(() {
-                                  young[i]['breed'] = v;
-                                  young[i]['variety'] = '';
-                                }),
-                              ),
-                              const AdaptiveGap(height: 16),
-                              CatalogField(
-                                key: ValueKey(
-                                  'variety-$i-${young[i]['breed']}',
-                                ),
-                                species: widget.record['dam']['species'],
-                                breed: young[i]['breed'] ?? '',
-                                value: young[i]['variety'] ?? '',
-                                onChanged: (v) => young[i]['variety'] = v,
-                              ),
-                              const AdaptiveGap(height: 16),
-                              DropdownButtonFormField<String>(
-                                initialValue: young[i]['sex'],
-                                validator: (v) =>
-                                    v == null ? 'Choose the sex' : null,
-                                decoration: const InputDecoration(
-                                  labelText: 'Sex',
-                                ),
-                                items: [
-                                  DropdownMenuItem(
-                                    value: 'M',
-                                    child: Text(cavy ? 'Boar' : 'Buck'),
-                                  ),
-                                  DropdownMenuItem(
-                                    value: 'F',
-                                    child: Text(cavy ? 'Sow' : 'Doe'),
-                                  ),
-                                ],
-                                onChanged: (v) => young[i]['sex'] = v,
-                              ),
+                              ],
                             ],
                           ),
                         ),
@@ -978,7 +1106,9 @@ class _LitterOffspringDialogState extends State<LitterOffspringDialog> {
           FilledButton(
             onPressed: busy ? null : save,
             child: Text(
-              saving ? 'Creating…' : 'Create ${young.length} animals',
+              saving
+                  ? 'Creating…'
+                  : 'Create ${chosen.length} ${chosen.length == 1 ? 'animal' : 'animals'}',
             ),
           ),
         ],

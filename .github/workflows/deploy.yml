@@ -27,7 +27,7 @@ jobs:
           npx --yes deno@2 check supabase/functions/offline-jobs/index.ts supabase/functions/import-ringmaster-records/index.ts supabase/functions/billing/index.ts supabase/functions/stripe-webhook/index.ts supabase/functions/delete-account/index.ts supabase/functions/billing-price-worker/index.ts
           npx --yes deno@2 test --allow-env supabase/functions/offline-jobs/core_test.ts supabase/functions/offline-jobs/handler_test.ts supabase/functions/billing/core_test.ts supabase/functions/billing/handler_test.ts supabase/functions/billing/overview_test.ts supabase/functions/billing-price-worker/worker_test.ts
       - name: Build web
-        run: flutter build web --release --pwa-strategy=none --dart-define=OFFLINE_PILOT=true --dart-define=OFFLINE_FULL=true --dart-define=APP_VERSION=0.26.0
+        run: flutter build web --release --pwa-strategy=none --dart-define=OFFLINE_PILOT=true --dart-define=OFFLINE_FULL=true --dart-define=APP_VERSION=0.27.0
       - name: Package offline app
         run: python3 tool/prepare_offline_pilot.py build/web
       - name: Verify shared offline repository

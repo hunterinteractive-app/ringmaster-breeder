@@ -68,6 +68,7 @@ async function main() {
       console.error('Browser runtime error:', error.stack || error.message);
     });
     if(process.env.DEBUG_REQUESTS==='true')page.on('requestfailed',request=>{const url=new URL(request.url());console.error('Fixture request failed:',url.origin+url.pathname,request.failure()?.errorText);});
+    if(process.env.DEBUG_REQUESTS==='true')page.on('response',async response=>{if(response.status()>=400)console.error('Fixture HTTP error:',new URL(response.url()).pathname,response.status(),(await response.text().catch(()=>'' )).slice(0,500));});
     page.on('console', message => {
       if (message.type() === 'error') consoleErrors.push(message.text());
     });
@@ -166,6 +167,19 @@ async function main() {
         weight: 5 - i / 100, recorded_at: new Date(Date.UTC(2026, 9, 17 - i)).toISOString() });
     }
     const receipts=new Map();
+    if (process.env.GROW_OUT_DASHBOARD === 'true') {
+      Object.assign(fixtureTables.license_tiers[0],{max_active_animals:1000,annual_price_cents:0});
+      fixtureTables.breeder_license_usage=[];
+      const sireId='00000000-0000-4000-8000-000000000004';
+      const litterId='00000000-0000-4000-8000-000000000005';
+      fixtureTables.animals.push({...animal,id:sireId,name:'Grow-out sire',tattoo:'S1',sex:'Buck'});
+      fixtureTables.breeding_records=[{id:litterId,sire_id:sireId,dam_id:animalId,breeding_date:'2026-07-01',status:'active'}];
+      fixtureTables.breeding_tracking=[{breeding_id:litterId,revision:1,birth_date:'2026-08-01',born_alive:3,born_dead:0,wean_date:'2026-09-15',weaned:3,weaned_males:2,weaned_females:1,weaning_destination:'grow_out',status:'active',cage:'G1'}];
+      fixtureTables.litter_weights=[
+        {id:'old',breeding_id:litterId,recorded_date:'2026-09-20',weight:8,feed_weight:10,voided:false,revision:1},
+        {id:'latest',breeding_id:litterId,recorded_date:'2026-10-01',weight:12,feed_weight:35,voided:false,revision:1},
+      ];
+    }
     if (process.env.COMPACT_HERD_SCREEN === 'true') {
       animal.sale_status = 'for_sale';
       animal.dob = '2025-02-19';
@@ -220,6 +234,12 @@ async function main() {
         }
         data=receipts.get(op.id);
       }
+      else if(url.pathname.endsWith('/rpc/save_production_measurement') && process.env.GROW_OUT_DASHBOARD === 'true') {
+        const index=fixtureTables.litter_weights.findIndex(r=>r.id===body.p_id);
+        const row={...body.p_data,id:body.p_id,breeding_id:body.p_parent,revision:body.p_revision+1};
+        if(index<0)fixtureTables.litter_weights.push(row);else fixtureTables.litter_weights[index]=row;
+        data=null;
+      }
       else if(url.pathname.endsWith('/functions/v1/offline-jobs')){
         const prior=fixtureTables.breeder_offline_jobs.find(j=>j.id===body.id);
         if(prior)data=prior;else {data={id:body.id,actor:userId,target:body.target,payload:body.payload,state:body.payload?.requires_sign_in?'needs_input':'complete',result:{fixture:true}};fixtureTables.breeder_offline_jobs.push(data);}
@@ -228,6 +248,7 @@ async function main() {
       else if (url.pathname === '/auth/v1/verify' || url.pathname === '/auth/v1/token') data = session;
       else if (url.pathname === '/auth/v1/user') data = user;
       else if (url.pathname.endsWith('/rpc/breeder_family_access')) data = { households: [{ owner_user_id: userId, is_owner: true, label: 'Fixture' }], invitations: [] };
+      else if (url.pathname.endsWith('/rpc/breeder_license_status')) data = {active:true,code:'TEST',name:'Test',max_rings:3,current_rings:1,max_active_animals:1000,active_count:fixtureTables.animals.length,annual_price_cents:0,growth_blocked:false};
       else if (url.pathname.endsWith('/breeder_legal_acceptances')) data = { accepted_at: '2026-01-01T00:00:00Z' };
       else if (url.pathname.endsWith('/user_licenses')) data = { tier_code: 'TEST', license_tiers: { max_rings: 3 } };
       else if (url.pathname.endsWith('/farms')) data = [{ id: ringId, owner_id: userId, name: 'Offline Test Herd', is_demo: false }];
@@ -291,6 +312,55 @@ async function main() {
     }
     await herd().click({ timeout: 30000 });
     await page.getByText('Willow', { exact: false }).first().waitFor({ timeout: 30000 });
+    if (process.env.GROW_OUT_DASHBOARD === 'true') {
+      assert.ok(fullWorkspace,'Use FULL_WORKSPACE=true for grow-out browser checks');
+      const settle=async()=>{await page.evaluate(()=>new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve))));await page.waitForTimeout(200);};
+      const fill=async(label,value)=>{
+        await page.getByRole('textbox',{name:label,exact:true}).click();await settle();
+        await page.locator('input:focus,textarea:focus').fill(value);await page.keyboard.press('Tab');
+      };
+      const reach=async(label)=>{
+        const target=page.getByRole('button',{name:label,exact:true}).first();
+        for(let i=0;i<30;i++){
+          const box=await target.count()?await target.boundingBox():null;
+          const v=page.viewportSize();if(box&&box.y>=55&&box.y+box.height<=v.height-35)return target;
+          await page.mouse.move(v.width-15,v.height-100);await page.mouse.wheel(0,160);await settle();
+        }throw new Error('Cannot reach '+label);
+      };
+      await (await reach('Breeding')).click();
+      await page.getByText('Grow-out dashboard',{exact:true}).click();
+      await page.getByText('Grow-out overview',{exact:true}).waitFor();
+      await page.getByText('3 rabbits • 0 cavies',{exact:true}).waitFor();
+      await page.getByText('35 lb',{exact:true}).waitFor();
+      console.log('PASS: grow-out dashboard loads the group and cumulative totals');
+      await page.setViewportSize({width:1280,height:1000});await settle();
+      await page.screenshot({path:'/tmp/breeder-grow-out-dashboard-desktop.png'});
+      await page.setViewportSize({width:390,height:844});await settle();
+      await page.screenshot({path:'/tmp/breeder-grow-out-dashboard-phone.png'});
+      await (await reach('Weights & feed')).click();
+      await page.getByText('Grow-out weights & feed',{exact:true}).waitFor();
+      await click('Record feed & weight');
+      await fill('Total group weight (lb) · optional','13');
+      await fill('Cumulative group feed (lb) · optional','40');
+      await click('Save');
+      await page.getByText('40 lb cumulative feed',{exact:false}).first().waitFor();
+      console.log('PASS: grow-out weight and feed save appears in measurement history');
+      await click('Back');
+      await page.getByText('40 lb',{exact:true}).waitFor();
+      await (await reach('Create individual records')).click();
+      await page.getByRole('checkbox').first().click();
+      await fill('Ear number / tag','GROWKEEP');
+      await click('Create 1 animal');
+      await page.getByText('2 growing out',{exact:true}).waitFor();
+      await page.getByText('2 rabbits • 0 cavies',{exact:true}).waitFor();
+      await setConnectivity(false);
+      await click('Refresh');
+      await page.getByText('2 growing out',{exact:true}).waitFor();
+      await page.getByText('40 lb',{exact:true}).waitFor();
+      assert.deepEqual(failures,[]);
+      console.log('PASS: dedicated grow-out dashboard totals, phone/desktop rendering, weight/feed saves, selected individual records, and offline refresh');
+      return;
+    }
     if (process.env.COMPACT_HERD_SCREEN === 'true') {
       const settle = async () => {
         await page.evaluate(() => new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve))));
@@ -672,6 +742,7 @@ async function main() {
     assert.deepEqual(externalFontRequests, [], 'UI fonts must be bundled for an offline restart');
     console.log('PASS: reconnect automatically syncs the animal edit and original weight once; manual Sync also works; no browser runtime errors');
   } catch (error) {
+    if(process.env.GROW_OUT_DASHBOARD==='true')console.error('Grow-out failure UI before recovery:',(await page.locator('body').innerText()).slice(0,4000));
     const syncButton = page.getByRole('button', { name: 'Sync', exact: true });
     if (await syncButton.count()) await syncButton.click().catch(() => {});
     console.error('Accessible labels:',await page.locator('[aria-label]').evaluateAll(nodes=>nodes.map(n=>({role:n.getAttribute('role'),label:n.getAttribute('aria-label')})).filter(n=>n.label)));

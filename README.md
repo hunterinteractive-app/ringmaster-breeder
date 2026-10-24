@@ -37,7 +37,7 @@ restores snapshot records while preserving newer records and current access.
 
 GitHub Actions checks analysis and tests, builds Flutter web, and uploads to Cloudflare Pages on pushes to `main`. Pull requests run checks without publishing. Configure `CLOUDFLARE_API_TOKEN` and `CLOUDFLARE_ACCOUNT_ID` as repository secrets The `ringmaster-breeder` Pages project and `breeder.ringmasterone.com` domain already exist. After the Actions credentials are configured, disable the existing direct GitHub builds in Pages so Actions controls deployment. Local Flutter is 3.38.5; CI follows Show and Club's pinned Flutter 3.41.4.
 
-Every served asset has browser/CDN `no-store` headers. Flutter's service worker is disabled; the bootstrap unregisters old root-scope workers and removes Flutter caches. Refresh fetches the currently deployed version after deployment completes. The footer displays the configured application release version (0.24.1 for this release). Do not set an overriding Cloudflare cache rule that forces caching for this host.
+Every served asset has browser/CDN `no-store` headers. Flutter's service worker is disabled; the bootstrap unregisters old root-scope workers and removes Flutter caches. Refresh fetches the currently deployed version after deployment completes. The footer displays the configured application release version (0.27.0 for this release). Do not set an overriding Cloudflare cache rule that forces caching for this host.
 
 ## Branding and remaining setup
 
@@ -68,6 +68,29 @@ Policy changes: increment the affected version in `lib/config/legal_config.dart`
 Animal lists, weight history, health history, and breeding history fetch ordered pages until all available records have loaded, rather than stopping at the API row limit. The in-app calendar fetches the viewed month plus its preceding and following months, and replaces that window on navigation, Today, or Refresh. Bounded queries include older source records when their follow-up or calculated breeding events can land in that window.
 
 Device subscriptions export dates from the first day of the previous month onward, using the subscription timezone, with no future cutoff. Older historical dates are excluded; the start advances on each subscription refresh. A historical source record can still contribute an upcoming follow-up. Existing device caches update on the calendar app's refresh schedule.
+
+## Litter grow out
+
+Breedings & litters → Update tracking → After weaning offers Individual records
+or Grow out. Herd → Breeding → Grow-out dashboard opens a dedicated overview
+with active group and animal counts, latest group weights, and cumulative feed.
+Filter by species or search parents/cage; totals follow the groups shown. Each
+group contributes its latest valid reading since weaning. Earlier cumulative feed
+readings are not added together, and missing readings remain unknown.
+
+Grow-out litters also stay grouped in Active and the Grow out filter,
+using their existing litter weights and feed records. Create individual records
+lets you select youngsters later; the remainder stay grouped. The litter completes
+when every youngster has an individual record, or you mark its tracking completed.
+Rabbit and cavy counts, parentage, birth dates and offspring offline sync are
+retained. Measurement saves use the existing server-confirmed workflow; downloaded
+readings are available offline. Assigning individual records does not recalculate
+earlier group weights or feed readings.
+
+Apply the `litter_grow_out` and `litter_grow_out_rpc_access` migrations before
+releasing this client. Existing litters default to Individual records. Validate with
+`flutter test test/litter_grow_out_test.dart test/grow_out_dashboard_test.dart`, `node tool/offline_workspace_test.cjs`
+and `supabase/tests/litter_grow_out.sql` against a disposable local database.
 
 ## Record save safety
 

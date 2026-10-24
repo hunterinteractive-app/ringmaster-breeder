@@ -494,9 +494,20 @@
           }
           const data = {
             ...p.p_data,
+            weaning_destination: p.p_data.weaning_destination ?? old?.weaning_destination ?? "individual",
             breeding_id: p.p_id,
             revision: p.p_revision + 1,
           };
+          const tracking = { ...old, ...data };
+          if (!["individual", "grow_out"].includes(tracking.weaning_destination)) throw new Error("Choose a valid weaning destination");
+          if (tracking.weaning_destination === "grow_out" && (!tracking.birth_date || !tracking.wean_date || !(tracking.weaned > 0))) throw new Error("Record birth, weaning date and a positive count for grow out");
+          const linked = Q.tableRows(tables, "breeding_offspring").filter(v => v.breeding_id === p.p_id);
+          if (linked.length && ["birth_date", "wean_date", "weaned"].some(k => old?.[k] != null && !Q.equal(old[k], tracking[k]))) throw new Error("Offspring already created. Birth and weaning totals are locked.");
+          if (tracking.weaned_males != null) {
+            const males = linked.filter(o => ["Buck", "Boar"].includes(row(tables, "animals", o.animal_id)?.sex)).length;
+            const females = linked.filter(o => ["Doe", "Sow"].includes(row(tables, "animals", o.animal_id)?.sex)).length;
+            if (tracking.weaned_males < males || tracking.weaned_females < females) throw new Error("Weaning sex counts conflict with linked offspring");
+          }
           if (old) update("breeding_tracking", old, data);
           else add("breeding_tracking", data);
           update("breeding_records", row(tables, "breeding_records", p.p_id), {
@@ -510,8 +521,10 @@
           const b = row(tables, "breeding_records", p.p_id),
             t = row(tables, "breeding_tracking", p.p_id, "breeding_id");
           const linked = Q.tableRows(tables, "breeding_offspring").filter(v => v.breeding_id === p.p_id);
+          const growOut = t?.weaning_destination === "grow_out";
           if (
-            !b || !t || !t.weaned || !b.sire_id || !t.birth_date || !t.wean_date || t.weaned - linked.length !== p.p_young.length ||
+            !b || !t || !t.weaned || !b.sire_id || !t.birth_date || !t.wean_date || !Array.isArray(p.p_young) || !p.p_young.length ||
+            p.p_young.length > t.weaned - linked.length || (!growOut && t.weaned - linked.length !== p.p_young.length) ||
             t.status === "cancelled"
           ) {
             throw new Error(
@@ -521,10 +534,14 @@
           if (linked.length >= t.weaned) throw new Error("Offspring records already exist");
           if (t.weaned_males != null) {
             const males = linked.filter(o => ["Buck", "Boar"].includes(row(tables, "animals", o.animal_id)?.sex)).length;
-            if (p.p_young.filter(y => y.sex === "M").length !== t.weaned_males - males || p.p_young.filter(y => y.sex === "F").length !== t.weaned_females - (linked.length - males)) throw new Error("Offspring sexes must match the remaining weaning counts");
+            const females = linked.filter(o => ["Doe", "Sow"].includes(row(tables, "animals", o.animal_id)?.sex)).length;
+            const newMales = p.p_young.filter(y => y.sex === "M").length, newFemales = p.p_young.filter(y => y.sex === "F").length;
+            if (newMales > t.weaned_males - males || newFemales > t.weaned_females - females ||
+                (!growOut && (newMales !== t.weaned_males - males || newFemales !== t.weaned_females - females))) throw new Error("Offspring sexes must match the remaining weaning counts");
           }
           const dam = row(tables, "animals", b.dam_id);
           for (const y of p.p_young) {
+            if (!["M", "F"].includes(y.sex) || !String(y.tattoo || "").trim()) throw new Error("Enter an ear number and sex for each animal");
             const sex = dam.species === "cavy"
               ? (y.sex === "M" ? "Boar" : "Sow")
               : (y.sex === "M" ? "Buck" : "Doe");
@@ -544,11 +561,14 @@
               row: { animal_id: a.id, breeding_id: p.p_id },
             });
           }
+          const complete = linked.length + p.p_young.length === t.weaned;
+          const status = complete ? "completed" : t.status;
           update("breeding_tracking", t, {
-            status: "completed",
+            status,
+            ...(complete ? { weaning_destination: "individual" } : {}),
             revision: t.revision + 1,
           });
-          update("breeding_records", b, { status: "completed" });
+          update("breeding_records", b, { status });
           result = p.p_young.length;
           break;
         }

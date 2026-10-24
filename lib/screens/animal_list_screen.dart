@@ -171,6 +171,18 @@ class _AnimalBrowserState extends State<AnimalBrowser> {
     if (mounted) widget.onRefresh();
   }
 
+  Future<void> _growOut() async {
+    final ring = widget.ringId ?? widget.animals.firstOrNull?['ring_id'];
+    if (ring == null) return;
+    await Navigator.push(
+      context,
+      MaterialPageRoute<void>(
+        builder: (_) => BreedingTrackerScreen(ringId: ring, growOut: true),
+      ),
+    );
+    if (mounted) widget.onRefresh();
+  }
+
   Future<void> _recordBreeding() async {
     final count = await showDialog<int>(
       context: context,
@@ -417,6 +429,11 @@ class _AnimalBrowserState extends State<AnimalBrowser> {
           label: 'Breedings & litters',
           icon: Icons.child_care,
           onPressed: _tracking,
+        ),
+        (
+          label: 'Grow-out dashboard',
+          icon: Icons.grass_outlined,
+          onPressed: _growOut,
         ),
         (
           label: 'Record breeding',

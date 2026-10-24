@@ -394,6 +394,36 @@ test('offspring projection creates only the remainder after imported kits are li
   d=Q.project(d,[op]);assert.equal(d.breeding_offspring.length,2);assert.equal(d.animals.filter(a=>a.name==='Missing kit').length,1);assert.equal(d.animals.filter(a=>a.id==='existing-kit').length,1);
 });
 
+test('grow-out litters stay grouped offline and create selected records in stages', async()=>{
+  for (const species of ['rabbit','cavy']) {
+    let d=tables();d.animals[0].species=species;
+    d.animals.push({...d.animals[0],id:'sire',tattoo:'SIRE',sex:species==='cavy'?'Boar':'Buck'});
+    d.breeding_records=[{id:'grow-out',dam_id:animal,sire_id:'sire',breeding_date:'2026-07-01',status:'active'}];
+    const save=await A.prepare(d,{type:'rpc',target:'save_breeding_tracking',body:{p_id:'grow-out',p_revision:0,p_data:{birth_date:'2026-08-01',born_alive:3,born_dead:0,wean_date:'2026-09-15',weaned:3,weaned_males:2,weaned_females:1,weaning_destination:'grow_out',status:'active'}}},W.uuid(),new Date(now).toISOString());
+    d=Q.project(d,[save]);assert.equal(d.animals.length,2);assert.equal(d.breeding_tracking[0].weaning_destination,'grow_out');
+    const create=young=>A.prepare(d,{type:'rpc',target:'create_litter_animals',body:{p_id:'grow-out',p_young:young}},W.uuid(),new Date(now).toISOString());
+    await assert.rejects(create([]),/weaning count/);
+    await assert.rejects(create([{tattoo:'F1',sex:'F'},{tattoo:'F2',sex:'F'}]),/sexes/);
+    const first=await create([{name:'Kept female',tattoo:'G1',sex:'F'}]);
+    d=Q.project(d,[first]);assert.equal(d.breeding_offspring.length,1);assert.equal(d.breeding_tracking[0].status,'active');assert.equal(d.breeding_tracking[0].weaning_destination,'grow_out');
+    const child=d.animals.find(a=>a.tattoo==='G1');assert.equal(child.dob,'2026-08-01');assert.equal(child.dam_id,animal);assert.equal(child.sire_id,'sire');assert.equal(child.sex,species==='cavy'?'Sow':'Doe');
+    await assert.rejects(A.prepare(d,{type:'rpc',target:'save_breeding_tracking',body:{p_id:'grow-out',p_revision:2,p_data:{weaned_males:3,weaned_females:0}}},W.uuid(),new Date(now).toISOString()),/conflict with linked/);
+    await assert.rejects(A.prepare(d,{type:'rpc',target:'save_breeding_tracking',body:{p_id:'grow-out',p_revision:2,p_data:{weaned:2}}},W.uuid(),new Date(now).toISOString()),/totals are locked/);
+    await assert.rejects(create([{tattoo:'G2',sex:'F'}]),/sexes/);
+    await assert.rejects(create([{tattoo:'G2',sex:'M'},{tattoo:'G3',sex:'M'},{tattoo:'G4',sex:'M'}]),/weaning count/);
+    const rest=await create([{tattoo:'G2',sex:'M'},{tattoo:'G3',sex:'M'}]);
+    d=Q.project(d,[rest]);assert.equal(d.breeding_offspring.length,3);assert.equal(d.breeding_records[0].status,'completed');assert.equal(d.breeding_tracking[0].status,'completed');assert.equal(d.breeding_tracking[0].weaning_destination,'individual');
+  }
+});
+
+test('individual weaning still requires every remaining animal; invalid grow out is rejected offline',async()=>{
+  const d=tables();d.animals.push({...d.animals[0],id:'sire',tattoo:'SIRE',sex:'Buck'});
+  d.breeding_records=[{id:'individual',dam_id:animal,sire_id:'sire',breeding_date:'2026-07-01',status:'active'}];
+  d.breeding_tracking=[{breeding_id:'individual',revision:1,birth_date:'2026-08-01',wean_date:'2026-09-15',weaned:2,weaned_males:1,weaned_females:1,status:'active'}];
+  await assert.rejects(A.prepare(d,{type:'rpc',target:'create_litter_animals',body:{p_id:'individual',p_young:[{tattoo:'I1',sex:'M'}]}},W.uuid(),new Date(now).toISOString()),/weaning count/);
+  await assert.rejects(A.prepare(d,{type:'rpc',target:'save_breeding_tracking',body:{p_id:'individual',p_revision:1,p_data:{weaning_destination:'grow_out',weaned:0}}},W.uuid(),new Date(now).toISOString()),/positive count/);
+});
+
 
 test('wool settings and reviewed wool links stay online and refresh the local herd', async()=>{
   const f=await fixture({fetch:async(input)=>{

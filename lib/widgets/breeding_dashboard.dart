@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import '../theme/app_theme.dart';
 import '../utils/animal_labels.dart';
+import '../utils/litter_lifecycle.dart';
 import 'breeding_settings_dialog.dart';
 
 class BreedingDashboard extends StatelessWidget {
@@ -101,7 +102,9 @@ class BreedingDashboard extends StatelessWidget {
         .where(
           (r) =>
               filter == 'All' ||
-              (filter == 'Active'
+              (filter == 'Grow out'
+                  ? litterIsGrowingOut(r)
+                  : filter == 'Active'
                   ? r['status'] == 'active'
                   : r['status'] != 'active'),
         )
@@ -140,7 +143,7 @@ class BreedingDashboard extends StatelessWidget {
               ),
               const SizedBox(height: 4),
               Text(
-                'From pairing to weaning • ${DateFormat('EEEE, MMMM d').format(today)}',
+                'From pairing to grow out • ${DateFormat('EEEE, MMMM d').format(today)}',
                 style: const TextStyle(color: Color(0xFF606B7C)),
               ),
               const AdaptiveGap(height: 20),
@@ -208,7 +211,7 @@ class BreedingDashboard extends StatelessWidget {
                   Wrap(
                     spacing: 8,
                     children: [
-                      for (final f in ['Active', 'History', 'All'])
+                      for (final f in ['Active', 'Grow out', 'History', 'All'])
                         ChoiceChip(
                           label: Text(f),
                           selected: filter == f,
@@ -303,17 +306,7 @@ class BreedingDashboard extends StatelessWidget {
             today.month,
             today.day,
           ).difference(DateTime.utc(start.year, start.month, start.day)).inDays;
-    final stage = !isActive
-        ? (r['status'] == 'cancelled' ? 'Cancelled' : 'Completed')
-        : weaned
-        ? 'Weaned'
-        : born
-        ? 'Nursing litter'
-        : t['breeding_occurred'] == false
-        ? 'Scheduled breeding'
-        : t['check_result'] == 'Positive'
-        ? 'Confirmed pregnant'
-        : 'Awaiting birth';
+    final stage = breedingStage(r);
     final tone = born ? const Color(0xFF326C5D) : BreederColors.primary;
     return Container(
       clipBehavior: Clip.antiAlias,
@@ -575,6 +568,13 @@ class BreedingDashboard extends StatelessWidget {
                   Text(
                     '${t['weaned_males']} ${cavy ? 'boars' : 'bucks'} • ${t['weaned_females']} ${cavy ? 'sows' : 'does'}',
                   ),
+                if (litterIsGrowingOut(r))
+                  event(
+                    Icons.grass_outlined,
+                    'Growing out together',
+                    '${litterUnrecordedCount(r)} ${cavy ? 'pups' : 'kits'} • ${children.length} with individual records',
+                    emphasize: true,
+                  ),
                 if ((r['notes'] ?? '').toString().isNotEmpty ||
                     (t['notes'] ?? '').toString().isNotEmpty)
                   ExpansionTile(
@@ -601,7 +601,11 @@ class BreedingDashboard extends StatelessWidget {
                       ),
                     ),
                     icon: const Icon(Icons.monitor_weight_outlined),
-                    label: const Text('Litter weights & feed'),
+                    label: Text(
+                      litterIsGrowingOut(r)
+                          ? 'Grow-out weights & feed'
+                          : 'Litter weights & feed',
+                    ),
                   ),
                 ),
                 if (r['import_record'] is Map)
@@ -631,7 +635,9 @@ class BreedingDashboard extends StatelessWidget {
                     icon: const Icon(Icons.add),
                     label: Text(
                       r['import_source'] == null
-                          ? 'Create offspring records'
+                          ? (litterIsGrowingOut(r)
+                                ? 'Create individual records'
+                                : 'Create offspring records')
                           : 'Manage offspring',
                     ),
                   ),

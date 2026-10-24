@@ -450,6 +450,7 @@ class _MobileHeader extends StatelessWidget {
                 child:
                     leading ??
                     IconButton(
+                      tooltip: 'Back',
                       visualDensity: VisualDensity.compact,
                       constraints: const BoxConstraints(
                         minWidth: 40,
@@ -565,6 +566,7 @@ class _WideHeader extends StatelessWidget {
             child:
                 leading ??
                 IconButton(
+                  tooltip: 'Back',
                   icon: Icon(
                     Icons.arrow_back,
                     color: Colors.white,
