@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'package:xml/xml.dart';
+import 'rabbit_register_fields.dart';
 
 /// Rabbit Register's Other XML is parsed locally. Source fields are retained
 /// alongside normalized values so unsupported history is never discarded.
@@ -63,10 +64,9 @@ class RabbitRegisterExport {
       // Recover only the observed exporter bug: all records and the final
       // section have closed, but ExportedData has no closing tag. Never salvage
       // incomplete records or silently return a partial parse.
-      if (!RegExp(
-            r'</(Animals|Contacts|Winnings|Litters|CritterWeights|LitterWeights|Wool|Mileage|PictureMap|GrowthData|Finances|Journal|SweepsPoints)>$',
-          ).hasMatch(source) ||
-          source.contains('</ExportedData>')) {
+      // Parsing after appending only the root close also handles an empty final
+      // section or trailing comment. Any unclosed record/section still fails.
+      if (source.contains('</ExportedData>')) {
         throw const FormatException(
           'The XML is truncated or malformed. Export it again.',
         );
@@ -105,6 +105,12 @@ class RabbitRegisterExport {
         for (final field in section.childElements) {
           header[field.name.toString()] = field.innerXml;
         }
+        final species = RabbitRegisterFields(header)['Species'];
+        if (species != null && species.toLowerCase() != 'rabbit') {
+          throw FormatException(
+            'This export contains $species records. Select a Rabbit Register rabbit export.',
+          );
+        }
         continue;
       }
       final kind = sections[sectionName];
@@ -127,8 +133,9 @@ class RabbitRegisterExport {
               ? field.innerText.trim()
               : field.innerXml;
         }
+        final fields = RabbitRegisterFields(raw, label: '$sectionName record');
         final id =
-            raw[switch (kind) {
+            fields.read(switch (kind) {
               'animal' => 'CID',
               'wool' => 'WID',
               'picture' => 'PID',
@@ -136,7 +143,7 @@ class RabbitRegisterExport {
               'growth' => 'GID',
               'sweep' => 'SDID',
               _ => 'ID',
-            }] ??
+            }, aliases: kind == 'show' ? const ['WID'] : const []) ??
             '';
         if (!RegExp(r'^[1-9]\d{0,9}$').hasMatch(id)) {
           throw FormatException(
@@ -148,20 +155,14 @@ class RabbitRegisterExport {
         }
         counts[sectionName] = counts[sectionName]! + 1;
         if (kind == 'animal') {
-          final storage = raw['Storage_Area'] ?? '';
-          final active = storage.endsWith(':Active');
-          final archived = storage.endsWith(':Archive');
-          if (!active && !archived) {
-            throw FormatException(
-              'Rabbit $id has an unknown storage area: $storage.',
-            );
-          }
-          final dob = _date(raw['DOB'], 'Rabbit $id birth date');
-          final dod = _date(raw['DOD'], 'Rabbit $id death date');
-          final sold = _date(raw['DateSold'], 'Rabbit $id sale date');
-          final name = _text(raw['Name']);
-          final tattoo = _text(raw['Ear_Num']);
-          final sex = switch (raw['Sex']?.toLowerCase()) {
+          final storage = fields['Storage_Area'] ?? '';
+          final active = _storageIsActive(storage, id);
+          final dob = _date(fields['DOB'], 'Rabbit $id birth date');
+          final dod = _date(fields['DOD'], 'Rabbit $id death date');
+          final sold = _date(fields['DateSold'], 'Rabbit $id sale date');
+          final name = _text(fields['Name']);
+          final tattoo = _text(fields['Ear_Num']);
+          final sex = switch (fields['Sex']?.toLowerCase()) {
             'buck' || 'm' || 'male' => 'Buck',
             'doe' || 'f' || 'female' => 'Doe',
             _ => null,
@@ -171,17 +172,17 @@ class RabbitRegisterExport {
               'Rabbit $id has no name or ear number; it will be named Rabbit Register #$id.',
             );
           }
-          if (raw['DOBTag'] != null && raw['DOBTag'] != '=') {
+          if (fields['DOBTag'] != null && fields['DOBTag'] != '=') {
             warnings.add(
-              'Rabbit $id has an approximate birth date (${raw['DOBTag']}); the qualifier is retained in source history.',
+              'Rabbit $id has an approximate birth date (${fields['DOBTag']}); the qualifier is retained in source history.',
             );
           }
           animals.add({
             'source_id': id,
             'name': name ?? tattoo ?? 'Rabbit Register #$id',
             'tattoo': tattoo,
-            'breed': _text(raw['Breed']),
-            'variety': _text(raw['Variety']),
+            'breed': _text(fields['Breed']),
+            'variety': _text(fields['Variety']),
             'sex': sex,
             'dob': dob,
             'status': active
@@ -191,14 +192,14 @@ class RabbitRegisterExport {
                 : sold != null
                 ? 'sold'
                 : 'archived',
-            'sire_id': _reference(raw['SireKey']),
-            'dam_id': _reference(raw['DamKey']),
-            'registration_number': _text(raw['Reg_']),
-            'grand_champion_number': _text(raw['Grand_Ch.__Num']),
-            'legs': _integer(raw['Legs'], 'Rabbit $id legs'),
-            'notes': _text(raw['Comments']),
+            'sire_id': _reference(fields['SireKey']),
+            'dam_id': _reference(fields['DamKey']),
+            'registration_number': _text(fields['Reg_']),
+            'grand_champion_number': _text(fields['Grand_Ch.__Num']),
+            'legs': _integer(fields['Legs'], 'Rabbit $id legs'),
+            'notes': _text(fields['Comments']),
             'profile_weight': _weight(
-              raw['Weight'],
+              fields['Weight'],
               'Rabbit $id profile weight',
             ),
             'raw': raw,
@@ -209,7 +210,7 @@ class RabbitRegisterExport {
             'source_id': id,
             'raw': raw,
             'animal_source_id': _reference(
-              raw[switch (kind) {
+              fields[switch (kind) {
                 'show' => 'CID',
                 'weight' || 'picture' => 'CRITTERKEY',
                 'wool' => 'CID',
@@ -218,12 +219,12 @@ class RabbitRegisterExport {
               }],
             ),
             if (kind == 'litter')
-              'sire_source_id': _reference(raw['SIREIDKEY']),
+              'sire_source_id': _reference(fields['SIREIDKEY']),
             if (kind == 'litter_weight')
-              'litter_source_id': _reference(raw['LITTERKEY']),
+              'litter_source_id': _reference(fields['LITTERKEY']),
             if (kind == 'weight') ...{
-              'weight': _weight(raw['CRITTERWT'], 'Weight $id'),
-              'recorded_date': _date(raw['WEIGHINGDATE'], 'Weight $id date'),
+              'weight': _weight(fields['CRITTERWT'], 'Weight $id'),
+              'recorded_date': _date(fields['WEIGHINGDATE'], 'Weight $id date'),
             },
           });
         }
@@ -378,6 +379,21 @@ class RabbitRegisterExport {
       value == null || value.trim().isEmpty ? null : value.trim();
   static String? _reference(String? value) =>
       value == '0' ? null : _text(value);
+
+  static bool _storageIsActive(String storage, String id) {
+    // The code identifies one of four active or nine archive areas. The label
+    // after the colon may repeat the code or contain a user-chosen name.
+    final code = storage.split(':').first.trim().toLowerCase();
+    if (RegExp(r'^active_(i|ii|iii|iv)$').hasMatch(code)) return true;
+    if (RegExp(r'^arch\._(i|ii|iii|iv|v|vi|vii|viii|ix)$').hasMatch(code)) {
+      return false;
+    }
+    // Preserve compatibility with exports recognized by their standard label.
+    if (storage.endsWith(':Active')) return true;
+    if (storage.endsWith(':Archive')) return false;
+    throw FormatException('Rabbit $id has an unknown storage area: $storage.');
+  }
+
   static String? _date(String? value, String label) {
     value = _text(value);
     // Export placeholders are missing dates, not actual events. Original

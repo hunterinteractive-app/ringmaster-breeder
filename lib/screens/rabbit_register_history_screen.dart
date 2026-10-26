@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'dart:typed_data';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
+import '../imports/rabbit_register_fields.dart';
 import '../offline/offline_runtime.dart';
 import '../widgets/adaptive_layout.dart';
 import '../widgets/ringmaster_page_shell.dart';
@@ -269,14 +270,16 @@ class _RabbitRegisterHistoryScreenState
   Widget _card(Map<String, dynamic> row) {
     final record = row['record'] as Map?;
     final raw = (row['raw'] ?? record?['raw']) as Map;
+    final fields = RabbitRegisterFields(raw);
     final title = switch (row['kind']) {
       'file' => row['filename'] ?? 'Original XML',
-      'animal' => raw['Name'] ?? raw['Ear_Num'] ?? 'Unnamed rabbit',
-      'contact' => '${raw['FirstName'] ?? ''} ${raw['LastName'] ?? ''}'.trim(),
+      'animal' => fields['Name'] ?? fields['Ear_Num'] ?? 'Unnamed rabbit',
+      'contact' =>
+        '${fields['FirstName'] ?? ''} ${fields['LastName'] ?? ''}'.trim(),
       'show' =>
-        '${raw['ShowName'] ?? 'Show result'} • ${raw['ShowDate'] ?? 'Date unknown'}',
+        '${fields['ShowName'] ?? 'Show result'} • ${fields['ShowDate'] ?? 'Date unknown'}',
       'litter' =>
-        'Litter • ${raw['DATEBRED'] ?? raw['DATEBORN'] ?? 'Date unknown'}',
+        'Litter • ${fields['DATEBRED'] ?? fields['DATEBORN'] ?? 'Date unknown'}',
       'weight' =>
         '${record?['weight'] == null ? 'No body weight' : '${record?['weight']} lb'} • ${record?['recorded_date'] ?? 'Date unknown'}',
       _ => 'Source record',

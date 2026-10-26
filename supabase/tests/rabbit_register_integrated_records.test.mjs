@@ -65,6 +65,7 @@ await db.exec(gp.slice(0,gp.indexOf('create function public.import_global_pedigr
 await db.exec(readFileSync(repo+'/supabase/migrations/20261014091326_automatic_sale_status.sql','utf8'));
 await db.exec(readFileSync(repo+'/supabase/migrations/20261021144237_rabbit_register_integrated_records.sql','utf8'));
 await db.exec(readFileSync(repo+'/supabase/migrations/20261021230151_rabbit_register_import_archive_quota_fix.sql','utf8'));
+await db.exec(readFileSync(repo+'/supabase/migrations/20261026022814_rabbit_register_compatibility.sql','utf8'));
 await db.exec("set role authenticated;select set_config('request.jwt.claim.sub','11111111-1111-4111-8111-111111111111',false)");
 const ring='aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa';
 async function run(data,commit=false,source='full') {return (await db.query('select public.import_rabbit_register($1,$2,$3::jsonb,$4) r',[ring,source,JSON.stringify(data),commit])).rows[0].r;}
@@ -252,6 +253,55 @@ const largeArchive={warnings_acknowledged:true,animals:Array.from({length:55},(_
 assert.equal((await run(largeArchive,true,'archive-quota')).animals_added,55);
 assert.equal((await db.query("select count(*)::int n from public.animals where rabbit_register_identity like '%archive-quota%' and status='active'")).rows[0].n,1);
 await db.exec('reset role;drop trigger fixture_active_quota on public.animals;drop function public.fixture_active_quota();set role authenticated;');
+// Documented spellings and capitalization must reach native tracking without
+// rewriting source snapshots, weakening identity checks, or duplicating retries.
+const variantSource='documented-fields';
+const variant={warnings_acknowledged:true,header:{Species:'\r\nRabbit\r\n'},animals:[
+ {...animal('9001','Doe',{Ear_Number:'VAR1',name:'Animal 9001',ForSalePprice:'25',Cage:'Original cage'}),tattoo:'VAR1',status:'active'},
+ {...animal('9002','Buck',{Ear_Number:'VAR2'}),tattoo:'VAR2',status:'archived'},
+],records:[
+ {kind:'litter',source_id:'1',animal_source_id:'9001',sire_source_id:'9002',raw:{ID:'1',DamIDKey:'9001',SireIDKey:'9002',DateBred:'2014-01-01',DateBorn:'2014-02-01',NumberBorn:'4',NumberWeaned:'3',RemoveLitterComplete:'true',Comments:'Original litter'}},
+ {kind:'show',source_id:'1',animal_source_id:'9001',raw:{WID:'1',CID:'9001',ShowName:'Documented Show',ShowDate:'2014-02-01',Winnings:'BOB',IsALeg:'true',IsAYouthShow:'false'}},
+ {kind:'weight',source_id:'1',animal_source_id:'9001',weight:4,recorded_date:'2014-03-01',raw:{ID:'1',CritterKey:'9001',CritterWt:'1814.368',FeedWt:'453.592',WeighingDate:'2014-03-01'}},
+ {kind:'litter_weight',source_id:'1',litter_source_id:'1',raw:{ID:'1',LitterKey:'1',LitterWt:'907.184',FeedWt:'1814.368',WeighingDate:'2014-03-01'}},
+ {kind:'wool',source_id:'1',animal_source_id:'9001',raw:{WID:'1',CID:'9001',ShearDate:'2014-04-01',FleeceWt:'20',Prime:'15',Comments:'Original wool'}},
+ {kind:'wool',source_id:'2',animal_source_id:'-1',raw:{WID:'2',CID:'-1',ShearDate:'2014-05-01',FleeceWt:'25',Comments:'Unresolved original wool'}},
+]};
+assert.equal((await run(variant,true,variantSource)).status,'imported');
+const variantAnimal=(await db.query('select animal_id,raw from public.rabbit_register_animals where source=$1 and source_id=$2',[variantSource,'9001'])).rows[0];
+assert.deepEqual(variantAnimal.raw,variant.animals[0].raw);
+assert.equal((await db.query('select asking_cents from public.animal_management where animal_id=$1',[variantAnimal.animal_id])).rows[0].asking_cents,2500);
+const variantLitter=(await db.query('select b.id,b.breeding_date::text,b.status,t.birth_date::text,t.born_total,t.weaned,t.custom_fields from public.breeding_records b join public.breeding_tracking t on t.breeding_id=b.id where b.import_source=$1',[variantSource])).rows[0];
+assert.equal(variantLitter.breeding_date,'2014-01-01');assert.equal(variantLitter.birth_date,'2014-02-01');
+assert.equal(variantLitter.status,'completed');assert.equal(variantLitter.born_total,4);assert.equal(variantLitter.weaned,3);
+assert.deepEqual(variantLitter.custom_fields,{});
+const variantShow=(await db.query('select record from public.breeder_show_history where animal_id=$1',[variantAnimal.animal_id])).rows[0].record;
+assert.equal(variantShow.special_awards,'BOB');assert.equal(variantShow.is_leg,true);assert.equal(variantShow.is_youth,false);
+assert.deepEqual(variantShow.raw,variant.records[1].raw);
+assert.equal(Number((await db.query('select feed_weight from public.animal_feed_weights where animal_id=$1',[variantAnimal.animal_id])).rows[0].feed_weight),1);
+assert.equal(Number((await db.query('select weight from public.litter_weights where breeding_id=$1',[variantLitter.id])).rows[0].weight),2);
+const variantWool=(await db.query('select recorded_date::text,fleece_grams,notes,measurements from public.animal_wool_records where animal_id=$1',[variantAnimal.animal_id])).rows[0];
+assert.equal(variantWool.recorded_date,'2014-04-01');assert.equal(Number(variantWool.fleece_grams),20);assert.equal(variantWool.notes,'Original wool');
+assert.deepEqual(variantWool.measurements,variant.records[4].raw);
+await db.query('select public.link_rabbit_register_wool($1,$2,$3,$4)',[ring,variantSource,'2',variantAnimal.animal_id]);
+assert.equal(Number((await db.query('select fleece_grams from public.animal_wool_records where animal_id=$1 and import_source_id=$2',[variantAnimal.animal_id,'2'])).rows[0].fleece_grams),25);
+const retryVariant=await run(variant,true,variantSource);assert.equal(retryVariant.animals_added,0);assert.equal(retryVariant.history_added,0);
+// Switching field spelling with the same identity is allowed; a changed ear
+// number still blocks the complete import and preserves its first snapshot.
+const alternate=structuredClone(variant);delete alternate.animals[0].raw.Ear_Number;alternate.animals[0].raw.Ear_Num='VAR1';
+delete alternate.animals[0].raw.Cage;alternate.animals[0].raw.CAGE='Updated source cage';alternate.animals[0].raw.DATEBOUGHT='2010-01-01';
+assert.equal((await run(alternate,true,variantSource)).status,'imported');
+const supplemented=(await db.query('select cage,purchase_date::text from public.animal_management where animal_id=$1',[variantAnimal.animal_id])).rows[0];
+assert.equal(supplemented.cage,'Original cage');assert.equal(supplemented.purchase_date,'2010-01-01');
+alternate.animals[0].raw.Ear_Num='WRONG';
+assert((await run(alternate,true,variantSource)).issues.some(i=>i.includes('changed identity')));
+assert.deepEqual((await db.query('select raw from public.rabbit_register_animals where animal_id=$1',[variantAnimal.animal_id])).rows[0].raw,variant.animals[0].raw);
+await assert.rejects(run({...variant,header:{Species:'Cavy'}},true,'wrong-species'),/rabbit export/);
+await assert.rejects(db.query('select public.rabbit_register_field($1::jsonb,$2)',[JSON.stringify({Ear_Num:'A',Ear_Number:'B'}),'Ear_Num']),/Conflicting values/);
+for(const name of ['rabbit_register_field_key','rabbit_register_field','import_rabbit_register','link_rabbit_register_history','link_rabbit_register_wool']) {
+ const proc=(await db.query("select prosecdef,proconfig,has_function_privilege('anon',p.oid,'execute') anonymous from pg_proc p join pg_namespace n on n.oid=p.pronamespace where n.nspname='public' and proname=$1",[name])).rows[0];
+ assert.equal(proc.prosecdef,false,name);assert.equal(proc.anonymous,false,name);assert(proc.proconfig.includes('search_path=""'),name);
+}
 // Optional real exports are parsed locally and never sent to production.
 for(const path of (process.env.RABBIT_REGISTER_EXTENDED_PAYLOADS??'').split(':').filter(Boolean)){
  const sample=JSON.parse(readFileSync(path,'utf8'));sample.warnings_acknowledged=true;

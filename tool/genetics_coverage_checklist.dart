@@ -25,6 +25,7 @@ String checklistIdentity(String value) {
   return switch (key) {
     "champagne d'argente" => "champagne d'argent",
     'peruvian stain' => 'peruvian satin',
+    'britannia petit' => 'britannia petite',
     _ => key,
   };
 }

@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ExportedData>
+  <Header><ExportTarget>RingMaster</ExportTarget><Species>Rabbit</Species><XMLExportVersion>15.003</XMLExportVersion></Header>
+  <Animals>
+    <Record><CID>1</CID><Breed>Dutch</Breed><Storage_Area>Active_I:Keepers</Storage_Area><Name>Fixture Doe</Name><Ear_Number>D1</Ear_Number><Sex>Doe</Sex><Grand_Ch_Num>GC1</Grand_Ch_Num><SireKey>2</SireKey><DOB>2014-01-01</DOB><Weight>1814.368</Weight><Cage>A1</Cage><ForSalePprice>25</ForSalePprice></Record>
+    <Record><CID>2</CID><Breed>Dutch</Breed><Storage_Area>Arch._II:Arch._II</Storage_Area><Name>Fixture Buck</Name><Ear_Number>B1</Ear_Number><Sex>Buck</Sex><DOB>2012-01-01</DOB><DOD>2015-01-01</DOD></Record>
+  </Animals>
+  <Contacts><Record><ID>1</ID><FirstName>Fixture</FirstName><LastName>Contact</LastName><ZIP>12345</ZIP></Record></Contacts>
+  <Winnings><Record><WID>1</WID><CID>1</CID><ShowDate>2014-03-01</ShowDate><ShowName>Fixture Show</ShowName><Winnings>BOB</Winnings><IsALeg>true</IsALeg><IsAYouthShow>false</IsAYouthShow></Record></Winnings>
+  <Litters><Record><ID>1</ID><SireIDKey>2</SireIDKey><DamIDKey>1</DamIDKey><DateBred>2014-02-01</DateBred><DateBorn>2014-03-01</DateBorn><NumberBorn>4</NumberBorn><NumberWeaned>3</NumberWeaned><RemoveLitterComplete>true</RemoveLitterComplete><Comments>Retain litter details</Comments></Record></Litters>
+  <CritterWeights><Record><ID>1</ID><CritterKey>1</CritterKey><CritterWt>1814.368</CritterWt><FeedWt>453.592</FeedWt><WeighingDate>2014-04-01</WeighingDate></Record></CritterWeights>
+  <LitterWeights><Record><ID>1</ID><LitterKey>1</LitterKey><LitterWt>907.184</LitterWt><FeedWt>1814.368</FeedWt><WeighingDate>2014-04-01</WeighingDate></Record></LitterWeights>
+  <Wool><Record><WID>1</WID><CID>1</CID><ShearDate>2014-05-01</ShearDate><FleeceWt>20</FleeceWt><Prime>15</Prime><Comments>Retain harvest details</Comments></Record></Wool>
+  <PictureMap><Record><PID>1</PID><CritterKey>1</CritterKey><FileName>fixture.jpg</FileName></Record></PictureMap>
+  <Mileage><Record><MIID>1</MIID><MileageIn>10</MileageIn></Record></Mileage>
+  <GrowthData><Record><GID>1</GID><Comments>Retain growth details</Comments></Record></GrowthData>
+  <Finances><Record><ID>1</ID><Amount>10</Amount></Record></Finances>
+  <Journal><Record><ID>1</ID><TextEntry>Retain journal details</TextEntry></Record></Journal>
+  <SweepsPoints><Record><SDID>1</SDID><BREEDER>Fixture</BREEDER></Record></SweepsPoints>
+</ExportedData>

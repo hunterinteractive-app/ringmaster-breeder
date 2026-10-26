@@ -93,21 +93,34 @@ class _RabbitRegisterImportScreenState
   }
 
   void _invalidate() => _review = null;
+  void _clearFile() {
+    _filename = null;
+    _export = null;
+    _sexes.clear();
+    _omittedParents.clear();
+    _fileRevision++;
+    _matches.clear();
+    _ack = false;
+    _review = null;
+    _result = null;
+  }
+
   Future<void> _pick() => _run(() async {
     setState(_invalidate);
-    final file = await (widget.pickFile?.call() ?? _pickPlatformFile());
-    if (file == null || !mounted) return;
-    final parsed = RabbitRegisterExport.parse(file.bytes);
+    ({String name, Uint8List bytes})? file;
+    try {
+      file = await (widget.pickFile?.call() ?? _pickPlatformFile());
+    } catch (_) {
+      if (mounted) setState(_clearFile);
+      rethrow;
+    }
+    final selectedFile = file;
+    if (selectedFile == null || !mounted) return;
+    setState(_clearFile);
+    final parsed = RabbitRegisterExport.parse(selectedFile.bytes);
     setState(() {
-      _filename = file.name;
+      _filename = selectedFile.name;
       _export = parsed;
-      _sexes.clear();
-      _omittedParents.clear();
-      _fileRevision++;
-      _matches.clear();
-      _ack = false;
-      _review = null;
-      _result = null;
     });
   });
   Future<({String name, Uint8List bytes})?> _pickPlatformFile() async {

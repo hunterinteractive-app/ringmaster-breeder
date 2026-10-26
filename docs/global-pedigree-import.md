@@ -1,5 +1,17 @@
 # Global Pedigree importer
 
+## Britannia Petite spelling correction — October 25, 2026
+
+The collector maps Global Pedigree's `Britannia Petit` label to `Britannia Petite` for owned rabbits and ancestors before review/matching. It strips the original breed suffix from the rabbit's heading before applying the alias, preserving the rabbit name. Collector version 10 is deployed with JWT verification enabled. Migration `20261025183901_britannia_petite_catalog_alias.sql` adds the same exact rabbit-breed correction to the existing catalog trigger without removing or merging any catalog rows or changing its privileges. The app's catalog identity and checklist tooling also recognize the alias.
+
+Seven imported records in Sara's Munchkins were corrected; only breed and the normal revision counter changed. Existing animal IDs, pedigree links, genotypes, colors and history were retained. Validation: 16 collector/history/sales tests, 13 Flutter catalog/checklist tests, scoped analysis, an isolated PostgreSQL catalog-trigger fixture, and a rolled-back authenticated live update confirming the source spelling saves as `Britannia Petite`.
+
+## Unrecorded varieties — October 25, 2026
+
+The owner confirmed `Standard` for imported Standard Chinchillas with unrecorded varieties. Twenty blank records in Sara's Munchkins were updated; only variety and revision changed. Collector version 11 applies this default when the Standard Chinchilla detail page has an explicit Variety field whose value is empty or a recognized placeholder. An absent field remains unknown, explicit varieties are preserved, and Britannia Petite receives no default. All 17 collector/history/sales tests and the function type check passed before deployment; JWT verification remains enabled.
+
+Authenticated browser inspection confirmed the source Variety field reads `None selected` for Britannia Petite records F6 (356609), HIGHER GROUND FARM ON CLOUD / F22 (356610), and HIGHER GROUND ANGEL / A (369177). These remain unrecorded pending owner-supplied values. The other four imported Britannia Petites retain Black (F12), Chestnut Agouti (F62), Opal (OPAL), and Black (OC).
+
 Account Settings → Import & export → Import from Global Pedigree collects the account's All Rabbits list and recursively follows sire/dam links. It previews the import into an owned, non-demo herd and saves only after the user chooses Import into herd.
 
 ## Data and matching

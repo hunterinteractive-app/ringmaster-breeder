@@ -52,6 +52,7 @@ void main() {
         ['Argente St. Hubert', 'Argenté St. Hubert (COD)'],
         ["Champagne d’Argente", "Champagne d'Argent"],
         ['Peruvian Stain', 'Peruvian Satin'],
+        ['Britannia Petit', 'Britannia Petite'],
         ['Argente\u0301 St. Hubert', 'Argenté St. Hubert (COD)'],
       ]) {
         expect(
@@ -121,6 +122,32 @@ void main() {
 
   test('Catalog identity ignores case and repeated whitespace', () {
     expect(CatalogService.normalize('  MINI   rex '), 'mini rex');
+  });
+  test('Britannia legacy spelling uses the recognized breed and its colors', () {
+    final choices = CatalogService.sortedChoices([
+      {
+        'name': 'Britannia Petit',
+        'is_recognized': false,
+        'varieties': [
+          {'name': 'Custom Color', 'is_recognized': false},
+          {'name': 'Black', 'is_recognized': false},
+        ],
+      },
+      {
+        'name': 'Britannia Petite',
+        'is_recognized': true,
+        'varieties': [
+          {'name': 'Black', 'is_recognized': true},
+        ],
+      },
+    ]);
+    expect(choices.single['name'], 'Britannia Petite');
+    expect(CatalogService.matches(choices.single, '  BRITANNIA   PETIT '), true);
+    expect(
+      (choices.single['varieties'] as List).map((v) => v['name']),
+      ['Black', 'Custom Color'],
+    );
+    expect((choices.single['varieties'] as List).first['is_recognized'], true);
   });
   test('Spelling suggestions distinguish near matches', () {
     expect(CatalogService.distance('Choclate', 'Chocolate'), 1);

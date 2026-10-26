@@ -80,7 +80,12 @@ final bytes = Uint8List.fromList(
     '<ExportedData><Animals><Record><CID>1</CID><Name>Sample</Name><Sex>?</Sex><Breed>Dutch</Breed><Weight>1814.368</Weight><Storage_Area>Active_I:Active</Storage_Area></Record></Animals>',
   ),
 );
-Future<void> open(WidgetTester t, FakeRabbitRegister gateway) async {
+Future<void> open(
+  WidgetTester t,
+  FakeRabbitRegister gateway, {
+  Uint8List? fileBytes,
+  Future<({String name, Uint8List bytes})?> Function()? pickFile,
+}) async {
   t.view.physicalSize = const Size(1200, 1800);
   t.view.devicePixelRatio = 1;
   addTearDown(t.view.resetPhysicalSize);
@@ -91,7 +96,9 @@ Future<void> open(WidgetTester t, FakeRabbitRegister gateway) async {
       builder: (context, child) => AppShell(child: child!),
       home: RabbitRegisterImportScreen(
         gateway: gateway,
-        pickFile: () async => (name: 'Other.XML', bytes: bytes),
+        pickFile:
+            pickFile ??
+            () async => (name: 'Other.XML', bytes: fileBytes ?? bytes),
       ),
     ),
   );
@@ -136,6 +143,78 @@ Future<void> ready(WidgetTester t) async {
 }
 
 void main() {
+  for (final unreadable in [false, true]) {
+    testWidgets(
+      'a rejected replacement file cannot import the previous export (read failure: $unreadable)',
+      (t) async {
+        var picks = 0;
+        final gateway = FakeRabbitRegister();
+        await open(
+          t,
+          gateway,
+          pickFile: () async {
+            picks++;
+            if (picks > 1 && unreadable) {
+              throw const FormatException(
+                'Unable to read this file. Choose it again.',
+              );
+            }
+            return (
+              name: picks == 1 ? 'Other.XML' : 'Rejected.XML',
+              bytes: picks == 1
+                  ? bytes
+                  : Uint8List.fromList(utf8.encode('<Other/>')),
+            );
+          },
+        );
+        await ready(t);
+        expect(gateway.previews, 1);
+        await reveal(t, find.text('Choose Rabbit Register XML'));
+        await t.tap(find.text('Choose Rabbit Register XML'));
+        await t.pumpAndSettle();
+        expect(
+          find.text(
+            unreadable
+                ? 'Unable to read this file. Choose it again.'
+                : 'Select a Rabbit Register ExportedData XML file.',
+          ),
+          findsOneWidget,
+        );
+        expect(find.text('Other.XML'), findsNothing);
+        expect(find.text('Preview import'), findsNothing);
+        expect(find.text('Import into herd'), findsNothing);
+        expect(gateway.saves, 0);
+      },
+    );
+  }
+  testWidgets(
+    'renamed archive storage reaches preview and imports as archived',
+    (t) async {
+      final gateway = FakeRabbitRegister();
+      await open(
+        t,
+        gateway,
+        fileBytes: Uint8List.fromList(
+          utf8.encode(
+            utf8
+                .decode(bytes)
+                .replaceAll('Active_I:Active', 'Arch._II:Arch._II'),
+          ),
+        ),
+      );
+      await ready(t);
+      expect(gateway.previews, 1);
+      expect(gateway.saves, 0);
+      final animal = (gateway.data!['animals'] as List).single;
+      expect(animal['status'], 'archived');
+      expect(animal['raw']['Storage_Area'], 'Arch._II:Arch._II');
+      await reveal(t, find.text('Import into herd'));
+      await t.tap(find.text('Import into herd'));
+      await t.pumpAndSettle();
+      expect(gateway.saves, 1);
+      expect(find.text('Import complete'), findsOneWidget);
+    },
+  );
   testWidgets(
     'file selection never saves; sex and warnings require review before save',
     (t) async {

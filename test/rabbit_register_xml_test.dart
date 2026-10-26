@@ -5,10 +5,11 @@ import 'package:ringmaster_breeder/imports/rabbit_register_xml.dart';
 String animal({
   String id = '1',
   String sex = 'Buck',
+  String storage = 'Active_I:Active',
   String extra = '',
   bool unnamed = false,
 }) =>
-    '<Record><CID>$id</CID><Breed>Dutch</Breed><Storage_Area>Active_I:Active</Storage_Area>${unnamed ? '' : '<Name>Test &amp; Rabbit</Name><Ear_Num>T1</Ear_Num>'}<Sex>$sex</Sex>$extra</Record>';
+    '<Record><CID>$id</CID><Breed>Dutch</Breed><Storage_Area>$storage</Storage_Area>${unnamed ? '' : '<Name>Test &amp; Rabbit</Name><Ear_Num>T1</Ear_Num>'}<Sex>$sex</Sex>$extra</Record>';
 RabbitRegisterExport parse(String s) =>
     RabbitRegisterExport.parse(utf8.encode(s));
 String xml(String animals, {String history = '', bool close = true}) =>
@@ -68,6 +69,86 @@ void main() {
     final payload = e.payload(sexes: {'1': 'Doe'});
     expect((payload['animals'] as List).single['sex'], 'Doe');
     expect(e.animals.single['raw']['Sex'], '?');
+  });
+  test(
+    'imports the reported archive label and retains original source bytes',
+    () {
+      final source = xml(
+        '${animal()}${animal(id: '64', storage: 'Arch._II:Arch._II')}',
+      );
+      final e = parse(source);
+      expect(e.animals.length, 2);
+      expect(e.animals.first['status'], 'active');
+      expect(e.animals.last['source_id'], '64');
+      expect(e.animals.last['status'], 'archived');
+      final payload = e.payload();
+      expect(
+        (payload['animals'] as List).last['raw']['Storage_Area'],
+        'Arch._II:Arch._II',
+      );
+      expect(utf8.decode(base64Decode(e.originalFileBase64)), source);
+    },
+  );
+  test('recognizes all active and archive codes independently of labels', () {
+    for (final area in ['I', 'II', 'III', 'IV']) {
+      for (final label in ['Active', 'Active_$area', 'Keepers', 'Archive']) {
+        final e = parse(xml(animal(storage: 'Active_$area:$label')));
+        expect(e.animals.single['status'], 'active');
+      }
+    }
+    for (final area in [
+      'I',
+      'II',
+      'III',
+      'IV',
+      'V',
+      'VI',
+      'VII',
+      'VIII',
+      'IX',
+    ]) {
+      for (final label in ['Archive', 'Arch._$area', 'Ancestors', 'Active']) {
+        final e = parse(xml(animal(storage: 'Arch._$area:$label')));
+        expect(e.animals.single['status'], 'archived');
+      }
+    }
+  });
+  test('renamed archive areas retain sale and death status precedence', () {
+    for (final (dates, status) in [
+      ('<DateSold>2020-01-02</DateSold>', 'sold'),
+      ('<DOD>2020-01-03</DOD>', 'deceased'),
+      ('<DateSold>2020-01-02</DateSold><DOD>2020-01-03</DOD>', 'deceased'),
+    ]) {
+      final e = parse(xml(animal(storage: 'Arch._II:Arch._II', extra: dates)));
+      expect(e.animals.single['status'], status);
+    }
+  });
+  test('keeps legacy labels and rejects unrecognized storage areas', () {
+    expect(
+      parse(xml(animal(storage: 'Archive_I:Archive'))).animals.single['status'],
+      'archived',
+    );
+    expect(
+      parse(xml(animal(storage: 'Other:Active'))).animals.single['status'],
+      'active',
+    );
+    for (final storage in [
+      '',
+      'Unknown:Unknown',
+      'Active_V:Keepers',
+      'Arch._X:Old',
+    ]) {
+      expect(
+        () => parse(xml(animal(id: '64', storage: storage))),
+        throwsA(
+          isA<FormatException>().having(
+            (error) => error.message,
+            'message',
+            'Rabbit 64 has an unknown storage area: $storage.',
+          ),
+        ),
+      );
+    }
   });
   test(
     'rejects duplicate IDs, duplicate fields, unknown sections and XML entities',

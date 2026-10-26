@@ -76,11 +76,18 @@ export function rabbit(html: string, id: string, owned: boolean, live = owned) {
   if (knownGenotype && Array.from(knownGenotype).length > 500) {
     throw new Error("A rabbit genotype is too long to import. Contact support@ringmasterone.com for help.");
   }
-  const breed = optional(value("Breed"));
+  let breed = optional(value("Breed"));
   let name = clean(doc.querySelector("#hybridDefaultHeading")?.textContent);
   if (breed && name.endsWith(` - ${breed}`)) {
     name = name.slice(0, -breed.length - 3);
   }
+  // Strip the source heading before mapping this reviewed spelling alias.
+  if (breed?.toLowerCase() === "britannia petit") breed = "Britannia Petite";
+  const sourceVariety = optional(value("Variety"));
+  // The herd owner confirmed Standard for this breed's unrecorded variety.
+  // A missing source row is not evidence of a blank field.
+  const variety = sourceVariety ??
+    (breed === "Standard Chinchilla" && fields.has("Variety") ? "Standard" : null);
   if (!name) throw new Error("A rabbit name could not be read.");
   const date = value("Date of Birth").match(/^(\d{2})\/(\d{2})\/(\d{4})/);
   const rawDate = optional(value("Date of Birth"));
@@ -104,7 +111,7 @@ export function rabbit(html: string, id: string, owned: boolean, live = owned) {
     name,
     tattoo: optional(value("Ear Number")),
     breed,
-    variety: optional(value("Variety")),
+    variety,
     known_genotype: knownGenotype,
     sex: ["Buck", "Doe"].includes(sex) ? sex : null,
     dob: date ? `${date[3]}-${date[1]}-${date[2]}` : null,

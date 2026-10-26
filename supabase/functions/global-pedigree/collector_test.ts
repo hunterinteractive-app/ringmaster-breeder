@@ -35,7 +35,7 @@ Deno.test("detail parser preserves fields, normalizes placeholders, and converts
   assertEquals(a.dob, "2022-05-04");
   assertEquals(a.sire_id, "2");
   assertEquals(a.dam_id, null);
-  assertEquals(a.variety, null);
+  assertEquals(a.variety, "Standard");
   assertEquals(a.legs, 2);
   assertEquals(a.status, "deceased");
   assertEquals(a.pedigree_only, false);
@@ -56,6 +56,25 @@ Deno.test("Known Genotype preserves source notation and missing values stay unkn
     '<tr><td class="inputLabel">Known Genotype:</td><td class="inputData">bb</td></tr></table>'), '1', true), Error, 'genotype could not be read');
   assertThrows(() => rabbit(detail().replace('</table>',
     '<tr><td class="inputLabel">Known Genotype:</td></tr></table>'), '1', true), Error, 'genotype could not be read');
+});
+Deno.test("Britannia Petit resolves to Britannia Petite without changing the rabbit name", () => {
+  const html = detail().replaceAll("Standard Chinchilla", "Britannia Petit");
+  for (const owned of [true, false]) {
+    const animal = rabbit(html, "1", owned);
+    assertEquals(animal.breed, "Britannia Petite");
+    assertEquals(animal.name, "Test Rabbit");
+    assertEquals(animal.pedigree_only, !owned);
+    assertEquals(animal.variety, null);
+  }
+  assertEquals(rabbit(detail(), "2", true).breed, "Standard Chinchilla");
+});
+Deno.test("only an explicitly blank Standard Chinchilla variety receives the confirmed default", () => {
+  for (const blank of ["None selected", "", "--", "???"]) {
+    assertEquals(rabbit(detail().replace("None selected", blank), "1", true).variety, "Standard");
+  }
+  assertEquals(rabbit(detail().replace("None selected", "Recorded Color"), "1", true).variety, "Recorded Color");
+  assertEquals(rabbit(detail().replaceAll("Standard Chinchilla", "Britannia Petit"), "1", true).variety, null);
+  assertEquals(rabbit(detail().replace('<tr><td class="inputLabel">Variety:</td><td class="inputData">None selected</td></tr>', ''), "1", true).variety, null);
 });
 Deno.test("herd listing ignores pedigree links and deduplicates detail links", () => {
   assertEquals(
