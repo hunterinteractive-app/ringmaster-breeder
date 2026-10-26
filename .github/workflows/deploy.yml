@@ -22,6 +22,8 @@ jobs:
       - run: flutter pub get
       - run: flutter analyze
       - run: flutter test
+      - name: Verify backup schema coverage and recovery tools
+        run: python3 -m unittest discover -s test/backups -v
       - name: Verify offline job handlers
         run: |
           npx --yes deno@2 check supabase/functions/offline-jobs/index.ts supabase/functions/import-ringmaster-records/index.ts supabase/functions/billing/index.ts supabase/functions/stripe-webhook/index.ts supabase/functions/delete-account/index.ts supabase/functions/billing-price-worker/index.ts

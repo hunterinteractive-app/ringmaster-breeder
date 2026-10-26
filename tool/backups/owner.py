@@ -13,13 +13,15 @@ from common import Database, ident, literal, sha256, write_json
 
 # Parent-before-child order. Every selected FK to a selected table is validated.
 TABLES = [
-    'farms', 'animals', 'breeding_settings', 'breeding_records',
-    'breeding_tracking', 'breeding_offspring', 'animal_weights',
+    'farms', 'herd_contacts', 'animals', 'animal_management', 'wool_settings',
+    'breeding_settings', 'breeding_records',
+    'breeding_tracking', 'breeding_offspring', 'litter_weights', 'animal_weights',
+    'animal_feed_weights', 'animal_wool_records',
     'animal_health_records', 'pedigree_drafts', 'animal_sales',
     'animal_sale_payments', 'animal_sale_history', 'breeder_exhibitor_profiles',
     'breeder_imported_animals', 'breeder_show_history', 'global_pedigree_animals',
     'global_pedigree_history', 'rabbit_register_sources', 'rabbit_register_animals',
-    'rabbit_register_records', 'kintraks_sources', 'kintraks_animals',
+    'rabbit_register_files', 'rabbit_register_records', 'kintraks_sources', 'kintraks_animals',
 ]
 PRESERVED = [
     'public.users', 'public.user_licenses', 'public.license_tiers',
@@ -36,6 +38,10 @@ PRESERVED = [
     'public.breeder_billing_audit',
     'public.breeder_billing_leases',
     'public.breeder_billing_payment_blocks',
+    # Keep live billing campaigns/email history and registration/referral state
+    # during owner recovery. The whole-service database dump includes them.
+    'public.breeder_price_changes', 'public.breeder_price_notices',
+    'public.breeder_registration_feedback', 'breeder_private.registration_settings',
 
     'public.species', 'public.breeds', 'public.varieties',
     'public.show_connections', 'public.connected_show_reports',
@@ -58,18 +64,21 @@ def scope(table, owner, stage=False):
     farms = f'SELECT id FROM {relation("farms", stage)} WHERE owner_id={literal(owner)}'
     animals = f'SELECT id FROM {relation("animals", stage)} WHERE ring_id IN ({farms})'
     breedings = (f'SELECT id FROM {relation("breeding_records", stage)} '
-                 f'WHERE sire_id IN ({animals}) AND dam_id IN ({animals})')
+                 f'WHERE sire_id IN ({animals}) OR dam_id IN ({animals}) '
+                 f'OR import_ring_id IN ({farms})')
     sales = f'SELECT id FROM {relation("animal_sales", stage)} WHERE ring_id IN ({farms})'
     if table == 'farms':
         return f't.owner_id={literal(owner)}'
     if table in ('breeder_exhibitor_profiles', 'breeder_imported_animals', 'breeder_show_history'):
         return f't.owner_id={literal(owner)}'
-    if table in ('animal_weights', 'animal_health_records'):
+    if table in ('animal_weights', 'animal_health_records', 'animal_management',
+                 'animal_feed_weights', 'animal_wool_records'):
         return f't.animal_id IN ({animals})'
     if table == 'breeding_records':
         # Include mixed-family records so FK validation refuses ambiguous recovery.
-        return f'(t.sire_id IN ({animals}) OR t.dam_id IN ({animals}))'
-    if table == 'breeding_tracking':
+        return (f'(t.sire_id IN ({animals}) OR t.dam_id IN ({animals}) '
+                f'OR t.import_ring_id IN ({farms}))')
+    if table in ('breeding_tracking', 'litter_weights'):
         return f't.breeding_id IN ({breedings})'
     if table == 'breeding_offspring':
         return f'(t.breeding_id IN ({breedings}) OR t.animal_id IN ({animals}))'
@@ -114,6 +123,15 @@ def primary_keys(db):
       WHERE p.contype='p' AND n.nspname='public' GROUP BY c.relname) x;""")
 
 
+def generated_columns(db):
+    return db.json("""SELECT coalesce(jsonb_object_agg(name,cols),'{}') FROM (
+      SELECT c.relname name,jsonb_agg(a.attname) cols
+      FROM pg_class c JOIN pg_namespace n ON n.oid=c.relnamespace
+      JOIN pg_attribute a ON a.attrelid=c.oid
+      WHERE n.nspname='public' AND c.relkind='r' AND NOT a.attisdropped
+        AND a.attgenerated<>'' GROUP BY c.relname) x;""")
+
+
 def assertion(condition, message):
     body = f'BEGIN IF {condition} THEN RAISE EXCEPTION {literal(message)}; END IF; END;'
     return 'DO ' + literal(body) + ';'
@@ -131,6 +149,7 @@ def make_plan(db, data, commit=False):
     if not auth_id:
         raise ValueError('Recovery requires an existing linked owner identity')
     keys = primary_keys(db)
+    generated = generated_columns(db)
     sql = ['BEGIN;', 'SET LOCAL standard_conforming_strings=on;',
            "SET LOCAL lock_timeout='15s';", "SET LOCAL statement_timeout='10min';",
            # Lock before validating live ownership. Foreign keys stay enabled.
@@ -188,7 +207,10 @@ def make_plan(db, data, commit=False):
     for table in TABLES:
         sql.append(f'ALTER TABLE {relation(table)} DISABLE TRIGGER USER;')
     for table in TABLES:
-        cols = [c['name'] for c in data['schema'][table]]
+        # Staging keeps original values for validation. PostgreSQL recomputes
+        # generated fields (for example Rabbit Register fingerprints) on write.
+        cols = [c['name'] for c in data['schema'][table]
+                if c['name'] not in generated.get(table, [])]
         values = ['NULL' if table == 'animals' and c in ('sire_id', 'dam_id') else 's.' + ident(c) for c in cols]
         if table == 'animals':
             values[cols.index('revision')] = '(extract(epoch from clock_timestamp())*1000000)::bigint'

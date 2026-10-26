@@ -121,6 +121,19 @@ def validate_source(db_url, api_url):
         raise ValueError('Use the Breeder direct or session-pooler connection string')
 
 
+def validate_inventory(inventory):
+    known = {'public.' + t for t in TABLES} | set(PRESERVED)
+    actual = set(inventory)
+    if actual != known:
+        details = []
+        if actual - known:
+            details.append('unclassified: ' + ', '.join(sorted(actual - known)))
+        if known - actual:
+            details.append('missing: ' + ', '.join(sorted(known - actual)))
+        raise ValueError('Schema inventory changed (' + '; '.join(details) +
+                         '): update the recovery/preservation lists in owner.py before backup')
+
+
 def create(output):
     db_url = os.environ['SUPABASE_DB_URL']
     api_url = os.environ['SUPABASE_URL'].rstrip('/')
@@ -143,16 +156,14 @@ def create(output):
                 inventory = db.json("""SELECT coalesce(jsonb_agg(n.nspname||'.'||c.relname),'[]')
                     FROM pg_class c JOIN pg_namespace n ON n.oid=c.relnamespace
                     WHERE n.nspname IN ('public','breeder_private') AND c.relkind='r';""")
-                known = {'public.' + t for t in TABLES} | set(PRESERVED)
-                if set(inventory) != known:
-                    raise ValueError('Schema inventory changed: classify new/missing tables in owner.py before backup')
+                validate_inventory(inventory)
                 objects = db.json(OBJECTS_SQL + ';')
                 write_json(root / 'buckets.json', db.json(
                     "SELECT coalesce(jsonb_agg(to_jsonb(b)),'[]') FROM storage.buckets b;"))
                 command = ['pg_dump', '--format=custom', '--no-owner', '--snapshot=' + point['snapshot'],
                            '--schema=public', '--schema=breeder_private', '--schema=auth',
                            '--schema=storage', '--schema=supabase_migrations',
-                           '--schema=extensions',
+                           '--schema=extensions', '--extension=pgcrypto',
                            '--file=' + str(root / 'database.dump')]
                 run(command, env=db.env)
                 # Roles carry no passwords; database payload and Storage are encrypted below.

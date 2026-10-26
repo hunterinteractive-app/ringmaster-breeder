@@ -23,8 +23,12 @@ ANIMAL = '12345678-1234-4234-8234-123456789021'
 PARENT = '12345678-1234-4234-8234-123456789022'
 OTHER_ANIMAL = '12345678-1234-4234-8234-123456789023'
 NEW_ANIMAL = '12345678-1234-4234-8234-123456789024'
+DAM = '12345678-1234-4234-8234-123456789025'
 WEIGHT = '12345678-1234-4234-8234-123456789031'
 SALE = '12345678-1234-4234-8234-123456789041'
+CONTACT = '12345678-1234-4234-8234-123456789051'
+OTHER_CONTACT = '12345678-1234-4234-8234-123456789052'
+BREEDING = '12345678-1234-4234-8234-123456789061'
 
 
 @unittest.skipUnless(os.environ.get('BACKUP_TEST_DB_URL'), 'Disposable database not configured')
@@ -52,6 +56,7 @@ class OwnerIntegrationTests(unittest.TestCase):
           INSERT INTO public.animals(id,ring_id,name,species,sex) VALUES
             ('{ANIMAL}','{RING}','Original','rabbit','Buck'),
             ('{PARENT}','{RING}','Father','rabbit','Buck'),
+            ('{DAM}','{RING}','Mother','rabbit','Doe'),
             ('{OTHER_ANIMAL}','{OTHER_RING}','Untouched','rabbit','Buck');
           UPDATE public.animals SET sire_id='{PARENT}' WHERE id='{ANIMAL}';
           INSERT INTO public.animal_weights(id,animal_id,weight) VALUES('{WEIGHT}','{ANIMAL}',4);
@@ -61,6 +66,26 @@ class OwnerIntegrationTests(unittest.TestCase):
             VALUES('{SALE}','deposit',2000,'{AUTH}');
           INSERT INTO public.animal_sale_history(sale_id,event,details,created_by)
             VALUES('{SALE}','fixture','{{}}','{AUTH}');
+          INSERT INTO public.herd_contacts(id,ring_id,source,source_id,name) VALUES
+            ('{CONTACT}','{RING}','fixture','one','Original contact'),
+            ('{OTHER_CONTACT}','{OTHER_RING}','fixture','other','Other contact');
+          INSERT INTO public.animal_management(animal_id,cage,buyer_contact_id)
+            VALUES('{ANIMAL}','A1','{CONTACT}');
+          UPDATE public.animal_sales SET buyer_contact_id='{CONTACT}' WHERE id='{SALE}';
+          INSERT INTO public.wool_settings(ring_id) VALUES('{RING}');
+          INSERT INTO public.animal_feed_weights(animal_id,recorded_date,feed_weight,native_weight_id)
+            VALUES('{ANIMAL}','2026-10-18',2,'{WEIGHT}');
+          INSERT INTO public.animal_wool_records(animal_id,recorded_date,fleece_grams,native_weight_id)
+            VALUES('{ANIMAL}','2026-10-18',100,'{WEIGHT}');
+          INSERT INTO public.rabbit_register_sources(ring_id,source) VALUES('{RING}','fixture');
+          INSERT INTO public.rabbit_register_files(ring_id,source,filename,original_file_base64)
+            VALUES('{RING}','fixture','synthetic.rr','c3ludGhldGlj');
+          INSERT INTO public.breeding_records(id,dam_id,import_ring_id,import_source,import_source_id,import_record)
+            VALUES('{BREEDING}','{DAM}','{RING}','rabbit_register','litter-one','{{}}');
+          INSERT INTO public.breeding_tracking(breeding_id,import_record,notes)
+            VALUES('{BREEDING}','{{}}','Unknown sire litter');
+          INSERT INTO public.litter_weights(breeding_id,recorded_date,weight)
+            VALUES('{BREEDING}','2026-10-18',5);
         """)
         self.db.execute("""DO $$ DECLARE r record; BEGIN
           FOR r IN SELECT c.oid::regclass t FROM pg_class c JOIN pg_namespace n ON n.oid=c.relnamespace
@@ -108,6 +133,31 @@ class OwnerIntegrationTests(unittest.TestCase):
 
     def test_cross_family_parent_is_rejected(self):
         self.snapshot['tables']['animals'][0]['sire_id'] = OTHER_ANIMAL
+        with self.assertRaises(RuntimeError):
+            self.apply_in_fixture(self.snapshot)
+
+    def test_new_herd_records_and_unknown_sire_litter_round_trip(self):
+        for table in ('herd_contacts', 'animal_management', 'wool_settings',
+                      'animal_feed_weights', 'animal_wool_records', 'rabbit_register_files',
+                      'breeding_records', 'breeding_tracking', 'litter_weights'):
+            self.assertEqual(len(self.snapshot['tables'][table]), 1, table)
+        self.assertIsNone(self.snapshot['tables']['breeding_records'][0]['sire_id'])
+        self.db.execute(f"""UPDATE public.animal_management SET cage='Changed' WHERE animal_id='{ANIMAL}';
+          DELETE FROM public.litter_weights WHERE breeding_id='{BREEDING}';
+          DELETE FROM public.rabbit_register_files WHERE ring_id='{RING}';
+          UPDATE public.herd_contacts SET name='Changed' WHERE id='{CONTACT}';""")
+        self.apply_in_fixture(self.snapshot)
+        self.assertEqual(self.db.json(f"SELECT to_json(cage) FROM public.animal_management WHERE animal_id='{ANIMAL}';"), 'A1')
+        self.assertEqual(self.db.json(f"SELECT to_json(weight) FROM public.litter_weights WHERE breeding_id='{BREEDING}';"), 5)
+        self.assertEqual(self.db.json(f"SELECT to_json(notes) FROM public.breeding_tracking WHERE breeding_id='{BREEDING}';"), 'Unknown sire litter')
+        self.assertEqual(self.db.json(f"SELECT to_json(name) FROM public.herd_contacts WHERE id='{CONTACT}';"), 'Original contact')
+        self.assertEqual(self.db.json(f"SELECT to_json(name) FROM public.herd_contacts WHERE id='{OTHER_CONTACT}';"), 'Other contact')
+        saved = self.snapshot['tables']['rabbit_register_files'][0]
+        restored = self.db.json(f"SELECT to_jsonb(t) FROM public.rabbit_register_files t WHERE ring_id='{RING}';")
+        self.assertEqual(restored, saved)
+
+    def test_cross_family_management_contact_is_rejected(self):
+        self.snapshot['tables']['animal_management'][0]['buyer_contact_id'] = OTHER_CONTACT
         with self.assertRaises(RuntimeError):
             self.apply_in_fixture(self.snapshot)
 

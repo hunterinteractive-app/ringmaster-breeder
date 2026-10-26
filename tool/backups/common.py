@@ -60,8 +60,14 @@ class Database:
 
     def execute(self, sql):
         marker = 'done_' + uuid.uuid4().hex
-        self.process.stdin.write(sql + '\n\\echo ' + marker + '\n')
-        self.process.stdin.flush()
+        try:
+            self.process.stdin.write(sql + '\n\\echo ' + marker + '\n')
+            self.process.stdin.flush()
+        except BrokenPipeError:
+            # psql can reject an early safety assertion while a large restore
+            # plan is still being written to its pipe.
+            raise RuntimeError('Database command failed; transaction rolled back. '
+                               'Diagnostics withheld because they may contain private records.') from None
         lines = []
         for line in self.process.stdout:
             if line.rstrip('\n') == marker:
@@ -74,11 +80,13 @@ class Database:
         return json.loads(self.execute(sql))
 
     def close(self):
-        if self.process.poll() is None:
-            self.process.stdin.close()
-            self.process.wait(timeout=30)
         if not self.process.stdin.closed:
-            self.process.stdin.close()
+            try:
+                self.process.stdin.close()
+            except BrokenPipeError:
+                pass
+        if self.process.poll() is None:
+            self.process.wait(timeout=30)
         self.process.stdout.close()
         self.errors.close()
 

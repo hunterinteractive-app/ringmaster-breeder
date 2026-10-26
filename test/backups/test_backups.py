@@ -4,6 +4,7 @@ import io
 import json
 import os
 from pathlib import Path
+import re
 import shutil
 import sys
 import tarfile
@@ -15,7 +16,8 @@ from types import SimpleNamespace
 sys.path.insert(0, str(Path(__file__).resolve().parents[2] / 'tool' / 'backups'))
 from common import literal, sha256, write_json
 from files import media_references
-from service import PROJECT, crypt, extract, object_key, preserve_first_of_month, report_completion, upload, validate_source, verify_directory
+from owner import TABLES, PRESERVED
+from service import PROJECT, crypt, extract, object_key, preserve_first_of_month, report_completion, upload, validate_inventory, validate_source, verify_directory
 
 
 class BackupTests(unittest.TestCase):
@@ -34,6 +36,28 @@ class BackupTests(unittest.TestCase):
         write_json(root / 'manifest.json', dict(format='ringmaster-breeder-service', version=1,
                    checksums={p.name: sha256(p) for p in root.iterdir()}))
         return root
+
+    def test_new_migration_tables_have_a_recovery_classification(self):
+        # Catch additions during ordinary CI, before the next nightly backup.
+        migrations = Path(__file__).resolve().parents[2] / 'supabase' / 'migrations'
+        created = set()
+        for path in migrations.glob('*.sql'):
+            created.update(re.findall(
+                r'^\s*create\s+table\s+(?:if\s+not\s+exists\s+)?'
+                r'((?:public|breeder_private)\.[a-z_][a-z_0-9]*)\s*\(',
+                path.read_text().lower(), flags=re.MULTILINE))
+        self.assertTrue(created, 'Migration inventory must not be empty')
+        known = {'public.' + t for t in TABLES} | set(PRESERVED)
+        self.assertEqual(created - known, set(), 'Classify new tables in tool/backups/owner.py')
+
+    def test_inventory_error_identifies_new_and_missing_tables(self):
+        inventory = {'public.' + t for t in TABLES} | set(PRESERVED)
+        validate_inventory(inventory)
+        inventory.add('public.future_records')
+        inventory.remove('public.animals')
+        with self.assertRaisesRegex(ValueError,
+                r'unclassified: public.future_records; missing: public.animals'):
+            validate_inventory(inventory)
 
     def test_checksum_detects_corruption_and_missing_files(self):
         root = self.fixture()

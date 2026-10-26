@@ -18,7 +18,8 @@ existing retention.
 Each archive contains:
 
 - A consistent PostgreSQL custom-format dump of `public`, `breeder_private`,
-  `auth`, `storage`, `supabase_migrations`, and `extensions`.
+  `auth`, `storage`, `supabase_migrations`, and `extensions`, explicitly including
+  the `pgcrypto` extension required by registration referral codes.
 - Cluster role definitions without role passwords.
 - Original bytes for every object listed in Storage at the database snapshot,
   across all buckets, plus bucket configuration and object metadata.
@@ -156,8 +157,13 @@ Authentication identities, active licenses, legal acceptances, invitations and
 revocations, admin privileges, calendar tokens, cross-app connection settings,
 background jobs, sent-email records, and sync receipts are preserved as they are
 now. Personal contact/profile details also remain current. Recovery never resends
-an email or requeues old jobs. The selected records include herds, animals,
-pedigree links and drafts, weights, health history, breeding, sales, and imports.
+an email or requeues old jobs. The selected records include herds, contacts,
+animals, management details, pedigree links and drafts, body/feed/litter weights,
+wool records/settings, health history, breeding (including imported litters with
+an unknown sire), sales, and imports with original Rabbit Register file bytes.
+Generated file fingerprints are recomputed by PostgreSQL during recovery.
+Billing price campaigns/notices and registration/referral state remain current
+during owner recovery; the whole-service dump includes all of these tables.
 
 1. Identify the owner by `public.users.id`, not email alone or a family member's
    Auth UUID. Owner package filenames are SHA-256 hashes of that exact ID. Read
@@ -305,7 +311,10 @@ truncates it afterward, and creates/drops `breeder_backup_restore_test` on that
 same disposable cluster. Never point it at a valuable database.
 
 The backup deliberately fails on any unclassified new/missing `public` or
-`breeder_private` table. When adding tables, update the recovery/preservation list
+`breeder_private` table and names the affected tables in its error. Ordinary
+deployment CI also checks explicit table additions in migrations against the
+classification lists, so omissions can be caught before the next nightly run.
+When adding tables, update the recovery/preservation list
 in `tool/backups/owner.py`, its ownership predicate and dependency order, then
 rerun the recovery drill. This prevents a newly added feature from silently
 disappearing from individual recovery. Ordinary backup runs are read-only on the
